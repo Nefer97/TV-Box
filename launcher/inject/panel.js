@@ -5,7 +5,7 @@
 //   __tvp.open({channels:[{id,label,color,title,start,end,image,desc}], current, vol, videoLow})
 //   __tvp.move('left'|'right')   __tvp.ok() -> azione per tvd   __tvp.set(chiave, valore)   __tvp.close()
 (function () {
-  const V = 15;                       // versione: una più nuova sostituisce quella già caricata
+  const V = 17;                       // versione: una più nuova sostituisce quella già caricata
   if (window.__tvp && window.__tvp.v === V) return;
   try { window.__tvp && window.__tvp.close(); } catch (e) {}
   const old = document.getElementById('__tvpanel');
@@ -131,7 +131,7 @@
       cu.appendChild(ld);
       root.appendChild(cu);
     }
-    root.appendChild(w);
+    if (!data.curtainOnly) root.appendChild(w);   // dalla home: solo il sipario, niente pannello
     // il popover sta nello strato più alto: si vede anche sopra un video a schermo intero
     const parent = document.body || document.documentElement;
     if (host.parentNode !== parent) parent.appendChild(host);
@@ -186,6 +186,7 @@
       if (!(readyAt && Date.now() - readyAt >= 1000) && Date.now() - t0 < 15000) return;
       clearInterval(curtainT);
       data.curtain = false;
+      if (data.curtainOnly) { open = false; setTimeout(close, 700); }   // finito: via tutto
       const c = root && root.querySelector('.curtain');
       if (c) { c.classList.add('gone'); setTimeout(() => c.remove(), 700); }
       document.documentElement.style.removeProperty('background');   // il colore messo all'inizio
@@ -220,7 +221,8 @@
       return true;
     },
     close() { close(); return true; },
-    isOpen() { return open && !!host; },        // se la pagina lo toglie, keep() lo rimette
+    isOpen() { return open && !!host; },
+    panelShown() { return open && !!host && !data.curtainOnly; },   // il pannello, non solo il sipario        // se la pagina lo toglie, keep() lo rimette
     move(d) {                        // la fila gira in cerchio
       if (!open) return false;
       arm();

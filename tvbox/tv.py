@@ -357,8 +357,14 @@ class TV:
         log.info("apro %s", sid)
         self.panel = self.pointer = False
         self._prepare(s)
+        pending = None
+        if s["live"] and not self._switching:    # diretta aperta dalla home: solo il sipario
+            pending = self._book({"channels": [{"id": sid, "label": s["label"], "color": s.get("color")}],
+                                  "current": sid, "curtain": True, "curtainOnly": True})
         self.current, self.opened_url = sid, s["url"]
         self.cdp.call("Page.navigate", {"url": s["url"]})
+        if pending:
+            threading.Thread(target=self._panel_unbook, args=(sid, pending), daemon=True).start()
         if s["live"] and s["kind"] == "web":
             threading.Thread(target=self._kick_live, daemon=True).start()
         if s.get("onair"):                    # canale in diretta: riparte da qui all'accensione
@@ -477,31 +483,32 @@ class TV:
         elif a == "home":
             self.home()
 
-    def panel_switch(self, sid):
-        """Cambio canale dal pannello senza che il pannello sparisca: prima di aprire il canale
-        nuovo si "prenota" il pannello nella pagina che sta per nascere (script registrato per i
-        documenti nuovi). Chrome tiene a schermo la pagina vecchia finché la nuova non disegna,
-        e la nuova disegna subito il pannello: il passaggio è quasi senza stacco."""
-        self.cdp.js("__tvp.set", "busy", sid, timeout=3)
-        js = panel_script()
-        data = self.panel_data()
-        data["current"] = sid
-        data["curtain"] = True              # fondo scuro finché il video nuovo non parte
-        # la pagina nuova nasce già blu (prima di qualsiasi contenuto: niente lampo bianco),
-        # poi il pannello con il sipario appena c'è il corpo della pagina
-        # solo nella pagina principale (non nei riquadri interni di pubblicità e statistiche)
-        boot = ("if (window.top === window) {\n" + js +
+    def _book(self, data):
+        """Prenota pannello e/o sipario nella pagina che sta per nascere (script registrato per i
+        documenti nuovi, solo nella pagina principale): la pagina nasce già blu e li disegna
+        subito, prima del sito. Il fondo di Chrome diventa blu: niente lampo bianco."""
+        boot = ("if (window.top === window) {\n" + panel_script() +
                 f"\n;var d = {json.dumps(data)};\n" + BOOT_START + "\n}")
         pending = None
         try:
             pending = self.cdp.call("Page.addScriptToEvaluateOnNewDocument", {"source": boot}).get("identifier")
         except Exception as ex:
-            log.warning("pannello prenotato: %s", ex)
-        try:                                 # fondo di Chrome blu invece che bianco
+            log.warning("prenotazione: %s", ex)
+        try:
             self.cdp.call("Emulation.setDefaultBackgroundColorOverride", {"color": DARK})
             self.dark_default = True
         except Exception:
             pass
+        return pending
+
+    def panel_switch(self, sid):
+        """Cambio canale dal pannello senza che il pannello sparisca: resta a schermo, con il
+        sipario dietro, mentre il canale nuovo si carica."""
+        self.cdp.js("__tvp.set", "busy", sid, timeout=3)
+        data = self.panel_data()
+        data["current"] = sid
+        data["curtain"] = True              # fondo scuro finché il video nuovo non parte
+        pending = self._book(data)
         self._switching = True
         try:
             self.open(sid, keep_dark=True)

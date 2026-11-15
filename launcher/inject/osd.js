@@ -3,7 +3,7 @@
 // (window.__tvCardsCSS). Non riceve tasti: sparisce da solo.
 //   __tvosd.show({label, color, now: {title, start, end, image}, next: {title, start}})
 (function () {
-  const V = 1;
+  const V = 2;
   if (window.__tvosd && window.__tvosd.v === V) return;
   const C = window.TVCards;
   const CSS = `
@@ -41,9 +41,14 @@
     setTimeout(() => { if (host) { try { host.hidePopover(); } catch (e) {} host.remove(); host = null; } }, 400);
   }
 
-  function show(d) {
+  function show(d, tries) {
     if (!d || !d.now || !d.now.title) return false;
-    if (window.__tvp && window.__tvp.isOpen()) return false;      // c'è già il pannello
+    const p = window.__tvp;
+    if (p && (p.panelShown ? p.panelShown() : p.isOpen())) return false;   // c'è già il pannello
+    if (p && p.isOpen() && (tries || 0) < 12) {                          // c'è ancora il sipario
+      setTimeout(() => show(d, (tries || 0) + 1), 400);
+      return true;
+    }
     if (host) host.remove();
     host = document.createElement('div');
     host.id = '__tvosd';
