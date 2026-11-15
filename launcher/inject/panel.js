@@ -5,7 +5,7 @@
 //   __tvp.open({channels:[{id,label,color,title,start,end,image,desc}], current, vol, videoLow})
 //   __tvp.move('left'|'right')   __tvp.ok() -> azione per tvd   __tvp.set(chiave, valore)   __tvp.close()
 (function () {
-  const V = 9;                       // versione: una più nuova sostituisce quella già caricata
+  const V = 10;                       // versione: una più nuova sostituisce quella già caricata
   if (window.__tvp && window.__tvp.v === V) return;
   try { window.__tvp && window.__tvp.close(); } catch (e) {}
   const old = document.getElementById('__tvpanel');
@@ -136,8 +136,19 @@
     vp.classList.toggle('end', off >= max - 1);
   }
   function arm() { clearTimeout(timer); timer = setTimeout(close, TIMEOUT); }
+  // alcune app (RaiPlay) ridisegnano tutta la pagina mentre partono: il pannello si rimette a posto
+  let guard = 0;
+  function keep() {
+    clearInterval(guard);
+    guard = setInterval(() => {
+      if (!open || !host || host.isConnected) return;
+      (document.body || document.documentElement).appendChild(host);
+      try { host.showPopover(); } catch (e) {}
+    }, 300);
+  }
   function close() {
     clearTimeout(timer);
+    clearInterval(guard);
     open = false;
     if (host) { try { host.hidePopover(); } catch (e) {} host.remove(); }
   }
@@ -156,10 +167,11 @@
       open = true;
       render();
       arm();
+      keep();
       return true;
     },
     close() { close(); return true; },
-    isOpen() { return open && !!host && host.isConnected; },
+    isOpen() { return open && !!host; },        // se la pagina lo toglie, keep() lo rimette
     move(d) {                        // la fila gira in cerchio
       if (!open) return false;
       arm();

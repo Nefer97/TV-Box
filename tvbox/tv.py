@@ -407,11 +407,7 @@ class TV:
             sid = r.get("id")
             if sid == self.current:
                 return self.panel_close()
-            # il pannello resta: la scheda mostra "Apro…", cambia canale e si riapre sul nuovo
-            self.cdp.js("__tvp.set", "busy", sid, timeout=3)
-            old = self.url()
-            self.open(sid)
-            threading.Thread(target=self._panel_reopen, args=(sid, old), daemon=True).start()
+            self.panel_switch(sid)
         elif a == "video":
             on = bool(r.get("on"))
             self.display.set_video_low(on)
@@ -421,20 +417,43 @@ class TV:
         elif a == "home":
             self.home()
 
-    def _panel_reopen(self, sid, old_url):
+    def panel_switch(self, sid):
+        """Cambio canale dal pannello senza che il pannello sparisca: prima di aprire il canale
+        nuovo si "prenota" il pannello nella pagina che sta per nascere (script registrato per i
+        documenti nuovi). Chrome tiene a schermo la pagina vecchia finché la nuova non disegna,
+        e la nuova disegna subito il pannello: il passaggio è quasi senza stacco."""
+        self.cdp.js("__tvp.set", "busy", sid, timeout=3)
+        js = panel_script()
+        data = self.panel_data()
+        data["current"] = sid
+        boot = (f"{js}\n;(function(){{var d={json.dumps(data)};"
+                "(function go(){if(!document.body)return setTimeout(go,25);window.__tvp.open(d);})();})();")
+        pending = None
+        try:
+            pending = self.cdp.call("Page.addScriptToEvaluateOnNewDocument", {"source": boot}).get("identifier")
+        except Exception as ex:
+            log.warning("pannello prenotato: %s", ex)
+        self.open(sid)
+        self.panel = True
+        threading.Thread(target=self._panel_unbook, args=(sid, pending), daemon=True).start()
+
+    def _panel_unbook(self, sid, pending):
+        """Appena il pannello c'è nella pagina nuova (o dopo 15 s) si toglie la prenotazione,
+        così un ricaricamento successivo della pagina non lo fa ricomparire."""
         deadline = time.monotonic() + 15
-        time.sleep(1.5)
+        time.sleep(1)
         while time.monotonic() < deadline and self.current == sid:
             try:
-                if self.cdp.eval("location.href", timeout=3) != old_url and \
-                        self.cdp.eval("document.readyState", timeout=3) in ("interactive", "complete"):
-                    time.sleep(1.2)
-                    if self.current == sid and not self.panel:
-                        self.post(self.panel_open)
-                    return
+                if self.cdp.eval("!!(window.__tvp && __tvp.isOpen())", timeout=3):
+                    break
             except Exception:
                 pass
-            time.sleep(0.5)
+            time.sleep(0.4)
+        if pending:
+            try:
+                self.cdp.call("Page.removeScriptToEvaluateOnNewDocument", {"identifier": pending})
+            except Exception:
+                pass
 
     # ---------- schermo ----------
     def _refit_window(self):
