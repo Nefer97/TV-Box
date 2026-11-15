@@ -100,9 +100,7 @@ export function move(dir) {
     const row = [...sc.querySelectorAll('[tabindex]')];
     const i = row.indexOf(cur), n = row.length;
     if (n > 1 && ((dir === 'left' && i === 0) || (dir === 'right' && i === n - 1))) {
-      const t = row[dir === 'left' ? n - 1 : 0];
-      t.focus();
-      t.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+      row[dir === 'left' ? n - 1 : 0].focus();          // la fila si centra da sola (centerInRow)
       return;
     }
   }
@@ -119,7 +117,18 @@ export function move(dir) {
     const d = main + cross * 2.2;
     if (d < bd) { bd = d; best = e; }
   }
-  if (best) { best.focus(); best.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  if (!best) return;
+  best.focus();
+  if (!best.closest('.row.scroller')) best.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+// fila dei canali: la scheda scelta resta al centro e scorre la fila (come nel pannello)
+export function centerInRow(e) {
+  const row = e.closest && e.closest('.row.scroller');
+  if (!row) return;
+  const max = row.scrollWidth - row.clientWidth;
+  const left = Math.max(0, Math.min(max, e.offsetLeft - row.clientWidth / 2 + e.offsetWidth / 2));
+  row.scrollTo({ left, behavior: 'smooth' });
 }
 
 // ---------- piccole utilità grafiche ----------

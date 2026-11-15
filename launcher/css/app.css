@@ -26,7 +26,7 @@ main { padding: 2.2vh 5vw 0; }
 h2.sec-title { margin: 3vh 0 1.4vh; }
 .row { display: flex; gap: 1.4vw; flex-wrap: wrap; }
 /* righe che scorrono di lato (canali): niente a capo */
-.row.scroller { flex-wrap: nowrap; overflow: hidden; padding: 1.4vh 1.2vw; margin: -1.4vh -1.2vw; }
+.row.scroller { flex-wrap: nowrap; overflow: hidden; padding: 1.4vh 1.2vw; margin: -1.4vh -1.2vw; position: relative; }
 
 /* ---------- riquadri dei servizi ---------- */
 .tile { position: relative; border-radius: 2.4vh; display: flex; flex-direction: column;
