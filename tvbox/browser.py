@@ -25,15 +25,19 @@ def inject_scripts(force_h264=True):
     return out
 
 
-def panel_script():
-    """Pannello cambio canale: le schede e lo stile sono gli stessi della home
-    (js/cards.js, css/tokens.css + css/cards.css), più il pannello vero e proprio."""
+def overlay_script(name):
+    """Un riquadro sopra le pagine (inject/<name>) con le schede e lo stile della home."""
     parts = [read_text(os.path.join(LAUNCHER_DIR, f)) for f in
-             ("js/cards.js", "css/tokens.css", "css/cards.css", "inject/panel.js")]
+             ("js/cards.js", "css/tokens.css", "css/cards.css", "inject/" + name)]
     if not all(parts):
         return None
-    cards_js, tokens, cards_css, panel = parts
-    return (cards_js + "\n;window.__tvCardsCSS = " + json.dumps(tokens + "\n" + cards_css) + ";\n" + panel)
+    cards_js, tokens, cards_css, js = parts
+    return cards_js + "\n;window.__tvCardsCSS = " + json.dumps(tokens + "\n" + cards_css) + ";\n" + js
+
+
+def panel_script():
+    """Pannello cambio canale (inject/panel.js)."""
+    return overlay_script("panel.js")
 
 
 class Browser:

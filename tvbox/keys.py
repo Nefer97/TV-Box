@@ -67,8 +67,10 @@ KEYMAP = {
     PANEL:       {"left": "panel_move", "right": "panel_move", "up": "panel_volume", "down": "panel_volume",
                   "ok": "panel_ok", "menu": "panel_close", "play": "panel_close", "ok_long": None},
     POINTER:     {**_arrows("pointer_nudge"), "ok": "click", "menu": "pointer_off", "play": "player_toggle"},
-    LIVE_TV:     {**_arrows("key_arrow"), "ok": "key_enter", "menu": "panel_open", "play": "tv_play"},
-    LIVE_PLAYER: {"up": "player_volume", "down": "player_volume", "left": "player_seek", "right": "player_seek",
+    # sulle dirette: + − volume, ◄ ► pannello già spostato sul canale vicino
+    LIVE_TV:     {"up": "player_volume", "down": "player_volume", "left": "panel_step", "right": "panel_step",
+                  "ok": "key_enter", "menu": "panel_open", "play": "tv_play"},
+    LIVE_PLAYER: {"up": "player_volume", "down": "player_volume", "left": "panel_step", "right": "panel_step",
                   "ok": "player_toggle", "menu": "panel_open", "play": "player_toggle"},
     LIVE_SITE:   {**_arrows("nav_move"), "ok": "nav_ok", "menu": "panel_open", "play": "player_toggle"},
     TVAPP_HBBTV: {**_arrows("key_arrow"), "ok": "key_enter", "menu": "tv_back", "play": "tv_play"},

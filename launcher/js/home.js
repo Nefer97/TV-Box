@@ -73,6 +73,12 @@ export function build() {
       setTimeout(() => edgeFade(row), 0);
     }
     items.forEach(id => row.appendChild(tile(id, CFG.services[id], sec.big)));
+    if (live) {                                        // in fondo ai canali: la Guida TV
+      const g = window.TVCards.action({ k: 'guide', ic: '☰', lbl: 'Guida TV', sub: 'Cosa c\'è dopo' });
+      g.tabIndex = 0;
+      g._act = () => state.show('guide');
+      row.appendChild(g);
+    }
     if (sec.big) row.classList.add('bigrow');
     if (sec.big && !bigDone) {                         // i siti dell'utente dopo i servizi principali
       bigDone = true;

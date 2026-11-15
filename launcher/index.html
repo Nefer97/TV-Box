@@ -27,6 +27,8 @@
       <div class="btn" tabindex="0" data-act="screen">Risoluzione schermo <span class="val" id="screen-val">…</span></div>
       <div class="btn" tabindex="0" data-act="screen-video">Risoluzione nei video <span class="val" id="screenvideo-val">…</span></div>
       <div class="btn" tabindex="0" data-act="saver">Salvaschermo <span class="val" id="saver-val">…</span></div>
+      <div class="btn" tabindex="0" data-act="startup">All'accensione <span class="val" id="startup-val">…</span></div>
+      <div class="btn" tabindex="0" data-act="sleep">Timer di spegnimento <span class="val" id="sleep-val">…</span></div>
       <div class="btn" tabindex="0" data-act="home-edit">Schermata iniziale <span class="val">scegli le tile</span></div>
       <div class="btn" tabindex="0" data-act="wifi">Wi-Fi <span class="val" id="wifi-cur">…</span></div>
       <div class="btn" tabindex="0" data-act="info">Rete <span class="val" id="ip">…</span></div>
@@ -38,7 +40,7 @@
       <b>MENU</b> = indietro · <b>tieni premuto MENU</b> = torna qui ·
       <b>tieni premuto il tasto centrale</b> = puntatore (per i siti difficili).
       Durante un video: centrale = pausa, ◀◀ ▶▶ = indietro/avanti, + − = volume.
-      Su una diretta: <b>MENU</b> = cambio canale.</p>
+      Su una diretta: <b>MENU</b> o <b>◀◀ ▶▶</b> = cambio canale, <b>+ −</b> = volume.</p>
   </section>
   <section class="page" id="page-siti">
     <div class="settings" id="siti-list"></div>
@@ -49,6 +51,9 @@
     <div class="settings" id="homeedit-list"></div>
     <p class="note">OK su una voce per mostrarla o nasconderla. I tuoi siti si mettono nella home da
       <b>Altri servizi → I miei siti</b>.</p>
+  </section>
+  <section class="page" id="page-guide">
+    <div class="guidepage"><div class="gchans" id="guide-chans"></div><div class="gprogs" id="guide-progs"></div></div>
   </section>
   <section class="page" id="page-wifi">
     <div id="wifi-status">…</div>

@@ -13,7 +13,7 @@ import time
 from urllib.parse import urlparse
 
 from . import keys
-from .browser import Browser, inject_scripts, panel_script
+from .browser import Browser, inject_scripts, overlay_script, panel_script
 from .cdp import CDP
 from .config import normalize_service
 from .display import Display
@@ -41,7 +41,7 @@ BLOCKLISTS = {
                  "*facebook.net*", "*criteo*", "*teads*", "*smartclip*", "*adsrvr*"],
 }
 
-NO_SERVICE = normalize_service("", {}, {})
+NO_SERVICE = normalize_service("", {}, {})      # pagina che non appartiene a nessun servizio
 
 # script "prenotato" nella pagina del canale nuovo: appena esiste l'elemento radice (nel primo
 # istante della pagina non c'è ancora: lo si aspetta con un MutationObserver) lo colora di blu
@@ -58,7 +58,8 @@ BOOT_START = """(function () {
   if (!start()) { var mo = new MutationObserver(function () { if (start()) mo.disconnect(); });
                   mo.observe(document, { childList: true }); }
 })();"""
-DARK = {"r": 11, "g": 16, "b": 32, "a": 1}      # pagina che non appartiene a nessun servizio
+DARK = {"r": 11, "g": 16, "b": 32, "a": 1}      # fondo di Chrome durante il cambio canale
+SLEEP_STEPS = [0, 30, 60, 90, 120]                  # timer di spegnimento (minuti, 0 = spento)
 
 
 class TV:
@@ -90,6 +91,11 @@ class TV:
         self._player_cache = (0.0, False)
         self._player_since = 0.0
         self._noplayer_since = 0.0
+        self._resumed = False              # ultimo canale già riaperto all'avvio
+        self._switching = False            # cambio canale dal pannello in corso (niente banner)
+        self.sleep_at = 0.0                # timer di spegnimento: istante (0 = spento)
+        self.sleep_warned = False
+        self.asleep = False                # schermo spento dal timer
 
     # ---------- coda delle azioni ----------
     def post(self, fn, *args):
@@ -109,6 +115,12 @@ class TV:
 
     def dispatch(self, event):
         kind = event[0]
+        if self.asleep:                                 # schermo spento: il primo tasto lo riaccende
+            return self.wake()
+        if self.sleep_warned:                           # "spegnimento tra 1 minuto": tasto = annulla
+            self.sleep_set(0)
+            self.toast("Timer di spegnimento annullato")
+            return
         if kind == "pointer":
             return self.pointer_move(event[1], event[2])
         key = event[1] if kind == "arrow" else kind
@@ -349,6 +361,10 @@ class TV:
         self.cdp.call("Page.navigate", {"url": s["url"]})
         if s["live"] and s["kind"] == "web":
             threading.Thread(target=self._kick_live, daemon=True).start()
+        if s.get("onair"):                    # canale in diretta: riparte da qui all'accensione
+            self.prefs.set("last_channel", sid)
+            if not self._switching:
+                threading.Thread(target=self._banner, args=(sid,), daemon=True).start()
 
     def open_url(self, url):
         """Apre un indirizzo scelto dall'utente (I miei siti)."""
@@ -378,6 +394,7 @@ class TV:
         self.panel = self.pointer = False
         self.display.set_lowres(False)
         self.current = self.opened_url = None
+        self.prefs.set("last_channel", None)            # spento dalla home: si riparte dalla home
         self._clear_dark()
         self._prepare(NO_SERVICE)
         self.cdp.close_other_pages()
@@ -406,11 +423,18 @@ class TV:
                           "title": o.get("title", ""), "start": o.get("start", 0), "end": o.get("end", 0),
                           "image": o.get("image", ""), "desc": (o.get("desc") or "")[:300]})
         return {"channels": chans, "current": self.current, "vol": self.volume(0),
-                "videoLow": self.display.video_low() if self.display.video_mode else None}
+                "videoLow": self.display.video_low() if self.display.video_mode else None,
+                "sleep": self.sleep_left()}
 
-    def panel_open(self, key=None):
+    def panel_step(self, key):
+        """◄ ► su una diretta: il pannello si apre già sul canale precedente / successivo."""
+        self.panel_open(step=-1 if key == "left" else 1)
+
+    def panel_open(self, key=None, step=0):
         js = panel_script()
-        data = json.dumps(self.panel_data())
+        d = self.panel_data()
+        d["step"] = step
+        data = json.dumps(d)
         self.panel = bool(self.cdp.eval(f"{js}\n;window.__tvp.open({data})", timeout=6))
         log.info("pannello: %s", "aperto" if self.panel else "non riuscito")
 
@@ -441,6 +465,13 @@ class TV:
             on = bool(r.get("on"))
             self.display.set_video_low(on)
             self.cdp.js("__tvp.set", "videoLow", on, timeout=3)
+        elif a == "sleep":                              # timer: spento -> 30 -> 60 -> 90 -> 120 -> spento
+            left = self.sleep_left()
+            nxt = next((m for m in SLEEP_STEPS if m > left), 0) if left else SLEEP_STEPS[1]
+            self.sleep_set(nxt)
+            self.cdp.js("__tvp.set", "sleep", self.sleep_left(), timeout=3)
+        elif a == "guide":
+            self.home(page="guide")
         elif a == "settings":
             self.home(page="settings")
         elif a == "home":
@@ -471,7 +502,11 @@ class TV:
             self.dark_default = True
         except Exception:
             pass
-        self.open(sid, keep_dark=True)
+        self._switching = True
+        try:
+            self.open(sid, keep_dark=True)
+        finally:
+            self._switching = False
         self.panel = True
         threading.Thread(target=self._panel_unbook, args=(sid, pending), daemon=True).start()
 
@@ -492,6 +527,75 @@ class TV:
                 self.cdp.call("Page.removeScriptToEvaluateOnNewDocument", {"identifier": pending})
             except Exception:
                 pass
+
+    # ---------- banner del programma all'apertura di un canale ----------
+    def _banner(self, sid):
+        """Quando il video del canale è partito: canale, programma, orario e il successivo."""
+        deadline = time.monotonic() + 25
+        time.sleep(2)
+        while time.monotonic() < deadline and self.current == sid:
+            if self.is_player():
+                break
+            time.sleep(0.7)
+        if self.current != sid or self.panel_active():
+            return
+        time.sleep(1.2)                                 # dopo lo schermo intero
+        now = self.epg.for_service(sid)
+        nxt = next((p for p in self.epg.guide(sid, hours=6) if p["start"] >= (now.get("end") or 1)), None)
+        s = self.services[sid]
+        data = {"label": s["label"], "color": s.get("color"), "now": now, "next": nxt}
+        js = overlay_script("osd.js")
+        if js and self.current == sid:
+            try:
+                self.cdp.eval(f"{js}\n;window.__tvosd.show({json.dumps(data)})", timeout=5)
+            except Exception as ex:
+                log.debug("banner: %s", ex)
+
+    # ---------- timer di spegnimento ----------
+    def sleep_left(self):
+        """Minuti che mancano (arrotondati per eccesso), 0 = timer spento."""
+        if not self.sleep_at:
+            return 0
+        return max(1, int((self.sleep_at - time.monotonic() + 59) // 60))
+
+    def sleep_set(self, minutes):
+        self.sleep_at = time.monotonic() + minutes * 60 if minutes else 0.0
+        self.sleep_warned = False
+        log.info("timer di spegnimento: %s", f"{minutes} min" if minutes else "spento")
+        return {"minutes": self.sleep_left()}
+
+    def _sleep_tick(self):
+        if not self.sleep_at or self.asleep:
+            return
+        left = self.sleep_at - time.monotonic()
+        if left <= 0:
+            self.post(self.sleep_now)
+        elif left <= 60 and not self.sleep_warned:
+            self.sleep_warned = True
+            self.toast("Spegnimento tra 1 minuto · premi un tasto per annullare")
+
+    def sleep_now(self):
+        """Fine del timer: si torna alla home e lo schermo si spegne (segnale video fermo);
+        il primo tasto del telecomando lo riaccende."""
+        self.sleep_at, self.sleep_warned = 0.0, False
+        log.info("timer di spegnimento: schermo spento")
+        self.home()
+        time.sleep(1)
+        self.display.blank(True)
+        self.asleep = True
+
+    def wake(self):
+        self.asleep = False
+        self.display.blank(False)
+        log.info("schermo riacceso")
+
+    # ---------- all'accensione: ultimo canale ----------
+    def _resume(self):
+        self._resumed = True
+        sid = self.prefs.get("last_channel")
+        if self.prefs.get("startup") == "last" and sid in self.services:
+            log.info("riparto dall'ultimo canale: %s", sid)
+            self.post(self.open, sid)
 
     # ---------- schermo ----------
     def _refit_window(self):
@@ -561,9 +665,12 @@ class TV:
                     ua = self.cdp.call("Browser.getVersion", timeout=3).get("userAgent", "")
                     if ua and "HbbTV" not in ua:
                         self.default_ua = ua.replace("HeadlessChrome", "Chrome")
+                if not self._resumed and self.default_ua is not None:
+                    self._resume()
                 if self.cdp.crashed.is_set():
                     self.cdp.crashed.clear()
                     self.home()
+                self._sleep_tick()
                 url = self.url()
                 self._auto_fullscreen_tick(url)
                 if self.display.video_mode:

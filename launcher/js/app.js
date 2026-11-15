@@ -1,17 +1,19 @@
 // app.js — avvio del launcher: pagine, tasti, aggiornamenti periodici.
 import { $, api, hideOverlay, move, overlay, overlayOpen, state, store } from './core.js';
 import { build, greeting, showDetail, tick, updateMeteo, updateOnAir, updateStatus } from './home.js';
+import { guidePage } from './guide.js';
 import { homeEditPage, sitiPage, sitoApri, wifiPage } from './lists.js';
 import { initSaver } from './saver.js';
 import { ACTIONS, changeVolume, settingsPage } from './settings.js';
 
 const TITLES = { altri: 'Altri servizi', settings: 'Impostazioni', wifi: 'Wi-Fi', siti: 'I miei siti',
-  homeedit: 'Schermata iniziale' };
+  homeedit: 'Schermata iniziale', guide: 'Guida TV' };
 // MENU: pagina a cui si torna (e voce da selezionare)
 const PARENT = { wifi: ['settings', 'wifi'], homeedit: ['settings', 'home-edit'], siti: ['altri'],
-  settings: ['home'], altri: ['home'] };
+  settings: ['home'], altri: ['home'], guide: ['home'] };
 // cosa preparare entrando in una pagina
-const ON_ENTER = { settings: settingsPage, wifi: wifiPage, siti: sitiPage, homeedit: () => homeEditPage() };
+const ON_ENTER = { settings: settingsPage, wifi: wifiPage, siti: sitiPage, homeedit: () => homeEditPage(),
+  guide: guidePage };
 
 function show(p) {
   const prev = state.page;
@@ -91,7 +93,8 @@ window.addEventListener('pageshow', () => { state.busy = false; $('#overlay').cl
   }
   if (!state.CFG) { $('#title').textContent = 'Errore: servizio TV non attivo'; return; }
   build();
-  show(location.hash === '#settings' ? 'settings' : 'home');      // tvd può aprire le Impostazioni
+  const start = location.hash.slice(1);                           // tvd può aprire Impostazioni o Guida
+  show(['settings', 'guide'].includes(start) ? start : 'home');
   if (location.hash) history.replaceState(null, '', location.pathname);
   updateOnAir(); setInterval(updateOnAir, 60000);
   updateStatus(); setInterval(updateStatus, 30000);

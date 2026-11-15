@@ -8,6 +8,8 @@ Contenuto:
     hidden  ["id", ...]                                         riquadri nascosti
     meteo   {"name", "lat", "lon"} | None                       città del meteo
     screen  {"mode": "auto" | "LxA", "video_low": bool}         risoluzione
+    startup "last" | "home"                                     all'accensione: ultimo canale o home
+    last_channel  "rai1" | None                                 canale in diretta lasciato acceso
 """
 import copy
 import os
@@ -21,6 +23,8 @@ DEFAULTS = {
     "hidden": [],
     "meteo": None,
     "screen": {"mode": "auto", "video_low": True},
+    "startup": "last",
+    "last_channel": None,
 }
 
 
@@ -86,6 +90,10 @@ class Prefs:
             if isinstance(mode, str) and (mode == "auto" or "x" in mode):
                 out["screen"]["mode"] = mode
             out["screen"]["video_low"] = s.get("video_low", True) is not False
+        if d.get("startup") in ("last", "home"):
+            out["startup"] = d["startup"]
+        if isinstance(d.get("last_channel"), str):
+            out["last_channel"] = d["last_channel"]
         return out
 
     # ---------- accesso ----------

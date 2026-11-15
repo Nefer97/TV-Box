@@ -5,7 +5,7 @@
 //   __tvp.open({channels:[{id,label,color,title,start,end,image,desc}], current, vol, videoLow})
 //   __tvp.move('left'|'right')   __tvp.ok() -> azione per tvd   __tvp.set(chiave, valore)   __tvp.close()
 (function () {
-  const V = 13;                       // versione: una più nuova sostituisce quella già caricata
+  const V = 15;                       // versione: una più nuova sostituisce quella già caricata
   if (window.__tvp && window.__tvp.v === V) return;
   try { window.__tvp && window.__tvp.close(); } catch (e) {}
   const old = document.getElementById('__tvpanel');
@@ -38,6 +38,8 @@
   .row::after { content: ""; flex: 0 0 .6vw; }   /* spazio per la cornice dell'ultima scheda */
   .tvcard.act.home { background: linear-gradient(160deg, #334155, #0f172a); }
   .tvcard.act.video { background: linear-gradient(160deg, #1d4ed8, #1e3a8a); }
+  .tvcard.act.guide { background: linear-gradient(160deg, #0f766e, #134e4a); }
+  .tvcard.act.sleep { background: linear-gradient(160deg, #6d28d9, #3b0764); }
   .detail { margin-top: 2.4vh; min-height: 9vh; max-width: 70vw; }
   .detail .dtitle { font-size: 3.2vh; }
   .detail .ddesc { -webkit-line-clamp: 1; font-size: 2vh; margin-top: .5vh; }
@@ -68,6 +70,12 @@
         dch: 'Risoluzione durante i video', dtitle: data.videoLow ? 'Più fluido' : 'Come il menu',
         ddesc: 'OK per cambiare: "più fluido" abbassa la risoluzione mentre guardi, "come il menu" la lascia uguale.' });
     }
+    const sl = data.sleep || 0;
+    e.push({ k: 'guide', ic: '☰', lbl: 'Guida TV', sub: 'Cosa c\'è dopo',
+      dch: 'Guida TV', dtitle: 'I programmi delle prossime ore', ddesc: 'Il canale si chiude e si apre la Guida TV.' },
+    { k: 'sleep', ic: '◷', lbl: 'Timer', sub: sl ? `spegne tra ${sl} min` : 'spento',
+      dch: 'Timer di spegnimento', dtitle: sl ? `Lo schermo si spegne tra ${sl} minuti` : 'Timer spento',
+      ddesc: 'OK per cambiare: 30, 60, 90, 120 minuti o spento. Un tasto qualsiasi riaccende lo schermo.' });
     e.push({ k: 'settings', ic: '⚙', lbl: 'Impostazioni', sub: 'Wi-Fi, schermo…',
       dch: 'Impostazioni', dtitle: 'Apri le impostazioni', ddesc: 'Il canale si chiude e si apre la pagina Impostazioni.' },
     { k: 'home', ic: '⌂', lbl: 'Home', sub: 'Schermata iniziale',
@@ -199,9 +207,11 @@
   window.__tvp = {
     v: V,
     open(d) {
+      try { window.__tvosd && window.__tvosd.hide(); } catch (e) {}   // via il banner del programma
       data = d;
-      const i = d.channels.findIndex(x => x.id === d.current);
-      idx = i < 0 ? 0 : i;
+      const i = d.channels.findIndex(x => x.id === d.current), n = d.channels.length;
+      // ◄ ► sulla diretta: si apre già sul canale vicino (in cerchio tra i canali)
+      idx = i < 0 ? 0 : (n ? ((i + (d.step || 0)) % n + n) % n : 0);
       open = true;
       render();
       arm();

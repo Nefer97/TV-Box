@@ -7,6 +7,11 @@ Ogni canale in config.json ha "onair": "<fonte>:<codice>":
 
 Formato: {"title", "desc", "start", "end" (millisecondi), "image", "image_big"}
 Le funzioni parse_* lavorano sui dati già scaricati: si provano con i test.
+
+Guida TV (programmi delle prossime ore), stesse fonti in versione "giornata":
+    rai:  https://www.raiplay.it/palinsesto/app/<rai-1>/<gg-mm-aaaa>.json   (oggi e domani)
+    ms:   feed "all listings" di Mediaset con una finestra di tempo
+    wbd:  la stessa Guida TV di sopra (contiene già più giorni)
 """
 import calendar
 import re
@@ -17,6 +22,9 @@ from .util import get_json, log
 
 RAI_ONAIR = "https://www.raiplay.it/palinsesto/onAir.json"
 MS_NOWNEXT = "https://static3.mediasetplay.mediaset.it/apigw/nownext/{code}.json"
+RAI_DAY = "https://www.raiplay.it/palinsesto/app/{slug}/{day}.json"
+MS_LISTINGS = ("https://feed.entertainment.tv.theplatform.eu/f/PR1GhC/mediaset-prod-all-listings-v2"
+               "?byListingTime={start}~{end}&byCallSign={code}")
 WBD_GUIDE = ("https://public.aurora.enhanced.live/site/page/guida-tv/?include=default"
              "&filter%5Benvironment%5D={env}&v=2")
 
@@ -113,6 +121,93 @@ def wbd_now(progs, now=None):
     return {}
 
 
+# ---------- Guida TV: liste di programmi ----------
+def rai_slug(name):
+    """ "Rai 1" -> "rai-1", "Rai News 24" -> "rai-news-24" """
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+
+
+def parse_rai_day(d):
+    out = []
+    for e in d.get("events") or []:
+        try:
+            day, hour = e["date"].replace("/", "-"), e["hour"]      # "15/11/2026"
+            st = time.mktime(time.strptime(f"{day} {hour}", "%d-%m-%Y %H:%M"))
+        except (KeyError, ValueError):
+            continue
+        dur = re.match(r"(\d+):(\d+)(?::(\d+))?", e.get("duration") or "")
+        mins = int(dur.group(1)) * 60 + int(dur.group(2)) if dur else 0
+        img = e.get("image") or ""
+        crop = (lambda size: f"https://www.raiplay.it/cropgd/{size}{img}" if img.startswith("/") else "")
+        title = (e.get("program") or {}).get("name") or e.get("name") or ""
+        ep = e.get("episode_title") or ""
+        desc = e.get("description") or ""
+        if ep and ep not in title and not ep.lower().startswith("puntata del"):
+            desc = f"{ep}. {desc}" if desc else ep
+        out.append({"title": title, "desc": desc, "start": int(st * 1000), "end": int((st + mins * 60) * 1000),
+                    "image": crop("480x270"), "image_big": crop("1280x720")})
+    return out
+
+
+def _ms_images(p):
+    img, best, big, bw = "", 0, "", 0
+    for k, v in (p.get("thumbnails") or {}).items():
+        w = v.get("width") or 0
+        if "keyframe" not in k or not v.get("url"):
+            continue
+        if not img or (360 <= w < best) or best < 360 < w:
+            img, best = v["url"], w
+        if bw < w <= 1920:
+            big, bw = v["url"], w
+    return img, big or img
+
+
+def parse_mediaset_listings(d):
+    out = []
+    for ent in d.get("entries") or []:
+        for l in ent.get("listings") or []:
+            p = l.get("program") or {}
+            img, big = _ms_images(p)
+            title = l.get("mediasetlisting$epgTitle") or p.get("title") or ""
+            ep = p.get("title") or ""
+            desc = l.get("description") or p.get("description") or ""
+            if ep and ep != title:
+                desc = f"{ep}. {desc}" if desc else ep
+            out.append({"title": title, "desc": desc, "start": l.get("startTime") or 0,
+                        "end": l.get("endTime") or 0, "image": img, "image_big": big})
+    return sorted(out, key=lambda x: x["start"])
+
+
+def wbd_list(progs):
+    out = []
+    for p in progs:
+        try:
+            st = calendar.timegm(time.strptime(p["start_dt"][:19], "%Y-%m-%dT%H:%M:%S"))
+            en = calendar.timegm(time.strptime(p["end_dt"][:19], "%Y-%m-%dT%H:%M:%S"))
+        except (KeyError, ValueError):
+            continue
+        show, ep = p.get("show_name") or "", p.get("title") or ""
+        desc = p.get("description") or ""
+        if show and ep and ep != show:
+            desc = f"{ep}. {desc}" if desc else ep
+        img = p.get("show_image") or ""
+        out.append({"title": show or ep, "desc": desc, "start": int(st * 1000), "end": int(en * 1000),
+                    "image": img, "image_big": img})
+    return sorted(out, key=lambda x: x["start"])
+
+
+def upcoming(progs, now=None, hours=12):
+    """Dal programma in onda alle prossime ore, senza doppioni."""
+    now_ms = (time.time() if now is None else now) * 1000
+    seen, out = set(), []
+    for p in sorted(progs, key=lambda x: x["start"]):
+        if p["end"] <= now_ms or p["start"] > now_ms + hours * 3600_000 or p["start"] in seen:
+            continue
+        seen.add(p["start"])
+        out.append(p)
+    return out
+
+
 class EPG:
     """Programmi in onda per tutti i canali, aggiornati al massimo una volta al minuto."""
 
@@ -122,6 +217,7 @@ class EPG:
         self.t = 0.0
         self.data = {}
         self.wbd = {}                       # ambiente -> (istante, programmi): si scarica ogni 30 min
+        self.guides = {}                    # "rai:Rai 1" -> (istante, programmi della giornata)
 
     def keys(self):
         return {s["onair"] for s in self.services.values() if s.get("onair")}
@@ -151,6 +247,37 @@ class EPG:
                     log.warning("palinsesto %s non disponibile: %s", k, ex)
             self.t, self.data = time.monotonic(), data
             return data
+
+    def guide(self, sid, hours=12):
+        """Programmi del canale dal momento attuale alle prossime ore (si riscarica ogni 15 min)."""
+        s = self.services.get(sid) or {}
+        key = s.get("onair") or ""
+        src, _, code = key.partition(":")
+        with self.lock:
+            c = self.guides.get(key)
+            if not c or time.monotonic() - c[0] > 900:
+                progs = []
+                try:
+                    if src == "rai":
+                        for d in (0, 1):                    # oggi e domani (la sera va oltre mezzanotte)
+                            day = time.strftime("%d-%m-%Y", time.localtime(time.time() + d * 86400))
+                            progs += parse_rai_day(get_json(RAI_DAY.format(slug=rai_slug(code), day=day)))
+                    elif src == "ms":
+                        now = int(time.time())
+                        progs = parse_mediaset_listings(get_json(MS_LISTINGS.format(
+                            start=(now - 4 * 3600) * 1000, end=(now + 16 * 3600) * 1000, code=code), timeout=10))
+                    elif src == "wbd":
+                        w = self.wbd.get(code)
+                        if not w or time.monotonic() - w[0] > 1800:
+                            w = self.wbd[code] = (time.monotonic(),
+                                                  wbd_programs(get_json(WBD_GUIDE.format(env=code), timeout=10)))
+                        progs = wbd_list(w[1])
+                except Exception as ex:
+                    log.warning("guida %s non disponibile: %s", key, ex)
+                    if c:
+                        return upcoming(c[1], hours=hours)
+                c = self.guides[key] = (time.monotonic(), progs)
+        return upcoming(c[1], hours=hours)
 
     def for_service(self, sid):
         s = self.services.get(sid) or {}

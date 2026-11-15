@@ -119,6 +119,16 @@ class Display:
                 "video_mode": self.video_mode, "video_low": self.prefs.get("screen")["video_low"],
                 "trial": bool(self.trial)}
 
+    # ---------- schermo spento (timer di spegnimento) ----------
+    @staticmethod
+    def blank(off):
+        """Spegne/riaccende il segnale video (DPMS): la TV va in "nessun segnale" e di solito
+        in standby da sola. La sessione X ha il DPMS disattivato: lo si accende solo qui."""
+        cmds = ([["xset", "+dpms"], ["xset", "dpms", "force", "off"]] if off
+                else [["xset", "dpms", "force", "on"], ["xset", "-dpms"], ["xset", "s", "reset"]])
+        for c in cmds:
+            subprocess.run(c, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+
     # ---------- durante i video ----------
     def set_lowres(self, on):
         with self.lock:

@@ -97,6 +97,31 @@ body.withdetail #bgimg.show { opacity: .42; }
 #wifi-status .muted { color: var(--muted); }
 .note { font-size: 2vh; color: var(--muted); line-height: 1.5; margin-top: 2vh; max-width: 70vw; }
 
+/* ---------- Guida TV ---------- */
+.guidepage { display: flex; gap: 2vw; height: 66vh; }
+.gchans { flex: 0 0 20vw; display: flex; flex-direction: column; gap: 1vh; overflow: hidden; padding: 1vh 1vw; margin: -1vh -1vw; }
+.btn.gch { font-size: 2.6vh; padding: 1.3vh 1.4vw; border-left: .6vh solid var(--ch); }
+.btn.gch.sel:not(:focus) { background: rgba(255,255,255,.16); }
+.gprogs { flex: 1; overflow: hidden; display: flex; flex-direction: column; gap: 1vh; padding: 1vh 1vw; margin: -1vh -1vw; }
+.gprog { display: flex; gap: 1.6vw; align-items: center; padding: 1.4vh 1.4vw; border-radius: 1.6vh; outline: none;
+  background: rgba(255,255,255,.05); transition: transform .12s ease, background .12s; }
+.gprog.live { background: rgba(225,29,46,.14); }
+.gprog:focus { background: #fff; color: var(--bg1); transform: scale(1.02); }
+.gtime { flex: 0 0 6.5vw; font-size: 3vh; font-weight: 800; font-variant-numeric: tabular-nums; }
+.gnow { display: block; width: max-content; margin-top: .6vh; font-size: 1.5vh; font-weight: 700; letter-spacing: .08em;
+  padding: .2vh .6vw; border-radius: .8vh; background: var(--live); color: #fff; }
+.gbody { flex: 1; min-width: 0; }
+.gtitle { font-size: 2.7vh; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gdesc { font-size: 2vh; opacity: .75; margin-top: .4vh; display: -webkit-box; -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical; overflow: hidden; }
+.gprog:focus .gdesc { -webkit-line-clamp: 2; }
+.gprog .bar { height: .5vh; border-radius: .3vh; margin-top: .8vh; background: rgba(255,255,255,.2); overflow: hidden; max-width: 30vw; }
+.gprog .bar i { display: block; height: 100%; background: var(--live-bar); }
+.gpic { flex: 0 0 11vw; height: 6.2vw; border-radius: 1.2vh; background: #1e293b center/cover no-repeat; }
+.gwait { font-size: 2.6vh; color: var(--muted); padding: 2vh 1vw; }
+/* scheda "Guida TV" in fondo ai canali */
+.tvcard.act.guide { background: linear-gradient(160deg, #0f766e, #134e4a); }
+
 /* ---------- tasti in fondo (solo nella home, quando non c'è il dettaglio) ---------- */
 footer.keys { position: fixed; bottom: 3vh; left: 5vw; right: 5vw; }
 body:not([data-page="home"]) footer, body.withdetail footer { display: none; }

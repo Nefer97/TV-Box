@@ -15,7 +15,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tvbox import keys  # noqa: E402
 from tvbox.config import Config, normalize_service  # noqa: E402
 from tvbox.display import parse_xrandr, scale_for  # noqa: E402
-from tvbox.epg import parse_mediaset, parse_rai, wbd_now, wbd_programs  # noqa: E402
+from tvbox.epg import (parse_mediaset, parse_mediaset_listings, parse_rai, parse_rai_day, rai_slug,  # noqa: E402
+                       upcoming, wbd_list, wbd_now, wbd_programs)
 from tvbox.prefs import Prefs  # noqa: E402
 from tvbox.remote import RemoteLogic  # noqa: E402
 from tvbox.sites import normalize_url  # noqa: E402
@@ -249,6 +250,51 @@ class EpgTest(unittest.TestCase):
         r = wbd_now(wbd_programs(d), now)
         self.assertEqual(r["title"], "Vado a vivere nel bosco")
         self.assertTrue(r["desc"].startswith("Episodio 3"))
+
+
+class GuideTest(unittest.TestCase):
+    def test_slug(self):
+        self.assertEqual(rai_slug("Rai 1"), "rai-1")
+        self.assertEqual(rai_slug("Rai News 24"), "rai-news-24")
+
+    def test_rai_giornata(self):
+        d = {"events": [{"date": "15/11/2026", "hour": "20:30", "duration": "02:50:00", "name": "Partita",
+                         "program": {"name": "UEFA Nations League"}, "image": "/dl/img/x.jpg"},
+                        {"date": "15/11/2026", "hour": "23:20", "duration": "00:05:00", "name": "TG1 Sera",
+                         "program": {"name": "Tg1"}, "episode_title": "Puntata del 15/11/2026"}]}
+        p = parse_rai_day(d)
+        self.assertEqual([x["title"] for x in p], ["UEFA Nations League", "Tg1"])
+        self.assertEqual((p[0]["end"] - p[0]["start"]) // 60000, 170)
+        self.assertEqual(p[1]["desc"], "")                       # "Puntata del…" non serve
+        self.assertTrue(p[0]["image"].endswith("/cropgd/480x270/dl/img/x.jpg"))
+
+    def test_mediaset_elenco(self):
+        d = {"entries": [{"listings": [
+            {"startTime": 2000, "endTime": 3000, "mediasetlisting$epgTitle": "Tg5", "program": {"title": "Tg5"}},
+            {"startTime": 1000, "endTime": 2000, "mediasetlisting$epgTitle": "Serie", "program": {"title": "Episodio 3"}}]}]}
+        p = parse_mediaset_listings(d)
+        self.assertEqual([x["title"] for x in p], ["Serie", "Tg5"])
+        self.assertEqual(p[0]["desc"], "Episodio 3")
+
+    def test_prossime_ore(self):
+        h = 3600_000
+        progs = [{"start": 0, "end": h}, {"start": h, "end": 2 * h}, {"start": 2 * h, "end": 3 * h},
+                 {"start": h, "end": 2 * h}, {"start": 20 * h, "end": 21 * h}]
+        out = upcoming(progs, now=1.5 * 3600, hours=4)
+        self.assertEqual([p["start"] for p in out], [h, 2 * h])     # niente passati, doppioni, troppo lontani
+
+    def test_wbd_elenco(self):
+        progs = [{"start_dt": "2026-11-15T20:00:00+00:00", "end_dt": "2026-11-15T21:00:00+00:00", "show_name": "B"},
+                 {"start_dt": "2026-11-15T19:00:00+00:00", "end_dt": "2026-11-15T20:00:00+00:00", "show_name": "A"}]
+        self.assertEqual([p["title"] for p in wbd_list(progs)], ["A", "B"])
+
+
+class LiveKeysTest(unittest.TestCase):
+    def test_frecce_sulle_dirette(self):
+        for m in (keys.LIVE_TV, keys.LIVE_PLAYER):
+            self.assertEqual(keys.action_for(m, "left"), "panel_step")
+            self.assertEqual(keys.action_for(m, "up"), "player_volume")
+        self.assertEqual(keys.action_for(keys.PLAYER, "left"), "player_seek")   # video normali: salti
 
 
 if __name__ == "__main__":

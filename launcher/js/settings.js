@@ -88,6 +88,32 @@ async function screenVideoMenu() {
     ['Come il menu: niente cambi di schermo', false, () => set(false)]], r.video_low);
 }
 
+// ---------- all'accensione ----------
+async function startupVal() {
+  const r = await api('prefs');
+  $('#startup-val').textContent = r && r.startup === 'home' ? 'la home' : 'l\'ultimo canale';
+  return r;
+}
+async function startupMenu() {
+  const r = await startupVal();
+  const set = v => async () => { await api('prefs?key=startup&value=' + v); hideOverlay(); startupVal(); };
+  choose('All\'accensione', [['Riparti dall\'ultimo canale guardato', 'last', set('last')],
+    ['Mostra la home', 'home', set('home')]], r && r.startup);
+}
+
+// ---------- timer di spegnimento ----------
+async function sleepVal() {
+  const r = await api('sleep');
+  $('#sleep-val').textContent = r && r.minutes ? `tra ${r.minutes} minuti` : 'spento';
+  return r;
+}
+async function sleepMenu() {
+  await sleepVal();
+  const set = m => async () => { await api('sleep?minutes=' + m); hideOverlay(); sleepVal(); };
+  choose('Timer di spegnimento', [30, 60, 90, 120].map(m => [`Tra ${m} minuti`, m, set(m)])
+    .concat([['Spento', 0, set(0)]]), -1);
+}
+
 // ---------- sistema ----------
 function confirmAct(question, action, msg) {
   overlay(question, [['Sì', () => { overlay(msg); api('system?action=' + action); }], ['Annulla', hideOverlay]]);
@@ -99,6 +125,8 @@ export const ACTIONS = {
   screen: screenMenu,
   'screen-video': screenVideoMenu,
   saver: saverMenu,
+  startup: startupMenu,
+  sleep: sleepMenu,
   info: refreshInfo,
   wifi: () => state.show('wifi'),
   'home-edit': () => state.show('homeedit'),
@@ -113,4 +141,6 @@ export function settingsPage() {
   updateMeteo();
   screenVal();
   $('#saver-val').textContent = saverLabel();
+  startupVal();
+  sleepVal();
 }

@@ -86,6 +86,28 @@ def make_routes(tv):
             return d.info()
         return {"ok": True}
 
+    def guide(q):
+        """Guida TV: canali in diretta e, per quello chiesto, i programmi delle prossime ore."""
+        chans = [{"id": sid, "label": tv.services[sid]["label"], "color": tv.services[sid].get("color")}
+                 for sid in tv.cfg.live_channels(tv.prefs.get("hidden"))]
+        sid = q.get("id") or (chans[0]["id"] if chans else "")
+        return {"channels": chans, "id": sid, "programs": tv.epg.guide(sid, hours=int(q.get("hours", 12)))
+                if sid in tv.services else []}
+
+    def prefs(q):
+        """Scelte semplici dalla TV (per ora: cosa fare all'accensione)."""
+        if q.get("key") == "startup" and q.get("value") in ("last", "home"):
+            tv.prefs.set("startup", q["value"])
+        return {"startup": tv.prefs.get("startup")}
+
+    def sleep(q):
+        if "minutes" in q:
+            try:
+                return tv.sleep_set(max(0, min(240, int(q["minutes"]))))
+            except ValueError:
+                pass
+        return {"minutes": tv.sleep_left()}
+
     def system(q):
         a = q.get("action")
         if a == "restart-ui":
@@ -99,6 +121,7 @@ def make_routes(tv):
         "onair": lambda q: tv.epg.onair(), "meteo": meteo.api, "sites": tv.sites.api,
         "volume": lambda q: {"volume": tv.volume(int(q.get("delta", "0") or 0))},
         "info": info, "wifi": wifi_, "screen": screen, "system": system,
+        "guide": guide, "prefs": prefs, "sleep": sleep,
     }
 
 
