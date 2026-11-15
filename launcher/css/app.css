@@ -134,6 +134,43 @@ body.withdetail #bgimg.show { opacity: .42; }
 /* scheda "Guida TV" in fondo ai canali */
 .tvcard.act.guide { background: linear-gradient(160deg, #0f766e, #134e4a); }
 
+/* ---------- Mediaset: righe di locandine ---------- */
+#page-mediaset { padding-top: 0; }
+.msdetail { min-height: 13vh; max-width: 70vw; margin-bottom: 1vh; }
+.msdetail .dtitle { font-size: 3.4vh; }
+.msrails { height: 58vh; overflow: hidden; }
+.msrail { padding-bottom: 1vh; }
+.msrail h2.sec-title { margin: 1.4vh 0 1.2vh; }
+.poster { flex: 0 0 9.4vw; width: 9.4vw; height: 14.1vw; border-radius: 1.6vh; position: relative; outline: none;
+  background: #1e293b center/cover no-repeat; box-shadow: 0 .8vh 2vh rgba(0,0,0,.35);
+  transition: transform .15s ease, box-shadow .15s ease; }
+.poster:focus { transform: scale(1.08); box-shadow: 0 0 0 .5vh var(--focus), 0 2.4vh 5vh rgba(0,0,0,.6); z-index: 2; }
+.poster .ptitle { display: none; }
+.poster .psub { position: absolute; left: .6vw; right: .6vw; bottom: .8vh; font-size: 1.6vh; font-weight: 700;
+  padding: .3vh .5vw; border-radius: .8vh; background: rgba(11,16,32,.85); text-align: center; }
+
+/* ---------- Mediaset: pagina della serie ---------- */
+#page-msserie { padding-top: 0; }
+.mshero { position: fixed; inset: 0; z-index: -1; background: center/cover no-repeat; opacity: .35; }
+.mshero::after { content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, var(--bg1) 0%, rgba(11,16,32,.85) 40%, rgba(11,16,32,.4) 100%),
+              linear-gradient(180deg, rgba(11,16,32,0) 50%, var(--bg1) 100%); }
+.msserie { display: flex; gap: 2.4vw; height: 70vh; }
+.mshead { flex: 0 0 30vw; }
+.mstitle { font-size: 4.4vh; font-weight: 800; line-height: 1.1; }
+.msinfo { font-size: 2.1vh; color: #ff8a8a; font-weight: 700; margin-top: 1vh; letter-spacing: .03em; }
+.msdesc { font-size: 2.2vh; line-height: 1.45; color: #d5d9e4; margin-top: 1.4vh;
+  display: -webkit-box; -webkit-line-clamp: 7; -webkit-box-orient: vertical; overflow: hidden; }
+.mschips { display: flex; flex-wrap: wrap; gap: .8vw; margin-top: 2vh; }
+.btn.chip { font-size: 2.2vh; padding: 1vh 1.2vw; }
+.btn.chip.on:not(:focus) { background: rgba(255,255,255,.2); }
+.mseps { flex: 1; overflow: hidden; display: flex; flex-direction: column; gap: 1vh; padding: 1vh 1vw; margin: -1vh -1vw; }
+.msep .gpic { flex: 0 0 12vw; height: 6.75vw; order: -1; }
+.msep .ginfo { font-size: 1.9vh; opacity: .7; margin-top: .3vh; }
+.msep .gnow { display: inline-block; margin: 0 0 0 1vw; vertical-align: .3vh; }
+.gnow.seen { background: #475569; }
+/* scheda Mediaset in home: logo dal sito anche se il riquadro apre la nostra sezione */
+
 /* ---------- tasti in fondo (solo nella home, quando non c'è il dettaglio) ---------- */
 footer.keys { position: fixed; bottom: 3vh; left: 5vw; right: 5vw; }
 body:not([data-page="home"]) footer, body.withdetail footer { display: none; }

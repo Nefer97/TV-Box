@@ -2,22 +2,24 @@
 import { $, api, centerInRow, hideOverlay, move, overlay, overlayOpen, state, store } from './core.js';
 import { build, greeting, showDetail, tick, updateMeteo, updateOnAir, updateStatus } from './home.js';
 import { guidePage } from './guide.js';
+import { msPage, seriesPage } from './mediaset.js';
 import { homeEditPage, sitiPage, sitoApri, wifiPage } from './lists.js';
 import { initSaver, saverAwake } from './saver.js';
 import { ACTIONS, changeVolume, settingsPage } from './settings.js';
 
 const TITLES = { altri: 'Altri servizi', settings: 'Impostazioni', wifi: 'Wi-Fi', siti: 'I miei siti',
-  homeedit: 'Riquadri della home', guide: 'Guida TV', 'set-av': 'Immagine e audio',
+  homeedit: 'Riquadri della home', guide: 'Guida TV', mediaset: 'Mediaset Infinity', msserie: 'Mediaset Infinity', 'set-av': 'Immagine e audio',
   'set-power': 'Accensione e spegnimento', 'set-home': 'Home e meteo', 'set-net': 'Rete e assistenza' };
 // MENU: pagina a cui si torna (e voce da selezionare)
 const PARENT = { wifi: ['set-net', 'wifi'], homeedit: ['set-home', 'home-edit'], siti: ['altri'],
-  settings: ['home'], altri: ['home'], guide: ['home'],
+  settings: ['home'], altri: ['home'], guide: ['home'], mediaset: ['home'], msserie: ['mediaset'],
   'set-av': ['settings', 'set-av'], 'set-power': ['settings', 'set-power'],
   'set-home': ['settings', 'set-home'], 'set-net': ['settings', 'set-net'] };
 // cosa preparare entrando in una pagina
 const ON_ENTER = { settings: settingsPage, 'set-av': settingsPage, 'set-power': settingsPage,
   'set-home': settingsPage, 'set-net': settingsPage,
-  wifi: wifiPage, siti: sitiPage, homeedit: () => homeEditPage(), guide: guidePage };
+  wifi: wifiPage, siti: sitiPage, homeedit: () => homeEditPage(), guide: guidePage,
+  mediaset: msPage, msserie: seriesPage };
 
 function show(p) {
   const prev = state.page;
@@ -31,7 +33,7 @@ function show(p) {
   if (target) target.focus();
   setTimeout(() => showDetail(document.activeElement), 0);
   // impostazioni: si aggiornano ogni volta; le liste solo arrivando da un'altra pagina
-  if (ON_ENTER[p] && (p === 'settings' || p.startsWith('set-') || prev !== p)) ON_ENTER[p]();
+  if (ON_ENTER[p] && (p === 'settings' || p.startsWith('set-') || p === 'msserie' || prev !== p)) ON_ENTER[p]();
 }
 state.show = show;
 
@@ -104,7 +106,8 @@ window.addEventListener('pageshow', () => { state.busy = false; $('#overlay').cl
   const start = location.hash.slice(1);                           // tvd può aprire Impostazioni o Guida
   state.asleep = start === 'sleep';                                // ...o la home a schermo spento
   window.__tvWake = saverAwake;                                    // tvd: schermo riacceso
-  show(['settings', 'guide'].includes(start) ? start : 'home');
+  if (start.startsWith('ms:')) { state.msSeries = start.slice(3); show('msserie'); }     // MENU da un episodio
+  else show(['settings', 'guide', 'mediaset'].includes(start) ? start : 'home');
   if (location.hash) history.replaceState(null, '', location.pathname);
   updateOnAir(); setInterval(updateOnAir, 60000);
   updateStatus(); setInterval(updateStatus, 30000);

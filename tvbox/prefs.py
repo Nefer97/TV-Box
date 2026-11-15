@@ -11,6 +11,7 @@ Contenuto:
     startup "last" | "home"                                     all'accensione: ultimo canale o home
     last_channel  "rai1" | None                                 canale in diretta lasciato acceso
     saver_off  minuti                                           schermo spento dopo tanto salvaschermo (0 = mai)
+    ms_history [{"series","title","poster","episode","n","t"}]  Mediaset: Continua a guardare
 """
 import copy
 import os
@@ -27,6 +28,7 @@ DEFAULTS = {
     "startup": "last",
     "last_channel": None,
     "saver_off": 60,
+    "ms_history": [],
 }
 
 
@@ -98,6 +100,10 @@ class Prefs:
             out["last_channel"] = d["last_channel"]
         if isinstance(d.get("saver_off"), int) and 0 <= d["saver_off"] <= 24 * 60:
             out["saver_off"] = d["saver_off"]
+        h = d.get("ms_history")
+        if isinstance(h, list):
+            out["ms_history"] = [x for x in h if isinstance(x, dict) and isinstance(x.get("series"), str)
+                                 and isinstance(x.get("episode"), str)][:12]
         return out
 
     # ---------- accesso ----------

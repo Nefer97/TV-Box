@@ -20,6 +20,7 @@ from tvbox.epg import (parse_mediaset, parse_mediaset_listings, parse_rai, parse
 from tvbox.prefs import Prefs  # noqa: E402
 from tvbox.remote import RemoteLogic  # noqa: E402
 from tvbox.sites import normalize_url  # noqa: E402
+from tvbox.mediaset import episodes_of, is_episode_url, parse_series  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -295,6 +296,34 @@ class LiveKeysTest(unittest.TestCase):
             self.assertEqual(keys.action_for(m, "left"), "panel_step")
             self.assertEqual(keys.action_for(m, "up"), "player_volume")
         self.assertEqual(keys.action_for(keys.PLAYER, "left"), "player_seek")   # video normali: salti
+
+
+class MediasetTest(unittest.TestCase):
+    def test_serie(self):
+        s = parse_series({"guid": "SE1", "title": "Terra amara", "tags": [{"scheme": "category", "title": "Fiction"}],
+                          "thumbnails": {"image_vertical-264x396": {"url": "https://x/p.jpg"}},
+                          "seriesTvSeasons": [{"id": "http://s/2", "guid": "ST2", "tvSeasonNumber": 2},
+                                              {"id": "http://s/1", "guid": "ST1", "tvSeasonNumber": 1}],
+                          "mediasetprogram$pageUrl": "//mediasetinfinity.mediaset.it/fiction/terraamara_SE1"})
+        self.assertEqual(s["poster"], "https://x/p.jpg")
+        self.assertEqual([x["n"] for x in s["seasons"]], [1, 2])
+        self.assertEqual(s["category"], "Fiction")
+        self.assertTrue(s["url"].startswith("https://"))
+
+    def test_episodi_gratis_in_ordine(self):
+        ep = lambda n, day, rights, url="//mediasetinfinity.mediaset.it/video/x/ep_F1": {   # noqa: E731
+            "guid": f"F{n}{day}", "tvSeasonEpisodeNumber": n, "title": f"Ep {n}", "mediasetprogram$videoPageUrl": url,
+            "mediasetprogram$channelsRights": rights,
+            "mediasetprogram$publishInfo": {"last_published": f"2026-11-{day:02d}T21:00:00Z"}}
+        eps = episodes_of([ep(7, 1, ["AVOD"]), ep(8, 8, ["AVOD"]), ep(8, 15, ["AVOD"]), ep(9, 16, ["SVOD"]),
+                           ep(None, 2, ["AVOD"])])
+        self.assertEqual([(e["n"], e["id"]) for e in eps], [(8, "F815"), (8, "F88"), (7, "F71")])
+        self.assertTrue(eps[0]["url"].startswith("https://mediasetinfinity"))
+
+    def test_indirizzo_episodio(self):
+        self.assertTrue(is_episode_url("https://mediasetinfinity.mediaset.it/video/x/ep_F1"))
+        self.assertFalse(is_episode_url("https://evil.it/video/x"))
+        self.assertFalse(is_episode_url("https://mediasetinfinity.mediaset.it/diretta/canale5"))
 
 
 if __name__ == "__main__":

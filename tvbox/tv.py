@@ -18,6 +18,7 @@ from .cdp import CDP
 from .config import normalize_service
 from .display import Display
 from .epg import EPG
+from .mediaset import Mediaset
 from .sites import Sites, normalize_url
 from .util import log
 
@@ -74,6 +75,7 @@ class TV:
         self.browser = Browser(cfg, self.launcher_url, self.display.scale_factor)
         self.epg = EPG(self.services)
         self.sites = Sites(prefs)
+        self.mediaset = Mediaset(prefs)
         self.input = vinput
         self.remote = None                 # RemoteLogic (per /api/info)
         self.actions = queue.Queue()
@@ -273,6 +275,9 @@ class TV:
     def page_back(self, key=None):
         if self.cdp.eval("!!(window.__nav && __nav.back())", timeout=3):
             return                                   # chiusa la tastiera a schermo
+        ret = self.services.get(self.current or "", {}).get("return_to")
+        if ret:                                      # es. episodio Mediaset -> pagina della serie
+            return self.home(page=ret)
         if self.cdp.eval("!!(window.__tv && __tv.exitFull())", timeout=3):
             return
         if self.cdp.eval("history.length > 1", timeout=3):
@@ -382,6 +387,15 @@ class TV:
             "kind": "web", "label": urlparse(u).hostname, "url": u, "auto_fullscreen": True,
             "shield": True, "block": ["ads"], "mobile": bool(saved.get("mobile"))}, {})
         self.open("__sito")
+
+    def open_episode(self, url, series):
+        """Episodio Mediaset scelto nella sezione Mediaset: la pagina del video del sito, a tutto
+        schermo, senza tracciamenti; MENU torna alla pagina della serie nella TV."""
+        self.services["__episodio"] = normalize_service("__episodio", {
+            "kind": "web", "label": "Mediaset Infinity", "url": url, "auto_fullscreen": True,
+            "block": ["trackers"], "return_to": "ms:" + series}, {})
+        self.open("__episodio")
+        threading.Thread(target=self._kick_live, daemon=True).start()   # avvio con l'audio
 
     def _kick_live(self):
         """Dirette web: avvia il video con l'audio e lo mette a tutto schermo appena può."""

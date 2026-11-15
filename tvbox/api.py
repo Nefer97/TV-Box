@@ -111,6 +111,20 @@ def make_routes(tv):
                 pass
         return {"minutes": tv.sleep_left()}
 
+    def mediaset(q):
+        """Sezione Mediaset: righe di serie, una serie con i suoi episodi, apertura di un episodio."""
+        from .mediaset import is_episode_url
+        a = q.get("action", "rails")
+        if a == "series":
+            return tv.mediaset.series(q.get("id", ""), q.get("season"))
+        if a == "play":
+            if not is_episode_url(q.get("url")):
+                return {"ok": False, "error": "Episodio non valido"}
+            tv.mediaset.remember(q)
+            tv.post(tv.open_episode, q["url"], q.get("series", ""))
+            return {"ok": True}
+        return tv.mediaset.rails()
+
     def system(q):
         a = q.get("action")
         if a == "restart-ui":
@@ -124,7 +138,7 @@ def make_routes(tv):
         "onair": lambda q: tv.epg.onair(), "meteo": meteo.api, "sites": tv.sites.api,
         "volume": lambda q: {"volume": tv.volume(int(q.get("delta", "0") or 0))},
         "info": info, "wifi": wifi_, "screen": screen, "system": system,
-        "guide": guide, "prefs": prefs, "sleep": sleep,
+        "guide": guide, "prefs": prefs, "sleep": sleep, "mediaset": mediaset,
     }
 
 

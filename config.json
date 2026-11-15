@@ -38,16 +38,17 @@
       { "title": "Canali in diretta",
         "items": ["rai1", "rai2", "rai3", "rete4", "canale5", "italia1", "realtime", "dmax", "nove"] }
     ],
-    "other": ["siti", "discovery", "raiplay_web", "la7", "raiplaysound", "plutotv", "netflix"]
+    "other": ["siti", "mediaset_web", "discovery", "raiplay_web", "la7", "raiplaysound", "plutotv", "netflix"]
   },
 
   "services": {
     "raiplay":      { "kind": "hbbtv", "identity": "samsung_tv", "label": "RaiPlay", "subtitle": "App per TV · dirette e on demand",
                       "icon": "play", "color": "#1d4ed8",
                       "url": "https://www.raiplay.it/hbbtv/wsA6DXk6W7Khjpn3/RaiPlay2020/index.html" },
-    "mediaset":     { "kind": "web", "label": "Mediaset Infinity", "subtitle": "Programmi, film e dirette",
-                      "icon": "play", "color": "#0f766e", "auto_fullscreen": true,
-                      "url": "https://mediasetinfinity.mediaset.it/" },
+    "mediaset":     { "kind": "page", "page": "mediaset", "label": "Mediaset Infinity", "subtitle": "Fiction e serie",
+                      "icon": "play", "color": "#0f766e", "logo_url": "https://mediasetinfinity.mediaset.it/" },
+    "mediaset_web": { "kind": "web", "label": "Mediaset Infinity (sito)", "icon": "play", "color": "#0f766e",
+                      "auto_fullscreen": true, "url": "https://mediasetinfinity.mediaset.it/" },
     "youtube":      { "kind": "tvapp", "identity": "ps4_leanback", "label": "YouTube", "subtitle": "Video, musica e canali",
                       "icon": "youtube", "no_logo": true, "color": "#b91c1c",
                       "url": "https://www.youtube.com/tv" },

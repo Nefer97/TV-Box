@@ -28,7 +28,7 @@ KIND_DEFAULTS = {
 }
 
 # campi che il launcher riceve per disegnare i riquadri
-UI_FIELDS = ("label", "subtitle", "icon", "color", "page", "onair", "live", "no_logo", "url")
+UI_FIELDS = ("label", "subtitle", "icon", "color", "page", "onair", "live", "no_logo", "url", "logo_url")
 
 
 def normalize_service(sid, raw, identities):

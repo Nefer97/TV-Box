@@ -35,7 +35,7 @@ function tile(id, s, big) {
   t.innerHTML = ICONS[s.icon] || ICONS.play;
   t.appendChild(el('span', 'label', s.label));
   if (big) t.appendChild(el('span', 'sub', s.subtitle || ''));   // sempre presente: riquadri allineati
-  const site = s.no_logo ? null : s.url;                           // logo vero del sito, se c'è
+  const site = s.no_logo ? null : (s.logo_url || s.url);           // logo vero del sito, se c'è
   if (big && site) {
     const box = el('div', 'logo'), img = new Image();
     img.onload = () => { t.classList.add('haslogo'); if (hasTransparency(img)) box.classList.add('bare'); };
