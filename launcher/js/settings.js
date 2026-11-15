@@ -24,7 +24,7 @@ function meteoCitta() {
   window.__osk.open({
     title: 'Città per il meteo (es. Roma)',
     onDone: async v => {
-      if (!v.trim()) { state.show('settings'); return; }
+      if (!v.trim()) { state.show('set-home'); return; }
       overlay('Cerco ' + v + '…');
       const r = await api('meteo?action=search&q=' + q(v));
       const res = (r && r.results) || [];
@@ -34,7 +34,7 @@ function meteoCitta() {
         hideOverlay(); updateMeteo(); focusAct('meteo');
       }]).concat([['Annulla', hideOverlay]]), 0);
     },
-    onCancel: () => { state.show('settings'); focusAct('meteo'); },
+    onCancel: () => { state.show('set-home'); focusAct('meteo'); },
   });
 }
 
@@ -135,7 +135,7 @@ export const ACTIONS = {
   poweroff: () => confirmAct('Spegnere il Mac mini?', 'poweroff', 'Spegnimento…'),
 };
 
-export function settingsPage() {
+export async function settingsPage() {
   api('volume').then(setVol);
   refreshInfo();
   updateMeteo();
@@ -143,4 +143,12 @@ export function settingsPage() {
   $('#saver-val').textContent = saverLabel();
   startupVal();
   sleepVal();
+  // riassunto sotto ogni gruppo
+  const [v, sc, st, sl, w, m] = await Promise.all(['volume', 'screen', 'prefs', 'sleep', 'wifi', 'meteo'].map(api));
+  $('#sum-av').textContent = [v && v.volume != null ? `Volume ${v.volume}%` : '',
+    sc && sc.current ? resName(sc.current) : ''].filter(Boolean).join(' · ');
+  $('#sum-power').textContent = (sl && sl.minutes ? `Timer: ${sl.minutes} min` : 'Timer spento') + ' · ' +
+    (st && st.startup === 'home' ? 'parte dalla home' : 'riparte dall\'ultimo canale');
+  $('#sum-home').textContent = m && m.city ? `Meteo: ${m.city}` : 'Scegli la città del meteo';
+  $('#sum-net').textContent = !w || !w.present ? 'Wi-Fi assente' : w.connected ? `Wi-Fi: ${w.ssid}` : 'Wi-Fi non collegato';
 }

@@ -19,28 +19,53 @@
 <main>
   <section class="page active" id="page-home"></section>
   <section class="page" id="page-altri"><div class="row" id="altri-row"></div></section>
+  <!-- Impostazioni: 4 gruppi; ogni riquadro apre la sua pagina (data-go) -->
   <section class="page" id="page-settings">
-    <div class="settings">
-      <div class="btn volctl" tabindex="0" data-act="vol">Volume
-        <span class="val"><span class="vhint">◀ ▶</span><span class="volbar"><i></i></span><span class="vol"></span></span></div>
-      <div class="btn" tabindex="0" data-act="meteo">Meteo <span class="val" id="meteo-city">…</span></div>
-      <div class="btn" tabindex="0" data-act="screen">Risoluzione schermo <span class="val" id="screen-val">…</span></div>
-      <div class="btn" tabindex="0" data-act="screen-video">Risoluzione nei video <span class="val" id="screenvideo-val">…</span></div>
-      <div class="btn" tabindex="0" data-act="saver">Salvaschermo <span class="val" id="saver-val">…</span></div>
-      <div class="btn" tabindex="0" data-act="startup">All'accensione <span class="val" id="startup-val">…</span></div>
-      <div class="btn" tabindex="0" data-act="sleep">Timer di spegnimento <span class="val" id="sleep-val">…</span></div>
-      <div class="btn" tabindex="0" data-act="home-edit">Schermata iniziale <span class="val">scegli le tile</span></div>
-      <div class="btn" tabindex="0" data-act="wifi">Wi-Fi <span class="val" id="wifi-cur">…</span></div>
-      <div class="btn" tabindex="0" data-act="info">Rete <span class="val" id="ip">…</span></div>
-      <div class="btn" tabindex="0" data-act="restart-ui">Ricarica interfaccia</div>
-      <div class="btn" tabindex="0" data-act="reboot">Riavvia il Mac mini</div>
-      <div class="btn" tabindex="0" data-act="poweroff">Spegni</div>
+    <div class="setcats">
+      <div class="setcat" tabindex="0" data-go="set-av" style="--c:#1d4ed8"><svg class="sic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>
+        <span class="slbl">Immagine e audio</span><span class="ssum" id="sum-av">…</span></div>
+      <div class="setcat" tabindex="0" data-go="set-power" style="--c:#6d28d9"><svg class="sic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/></svg>
+        <span class="slbl">Accensione e spegnimento</span><span class="ssum" id="sum-power">…</span></div>
+      <div class="setcat" tabindex="0" data-go="set-home" style="--c:#0f766e"><svg class="sic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>
+        <span class="slbl">Home e meteo</span><span class="ssum" id="sum-home">…</span></div>
+      <div class="setcat" tabindex="0" data-go="set-net" style="--c:#374151"><svg class="sic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>
+        <span class="slbl">Rete e assistenza</span><span class="ssum" id="sum-net">…</span></div>
     </div>
     <p class="note">Telecomando: <b>frecce</b> per muoversi · <b>tasto centrale</b> = OK ·
-      <b>MENU</b> = indietro · <b>tieni premuto MENU</b> = torna qui ·
+      <b>MENU</b> = indietro · <b>tieni premuto MENU</b> = torna alla home ·
       <b>tieni premuto il tasto centrale</b> = puntatore (per i siti difficili).
       Durante un video: centrale = pausa, ◀◀ ▶▶ = indietro/avanti, + − = volume.
       Su una diretta: <b>MENU</b> o <b>◀◀ ▶▶</b> = cambio canale, <b>+ −</b> = volume.</p>
+  </section>
+  <section class="page" id="page-set-av">
+    <div class="settings">
+      <div class="btn volctl" tabindex="0" data-act="vol">Volume
+        <span class="val"><span class="vhint">◀ ▶</span><span class="volbar"><i></i></span><span class="vol"></span></span></div>
+      <div class="btn" tabindex="0" data-act="screen">Risoluzione schermo <span class="val" id="screen-val">…</span></div>
+      <div class="btn" tabindex="0" data-act="screen-video">Risoluzione nei video <span class="val" id="screenvideo-val">…</span></div>
+    </div>
+  </section>
+  <section class="page" id="page-set-power">
+    <div class="settings">
+      <div class="btn" tabindex="0" data-act="startup">All'accensione <span class="val" id="startup-val">…</span></div>
+      <div class="btn" tabindex="0" data-act="sleep">Timer di spegnimento <span class="val" id="sleep-val">…</span></div>
+      <div class="btn" tabindex="0" data-act="saver">Salvaschermo <span class="val" id="saver-val">…</span></div>
+      <div class="btn" tabindex="0" data-act="reboot">Riavvia il Mac mini</div>
+      <div class="btn" tabindex="0" data-act="poweroff">Spegni</div>
+    </div>
+  </section>
+  <section class="page" id="page-set-home">
+    <div class="settings">
+      <div class="btn" tabindex="0" data-act="home-edit">Riquadri della home <span class="val">mostra o nascondi</span></div>
+      <div class="btn" tabindex="0" data-act="meteo">Città del meteo <span class="val" id="meteo-city">…</span></div>
+    </div>
+  </section>
+  <section class="page" id="page-set-net">
+    <div class="settings">
+      <div class="btn" tabindex="0" data-act="wifi">Wi-Fi <span class="val" id="wifi-cur">…</span></div>
+      <div class="btn" tabindex="0" data-act="info">Indirizzo di rete <span class="val" id="ip">…</span></div>
+      <div class="btn" tabindex="0" data-act="restart-ui">Ricarica interfaccia <span class="val">se qualcosa non va</span></div>
+    </div>
   </section>
   <section class="page" id="page-siti">
     <div class="settings" id="siti-list"></div>

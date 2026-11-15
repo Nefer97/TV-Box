@@ -7,13 +7,17 @@ import { initSaver } from './saver.js';
 import { ACTIONS, changeVolume, settingsPage } from './settings.js';
 
 const TITLES = { altri: 'Altri servizi', settings: 'Impostazioni', wifi: 'Wi-Fi', siti: 'I miei siti',
-  homeedit: 'Schermata iniziale', guide: 'Guida TV' };
+  homeedit: 'Riquadri della home', guide: 'Guida TV', 'set-av': 'Immagine e audio',
+  'set-power': 'Accensione e spegnimento', 'set-home': 'Home e meteo', 'set-net': 'Rete e assistenza' };
 // MENU: pagina a cui si torna (e voce da selezionare)
-const PARENT = { wifi: ['settings', 'wifi'], homeedit: ['settings', 'home-edit'], siti: ['altri'],
-  settings: ['home'], altri: ['home'], guide: ['home'] };
+const PARENT = { wifi: ['set-net', 'wifi'], homeedit: ['set-home', 'home-edit'], siti: ['altri'],
+  settings: ['home'], altri: ['home'], guide: ['home'],
+  'set-av': ['settings', 'set-av'], 'set-power': ['settings', 'set-power'],
+  'set-home': ['settings', 'set-home'], 'set-net': ['settings', 'set-net'] };
 // cosa preparare entrando in una pagina
-const ON_ENTER = { settings: settingsPage, wifi: wifiPage, siti: sitiPage, homeedit: () => homeEditPage(),
-  guide: guidePage };
+const ON_ENTER = { settings: settingsPage, 'set-av': settingsPage, 'set-power': settingsPage,
+  'set-home': settingsPage, 'set-net': settingsPage,
+  wifi: wifiPage, siti: sitiPage, homeedit: () => homeEditPage(), guide: guidePage };
 
 function show(p) {
   const prev = state.page;
@@ -27,7 +31,7 @@ function show(p) {
   if (target) target.focus();
   setTimeout(() => showDetail(document.activeElement), 0);
   // impostazioni: si aggiornano ogni volta; le liste solo arrivando da un'altra pagina
-  if (ON_ENTER[p] && (p === 'settings' || prev !== p)) ON_ENTER[p]();
+  if (ON_ENTER[p] && (p === 'settings' || p.startsWith('set-') || prev !== p)) ON_ENTER[p]();
 }
 state.show = show;
 
@@ -36,12 +40,16 @@ function back() {
   const to = PARENT[state.page];
   if (!to) return;
   show(to[0]);
-  if (to[1]) { const e = document.querySelector(`[data-act="${to[1]}"]`); if (e) e.focus(); }
+  if (to[1]) {
+    const e = document.querySelector(`#page-${to[0]} [data-act="${to[1]}"], #page-${to[0]} [data-go="${to[1]}"]`);
+    if (e) e.focus();
+  }
 }
 
 function activate(e) {
   if (!e) return;
   if (e._act) return e._act();
+  if (e.dataset.go) return show(e.dataset.go);                    // gruppo delle Impostazioni
   if (e.dataset.url) return sitoApri(e.dataset.url);
   if (e.dataset.id) {
     const s = state.CFG.services[e.dataset.id];
