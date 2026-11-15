@@ -4,13 +4,22 @@
 (() => {
   if (window.__tv) return;
   const T = {};
+  // il video principale: quello che sta davvero andando con l'audio, poi quello che va
+  // (anche muto), poi il più grande. Conta perché alcuni siti (Mediaset) cambiano elemento
+  // video durante la diretta: quello vecchio, fermo, resterebbe allargato e lo schermo nero.
   T.main = () => {
-    let best = null, ba = 0;
-    for (const v of document.querySelectorAll('video')) {
-      const r = v.getBoundingClientRect(), a = r.width * r.height;
-      if (a > ba) { ba = a; best = v; }
+    const all = [...document.querySelectorAll('video')];
+    const going = v => !v.paused && !v.ended && v.readyState >= 2;
+    const pools = [all.filter(v => going(v) && !v.muted), all.filter(going), all];
+    for (const pool of pools) {
+      let best = null, ba = 0;
+      for (const v of pool) {
+        const r = v.getBoundingClientRect(), a = r.width * r.height;
+        if (a > ba) { ba = a; best = v; }
+      }
+      if (best) return best;
     }
-    return best;
+    return null;
   };
   T.area = v => { const r = v.getBoundingClientRect();
                   return (r.width * r.height) / Math.max(1, innerWidth * innerHeight); };
