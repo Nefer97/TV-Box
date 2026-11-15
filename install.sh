@@ -1,13 +1,68 @@
 #!/bin/bash
 # Installa "tvbox" su un Debian 13 (trixie) amd64 minimale (senza desktop).
-# Uso:  sudo ./install.sh        (dalla cartella del progetto)
+# Uso (dalla cartella del progetto):
+#   sudo ./install.sh              installazione completa (pacchetti, utente, sistema, app)
+#   sudo ./install.sh --update     aggiorna solo l'app (tvd, launcher, config) e la riavvia;
+#                                  la versione di prima resta in /opt/tvbox.prev
+#   sudo ./install.sh --rollback   torna alla versione di prima
+# Di solito non si lancia a mano: dal PC basta ./deploy.sh
 set -euo pipefail
 
 TV_USER=tv
 SRC="$(cd "$(dirname "$0")" && pwd)"
 DEST=/opt/tvbox
+PREV=/opt/tvbox.prev
 
 [ "$(id -u)" -eq 0 ] || { echo "Esegui come root (sudo ./install.sh)"; exit 1; }
+
+# File dell'app: tvd.py, il pacchetto tvbox/ e tutto il launcher. Si ricopiano da zero,
+# così non restano file vecchi. La configurazione in /etc/tvbox: quella di prima in .prev
+install_app() {
+  install -d "$DEST" "$DEST/system" /etc/tvbox
+  rm -rf "$DEST/tvbox" "$DEST/launcher"
+  install -m 0755 "$SRC/tvd.py" "$DEST/tvd.py"
+  install -d "$DEST/tvbox"
+  install -m 0644 "$SRC"/tvbox/*.py "$DEST/tvbox/"
+  cp -r "$SRC/launcher" "$DEST/launcher"
+  find "$DEST/launcher" -type d -exec chmod 0755 {} + ; find "$DEST/launcher" -type f -exec chmod 0644 {} +
+  install -m 0755 "$SRC/system/xinitrc" "$DEST/system/xinitrc"
+  if [ -f /etc/tvbox/config.json ] && ! cmp -s "$SRC/config.json" /etc/tvbox/config.json; then
+    cp /etc/tvbox/config.json /etc/tvbox/config.json.prev
+  fi
+  install -m 0644 "$SRC/config.json" /etc/tvbox/config.json
+  [ -f /etc/tvbox/session.env ] || install -m 0644 "$SRC/system/session.env" /etc/tvbox/session.env
+}
+
+restart_tvd() {
+  sync
+  # la sessione X lo fa ripartire da sola (system/xinitrc); il modello è ancorato all'inizio
+  # della riga, altrimenti pkill colpirebbe anche la shell ssh che lo lancia
+  pkill -f "^/usr/bin/python3 /opt/tvbox/tvd.py" || true
+}
+
+case "${1:-}" in
+  --update)
+    echo "==> Aggiornamento dell'app"
+    [ -d "$DEST" ] && { rm -rf "$PREV"; cp -a "$DEST" "$PREV"; }
+    install_app
+    restart_tvd
+    echo "Aggiornato: $(sed -n 's/^VERSION = //p' "$DEST/tvbox/__init__.py" 2>/dev/null)"
+    echo "Se qualcosa non va, dal PC:  ./deploy.sh --rollback"
+    exit 0 ;;
+  --rollback)
+    [ -d "$PREV" ] || { echo "Nessuna versione precedente in $PREV"; exit 1; }
+    echo "==> Torno alla versione di prima"
+    rm -rf "$DEST.new"; mv "$DEST" "$DEST.new"; mv "$PREV" "$DEST"; mv "$DEST.new" "$PREV"
+    [ -f /etc/tvbox/config.json.prev ] && {
+      mv /etc/tvbox/config.json /etc/tvbox/config.json.new
+      mv /etc/tvbox/config.json.prev /etc/tvbox/config.json
+      mv /etc/tvbox/config.json.new /etc/tvbox/config.json.prev; }
+    restart_tvd
+    echo "Fatto (la versione appena tolta è in $PREV)."
+    exit 0 ;;
+  "") ;;
+  *) echo "Opzione sconosciuta: $1"; exit 1 ;;
+esac
 [ "$(dpkg --print-architecture)" = "amd64" ] || {
   echo "Serve Debian amd64: Chrome e Widevine non esistono per Linux a 32 bit."; exit 1; }
 grep -qw lm /proc/cpuinfo || { echo "CPU senza 64 bit (Core Duo): vedi la guida."; exit 1; }
@@ -42,14 +97,7 @@ done
 install -m 0644 -o "$TV_USER" -g "$TV_USER" "$SRC/system/bash_profile" "/home/$TV_USER/.bash_profile"
 
 echo "==> File del progetto in $DEST"
-install -d "$DEST/launcher" "$DEST/system" /etc/tvbox
-install -m 0755 "$SRC/tvd.py" "$DEST/tvd.py"
-install -m 0644 "$SRC"/launcher/*.html "$SRC"/launcher/*.js "$DEST/launcher/"
-install -d "$DEST/launcher/vendor"
-install -m 0644 "$SRC"/launcher/vendor/* "$DEST/launcher/vendor/"
-install -m 0755 "$SRC/system/xinitrc" "$DEST/system/xinitrc"
-[ -f /etc/tvbox/config.json ] || install -m 0644 "$SRC/config.json" /etc/tvbox/config.json
-[ -f /etc/tvbox/session.env ] || install -m 0644 "$SRC/system/session.env" /etc/tvbox/session.env
+install_app
 
 echo "==> Autologin su tty1"
 install -d /etc/systemd/system/getty@tty1.service.d
