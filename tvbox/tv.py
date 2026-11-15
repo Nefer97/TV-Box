@@ -427,7 +427,10 @@ class TV:
         data = self.panel_data()
         data["current"] = sid
         data["curtain"] = True              # fondo scuro finché il video nuovo non parte
-        boot = (f"{js}\n;(function(){{var d={json.dumps(data)};"
+        # la pagina nuova nasce già blu (prima di qualsiasi contenuto: niente lampo bianco),
+        # poi il pannello con il sipario appena c'è il corpo della pagina
+        boot = ("document.documentElement.style.setProperty('background','#0b1020','important');\n"
+                f"{js}\n;(function(){{var d={json.dumps(data)};"
                 "(function go(){if(!document.body)return setTimeout(go,25);window.__tvp.open(d);})();})();")
         pending = None
         try:

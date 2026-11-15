@@ -5,7 +5,7 @@
 //   __tvp.open({channels:[{id,label,color,title,start,end,image,desc}], current, vol, videoLow})
 //   __tvp.move('left'|'right')   __tvp.ok() -> azione per tvd   __tvp.set(chiave, valore)   __tvp.close()
 (function () {
-  const V = 11;                       // versione: una più nuova sostituisce quella già caricata
+  const V = 12;                       // versione: una più nuova sostituisce quella già caricata
   if (window.__tvp && window.__tvp.v === V) return;
   try { window.__tvp && window.__tvp.close(); } catch (e) {}
   const old = document.getElementById('__tvpanel');
@@ -19,6 +19,11 @@
   .curtain { position: fixed; inset: 0; transition: opacity .6s ease;
     background: radial-gradient(120% 120% at 20% 0%, var(--bg2), var(--bg1)); }
   .curtain.gone { opacity: 0; }
+  .curtain .load { position: absolute; left: 0; right: 0; top: 24vh; display: flex; flex-direction: column;
+    align-items: center; gap: 2.4vh; font-size: 3vh; font-weight: 700; color: var(--fg); }
+  .spin { width: 8vh; height: 8vh; border-radius: 50%; border: .8vh solid rgba(255,255,255,.18);
+    border-top-color: #fff; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   .wrap { position: fixed; left: 0; right: 0; bottom: 0; padding: 7vh 5vw 3.2vh; --card-h: 17vh;
     background: linear-gradient(to top, rgba(11,16,32,.97) 0%, rgba(11,16,32,.93) 62%, rgba(11,16,32,0) 100%);
     font-family: var(--font); color: var(--fg); }
@@ -111,7 +116,13 @@
     keys.innerHTML = '<span><b>◄ ►</b>scegli</span><span><b>OK</b>cambia canale</span>' +
       '<span><b>+ −</b>volume</span><span><b>MENU</b>chiudi</span><span><b>Tieni MENU</b>home</span>';
     w.append(head, vp, det, keys);
-    if (data.curtain) root.appendChild(el('div', 'curtain'));
+    if (data.curtain) {                       // cambio canale: sfondo scuro e cerchio che gira
+      const cu = el('div', 'curtain'), ld = el('div', 'load');
+      const ch = data.channels.find(c => c.id === data.current);
+      ld.append(el('div', 'spin'), el('div', '', 'Apro ' + (ch ? ch.label : 'il canale') + '…'));
+      cu.appendChild(ld);
+      root.appendChild(cu);
+    }
     root.appendChild(w);
     // il popover sta nello strato più alto: si vede anche sopra un video a schermo intero
     const parent = document.body || document.documentElement;
@@ -151,19 +162,26 @@
       try { host.showPopover(); } catch (e) {}
     }, 300);
   }
+  // il sipario resta finché il video nuovo sta andando ed è a tutto schermo, più un secondo
+  // (lo schermo intero arriva con un attimo di ritardo); al massimo 15 s
   let curtainT = 0;
   function watchCurtain() {
     clearInterval(curtainT);
     if (!data.curtain) return;
     const t0 = Date.now();
+    let readyAt = 0;
     curtainT = setInterval(() => {
       const playing = [...document.querySelectorAll('video')].some(v => !v.paused && v.readyState >= 3 && v.currentTime > 0);
-      if (!playing && Date.now() - t0 < 12000) return;
+      const big = !window.__tv || window.__tv.isPlayer();
+      if (playing && big) readyAt = readyAt || Date.now();
+      else readyAt = 0;
+      if (!(readyAt && Date.now() - readyAt >= 1000) && Date.now() - t0 < 15000) return;
       clearInterval(curtainT);
       data.curtain = false;
       const c = root && root.querySelector('.curtain');
       if (c) { c.classList.add('gone'); setTimeout(() => c.remove(), 700); }
-    }, 300);
+      document.documentElement.style.removeProperty('background');   // il colore messo all'inizio
+    }, 250);
   }
   function close() {
     clearTimeout(timer);
