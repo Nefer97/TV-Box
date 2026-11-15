@@ -1,0 +1,116 @@
+// settings.js — pagina Impostazioni: volume, meteo, risoluzione, rete, riavvio/spegnimento.
+import { $, api, choose, focusAct, hideOverlay, overlay, q, state } from './core.js';
+import { updateMeteo } from './home.js';
+import { saverLabel, saverMenu } from './saver.js';
+
+// ---------- volume (◀ ▶ sulla voce Volume) ----------
+export function setVol(r) {
+  if (!r || r.volume == null) return;
+  document.querySelectorAll('.vol').forEach(e => { e.textContent = r.volume + '%'; });
+  document.querySelectorAll('.volbar i').forEach(e => { e.style.width = r.volume + '%'; });
+}
+export const changeVolume = delta => api('volume?delta=' + delta).then(setVol);
+
+// ---------- rete ----------
+function refreshInfo() {
+  api('info').then(r => { $('#ip').textContent = r && r.ip && r.ip.length ? r.ip[0] : 'non connesso'; });
+  api('wifi').then(w => {
+    $('#wifi-cur').textContent = !w || !w.present ? 'assente' : w.connected ? w.ssid : 'non collegato';
+  });
+}
+
+// ---------- meteo: città scelta con la tastiera a schermo ----------
+function meteoCitta() {
+  window.__osk.open({
+    title: 'Città per il meteo (es. Roma)',
+    onDone: async v => {
+      if (!v.trim()) { state.show('settings'); return; }
+      overlay('Cerco ' + v + '…');
+      const r = await api('meteo?action=search&q=' + q(v));
+      const res = (r && r.results) || [];
+      if (!res.length) { overlay('Nessuna città trovata', [['OK', hideOverlay]]); return; }
+      overlay('Quale città?', res.map(c => [`${c.name} (${c.area})`, async () => {
+        await api(`meteo?action=set&name=${q(c.name)}&lat=${c.lat}&lon=${c.lon}`);
+        hideOverlay(); updateMeteo(); focusAct('meteo');
+      }]).concat([['Annulla', hideOverlay]]), 0);
+    },
+    onCancel: () => { state.show('settings'); focusAct('meteo'); },
+  });
+}
+
+// ---------- risoluzione: prova di 15 s, se non si conferma torna quella di prima ----------
+export function resName(m) {
+  const [w, h] = m.split('x').map(Number);
+  const tag = h === 720 && w === 1280 ? 'HD' : h === 1080 ? 'Full HD' : h === 768 && w >= 1360 ? 'HD Ready'
+    : h === 2160 ? '4K' : Math.abs(w / h - 4 / 3) < 0.02 ? '4:3' : '';
+  return `${w} × ${h}` + (tag ? ` (${tag})` : '');
+}
+async function screenVal() {
+  const r = await api('screen');
+  $('#screen-val').textContent = r && r.current ? resName(r.current) : '…';
+  $('#screenvideo-val').textContent = !r || !r.video_mode ? '—'
+    : r.video_low ? `abbassa a ${resName(r.video_mode)}` : 'come il menu';
+}
+async function screenMenu() {
+  const r = await api('screen');
+  if (!r || !r.modes) { overlay('Schermo non trovato', [['OK', hideOverlay]]); return; }
+  const modes = r.modes.filter(m => +m.split('x')[0] >= 1024).slice(0, 7);
+  choose('Risoluzione schermo',
+    [[`Automatica (${r.preferred ? resName(r.preferred) : '—'})`, 'auto', () => screenTry('auto', 'automatica')]]
+      .concat(modes.map(m => [resName(m), m, () => screenTry(m, resName(m))])),
+    r.saved);
+}
+async function screenTry(mode, name) {
+  const r = await api('screen?action=try&mode=' + q(mode));
+  if (!r || !r.ok) { overlay((r && r.error) || 'Non riuscito', [['OK', hideOverlay]]); return; }
+  let left = r.seconds || 15;
+  const msg = () => `Si vede bene e a tutto schermo?\nSe non confermi, torno alla risoluzione di prima tra ${left} s`;
+  const end = (text, wait) => {
+    clearInterval(t);
+    overlay(text);
+    setTimeout(() => { hideOverlay(); focusAct('screen'); screenVal(); }, wait);
+  };
+  const done = keep => { api('screen?action=' + (keep ? 'keep' : 'revert'));
+    end(keep ? `Risoluzione ${name} salvata` : 'Torno alla risoluzione di prima…', keep ? 2500 : 3000); };
+  overlay(msg(), [['Sì, tienila', () => done(true)], ['No, torna indietro', () => done(false)]]);
+  const t = setInterval(() => {
+    if (--left <= 0) end('Torno alla risoluzione di prima…', 3000);   // tvd torna indietro da solo
+    else $('#omsg').textContent = msg();
+  }, 1000);
+}
+async function screenVideoMenu() {
+  const r = await api('screen');
+  if (!r || !r.video_mode) { overlay('Non disponibile', [['OK', hideOverlay]]); return; }
+  const set = on => { api('screen?action=video&on=' + (on ? 1 : 0)); hideOverlay(); focusAct('screen-video');
+    setTimeout(screenVal, 1500); };
+  choose('Durante i video', [
+    [`Abbassa a ${resName(r.video_mode)}: più fluido`, true, () => set(true)],
+    ['Come il menu: niente cambi di schermo', false, () => set(false)]], r.video_low);
+}
+
+// ---------- sistema ----------
+function confirmAct(question, action, msg) {
+  overlay(question, [['Sì', () => { overlay(msg); api('system?action=' + action); }], ['Annulla', hideOverlay]]);
+}
+
+// azioni delle voci (data-act nell'HTML)
+export const ACTIONS = {
+  meteo: meteoCitta,
+  screen: screenMenu,
+  'screen-video': screenVideoMenu,
+  saver: saverMenu,
+  info: refreshInfo,
+  wifi: () => state.show('wifi'),
+  'home-edit': () => state.show('homeedit'),
+  'restart-ui': () => { overlay('Ricarico l\'interfaccia…'); api('system?action=restart-ui'); },
+  reboot: () => confirmAct('Riavviare il Mac mini?', 'reboot', 'Riavvio…'),
+  poweroff: () => confirmAct('Spegnere il Mac mini?', 'poweroff', 'Spegnimento…'),
+};
+
+export function settingsPage() {
+  api('volume').then(setVol);
+  refreshInfo();
+  updateMeteo();
+  screenVal();
+  $('#saver-val').textContent = saverLabel();
+}

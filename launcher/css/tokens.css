@@ -1,0 +1,13 @@
+/* tokens.css — colori, caratteri e misure comuni (launcher e pannello sopra le dirette).
+   Tutte le misure sono in proporzione allo schermo (vh/vw): stessa resa a 720 o 768 righe. */
+:root, :host {
+  --bg1: #0b1020;
+  --bg2: #141b33;
+  --fg: #f4f6fb;
+  --muted: #9aa3b8;
+  --focus: #ffffff;
+  --live: #e11d2e;          /* bollino LIVE */
+  --live-bar: #ff3b3b;      /* barra di avanzamento, pallino delle sezioni */
+  --accent: #3b82f6;        /* volume */
+  --font: "Noto Sans", "DejaVu Sans", sans-serif;
+}

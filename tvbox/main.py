@@ -1,5 +1,6 @@
 """Avvio di tvd: configurazione, preferenze, TV, API, telecomando, sorveglianza di Chrome."""
 import logging
+import logging.handlers
 import os
 import signal
 import threading
@@ -13,8 +14,27 @@ from .tv import TV
 from .util import log
 
 
+LOG_DIR = "/var/log/tvbox"
+
+
+def setup_logging():
+    """Registro in /var/log/tvbox/tvd.log (leggibile anche da admin, massimo 3 × 1 MB);
+    se la cartella non c'è, solo sullo schermo/nel file della sessione come in V1."""
+    fmt = logging.Formatter("%(asctime)s tvd %(levelname)s %(message)s")
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    out = logging.StreamHandler()
+    out.setFormatter(fmt)
+    root.addHandler(out)
+    if os.access(LOG_DIR, os.W_OK):
+        f = logging.handlers.RotatingFileHandler(os.path.join(LOG_DIR, "tvd.log"),
+                                                 maxBytes=1_000_000, backupCount=2)
+        f.setFormatter(fmt)
+        root.addHandler(f)
+
+
 def main():
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s tvd %(levelname)s %(message)s")
+    setup_logging()
     log.info("tvbox %s", VERSION)
     cfg = Config.load()
     prefs = Prefs()

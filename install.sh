@@ -31,6 +31,8 @@ install_app() {
   fi
   install -m 0644 "$SRC/config.json" /etc/tvbox/config.json
   [ -f /etc/tvbox/session.env ] || install -m 0644 "$SRC/system/session.env" /etc/tvbox/session.env
+  # registro di tvd leggibile anche da admin (per i controlli a distanza)
+  install -d -o "$TV_USER" -g "$TV_USER" -m 0755 /var/log/tvbox
 }
 
 restart_tvd() {
