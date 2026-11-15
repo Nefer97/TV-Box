@@ -1,0 +1,19 @@
+{
+  "CommandLineFlagSecurityWarningsEnabled": false,
+  "TranslateEnabled": false,
+  "PasswordManagerEnabled": false,
+  "AutofillAddressEnabled": false,
+  "AutofillCreditCardEnabled": false,
+  "BrowserSignin": 0,
+  "SyncDisabled": true,
+  "MetricsReportingEnabled": false,
+  "DefaultBrowserSettingEnabled": false,
+  "DefaultNotificationsSetting": 2,
+  "DefaultGeolocationSetting": 2,
+  "PrivacySandboxPromptEnabled": false,
+  "PromotionalTabsEnabled": false,
+  "ShowCastIconInToolbar": false,
+  "EnableMediaRouter": false,
+  "BackgroundModeEnabled": false,
+  "HardwareAccelerationModeEnabled": true
+}

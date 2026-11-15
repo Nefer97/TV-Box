@@ -1,0 +1,13 @@
+[Unit]
+Description=Mac mini: riaccensione automatica al ritorno della corrente
+After=local-fs.target
+
+[Service]
+Type=oneshot
+# Solo sul Mac mini (non in macchine virtuali o altri PC)
+ExecCondition=/bin/sh -c 'grep -q "^Macmini" /sys/class/dmi/id/product_name'
+# Registro del chipset ICH7 (Mac mini 2006/2007): 0 = accendi dopo mancanza corrente
+ExecStart=/usr/bin/setpci -s 0:1f.0 0xa4.b=0
+
+[Install]
+WantedBy=multi-user.target

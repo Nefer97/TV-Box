@@ -1,0 +1,22 @@
+#!/bin/sh
+# Sessione X della TV: nessun desktop, solo window manager kiosk + tvd (che avvia Chrome).
+[ -f /etc/tvbox/session.env ] && . /etc/tvbox/session.env
+
+xset s off; xset s noblank; xset -dpms
+xsetroot -solid black 2>/dev/null
+
+# Risoluzione (consigliato 1280x720 sul GMA 950: meno pixel = video più fluido)
+if [ -n "$TV_MODE" ]; then
+  OUT=$(xrandr | awk '/ connected/{print $1; exit}')
+  [ -n "$OUT" ] && xrandr --output "$OUT" --mode "$TV_MODE" ${TV_RATE:+--rate $TV_RATE}
+fi
+
+matchbox-window-manager -use_titlebar no -use_cursor yes &
+unclutter --timeout 3 --jitter 3 &
+
+# tvd non deve mai restare spento
+while true; do
+  /usr/bin/python3 /opt/tvbox/tvd.py >>"$HOME/.tvbox.log" 2>&1
+  echo "$(date) tvd uscito, riavvio" >>"$HOME/.tvbox.log"
+  sleep 2
+done

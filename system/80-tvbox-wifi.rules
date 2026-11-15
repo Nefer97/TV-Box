@@ -1,0 +1,2 @@
+# ogni scheda Wi-Fi avvia il suo wpa_supplicant (gestito dal launcher: Impostazioni > Wi-Fi)
+SUBSYSTEM=="net", ACTION=="add", KERNEL=="wl*", TAG+="systemd", ENV{SYSTEMD_WANTS}+="wpa_supplicant@%k.service"

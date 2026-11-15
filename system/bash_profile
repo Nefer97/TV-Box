@@ -1,0 +1,6 @@
+# Avvio automatico della TV sul primo terminale (autologin)
+if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ] && [ ! -f "$HOME/NO_TV" ]; then
+  startx /opt/tvbox/system/xinitrc -- -nolisten tcp vt1 -keeptty >"$HOME/.xorg-session.log" 2>&1
+  # se X termina, il logout fa ripartire getty -> autologin -> nuova sessione
+  logout
+fi

@@ -1,0 +1,11 @@
+#!/bin/sh
+# tvbox-wifi-prep IFACE — prima di avviare wpa_supplicant@IFACE: se manca la configurazione
+# della scheda la crea vuota (le reti si aggiungono da Impostazioni > Wi-Fi) e la rende
+# modificabile dal launcher (update_config=1, socket di controllo per il gruppo netdev).
+set -e
+C="/etc/wpa_supplicant/wpa_supplicant-$1.conf"
+umask 077
+if [ ! -f "$C" ]; then
+  printf 'ctrl_interface=DIR=/run/wpa_supplicant GROUP=netdev\nupdate_config=1\ncountry=IT\n' > "$C"
+fi
+grep -q '^update_config=1' "$C" || sed -i '1a update_config=1' "$C"
