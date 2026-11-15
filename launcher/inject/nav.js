@@ -259,8 +259,13 @@
                      '::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}';
     (document.head || document.documentElement).appendChild(st);
   }
+  // nel primo istante la pagina non ha ancora la radice: appena nasce (non a pagina finita,
+  // altrimenti la barra si vede per un attimo)
   if (document.documentElement) noScrollbars();
-  else document.addEventListener('DOMContentLoaded', noScrollbars);
+  else {
+    const mo = new MutationObserver(() => { if (document.documentElement) { mo.disconnect(); noScrollbars(); } });
+    mo.observe(document, { childList: true });
+  }
 
   window.__nav = { move, activate, back, hide, current: () => cur };
 })();

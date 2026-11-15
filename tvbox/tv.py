@@ -43,19 +43,22 @@ BLOCKLISTS = {
 
 NO_SERVICE = normalize_service("", {}, {})
 
-# script "prenotato" nella pagina del canale nuovo. Nel primo istante la pagina non ha ancora
-# l'elemento radice: si aspetta che nasca (MutationObserver) per colorarlo subito di blu.
-BOOT_BG = """(function () {
-  var paint = function () { var e = document.documentElement;
-    if (e) { e.style.setProperty('background', '#0b1020', 'important'); return true; } return false; };
-  if (!paint()) { var mo = new MutationObserver(function () { if (paint()) mo.disconnect(); });
+# script "prenotato" nella pagina del canale nuovo: appena esiste l'elemento radice (nel primo
+# istante della pagina non c'è ancora: lo si aspetta con un MutationObserver) lo colora di blu
+# e ci aggancia pannello e sipario, senza aspettare il corpo della pagina (che su Mediaset
+# arriva tardi, dopo script pesanti). Va eseguito solo nella pagina principale.
+BOOT_START = """(function () {
+  var start = function () {
+    var e = document.documentElement;
+    if (!e) return false;
+    e.style.setProperty('background', '#0b1020', 'important');
+    try { window.__tvp.open(d); } catch (x) { console.error('[pannello]', x); }
+    return true;
+  };
+  if (!start()) { var mo = new MutationObserver(function () { if (start()) mo.disconnect(); });
                   mo.observe(document, { childList: true }); }
-})();
-"""
-BOOT_OPEN = """(function go() {
-  if (!document.body || !window.__tvp) return setTimeout(go, 25);
-  try { window.__tvp.open(d); } catch (e) { console.error('[pannello]', e); }
-})(); })();"""      # pagina che non appartiene a nessun servizio
+})();"""
+DARK = {"r": 11, "g": 16, "b": 32, "a": 1}      # pagina che non appartiene a nessun servizio
 
 
 class TV:
@@ -83,6 +86,7 @@ class TV:
         self.view_override = False
         self.shield_script = None
         self.blocked = []
+        self.dark_default = False          # fondo di Chrome blu (solo durante i cambi canale)
         self._player_cache = (0.0, False)
         self._player_since = 0.0
         self._noplayer_since = 0.0
@@ -324,10 +328,20 @@ class TV:
         except Exception as ex:
             log.warning("vista/protezione: %s", ex)
 
-    def open(self, sid):
+    def _clear_dark(self):
+        if self.dark_default:
+            try:
+                self.cdp.call("Emulation.setDefaultBackgroundColorOverride", {})
+            except Exception:
+                pass
+            self.dark_default = False
+
+    def open(self, sid, keep_dark=False):
         s = self.services.get(sid)
         if not s or not s.get("url"):
             return
+        if not keep_dark:
+            self._clear_dark()
         log.info("apro %s", sid)
         self.panel = self.pointer = False
         self._prepare(s)
@@ -364,6 +378,7 @@ class TV:
         self.panel = self.pointer = False
         self.display.set_lowres(False)
         self.current = self.opened_url = None
+        self._clear_dark()
         self._prepare(NO_SERVICE)
         self.cdp.close_other_pages()
         self.cdp.call("Page.navigate", {"url": self.launcher_url + (f"#{page}" if page else "")})
@@ -444,14 +459,19 @@ class TV:
         # la pagina nuova nasce già blu (prima di qualsiasi contenuto: niente lampo bianco),
         # poi il pannello con il sipario appena c'è il corpo della pagina
         # solo nella pagina principale (non nei riquadri interni di pubblicità e statistiche)
-        boot = ("if (window.top === window) {\n" + BOOT_BG + js +
-                f"\n;(function(){{var d={json.dumps(data)};" + BOOT_OPEN + "\n}")
+        boot = ("if (window.top === window) {\n" + js +
+                f"\n;var d = {json.dumps(data)};\n" + BOOT_START + "\n}")
         pending = None
         try:
             pending = self.cdp.call("Page.addScriptToEvaluateOnNewDocument", {"source": boot}).get("identifier")
         except Exception as ex:
             log.warning("pannello prenotato: %s", ex)
-        self.open(sid)
+        try:                                 # fondo di Chrome blu invece che bianco
+            self.cdp.call("Emulation.setDefaultBackgroundColorOverride", {"color": DARK})
+            self.dark_default = True
+        except Exception:
+            pass
+        self.open(sid, keep_dark=True)
         self.panel = True
         threading.Thread(target=self._panel_unbook, args=(sid, pending), daemon=True).start()
 
@@ -527,6 +547,7 @@ class TV:
             if not self.browser.alive():
                 self.cdp.drop()
                 self.blocked, self.shield_script, self.view_override = [], None, False
+                self.dark_default = False
                 log.warning("Chrome non attivo: riavvio")
                 self.browser.start()
                 fails = 0
