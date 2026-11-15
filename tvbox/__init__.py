@@ -17,4 +17,4 @@
     api       API HTTP per il launcher
     main      avvio
 """
-VERSION = "2.0.0-dev"
+VERSION = "2.0.0"

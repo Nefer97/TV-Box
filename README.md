@@ -1,9 +1,9 @@
 # tvbox
 
 **Una Smart TV fatta in casa con un Mac mini del 2007.**
-Debian 13, Google Chrome in modalità kiosk e un piccolo demone Python trasformano un vecchio
-Mac mini in un box TV comandato dall'Apple Remote: canali in diretta Rai, Mediaset e
-Warner Bros. Discovery, YouTube, RaiPlay, i tuoi siti preferiti, meteo e salvaschermo.
+Debian 13, Google Chrome in modalità kiosk e un demone Python trasformano un vecchio Mac mini
+in un box TV comandato dall'Apple Remote: canali in diretta Rai, Mediaset e Warner Bros.
+Discovery con guida TV, YouTube, RaiPlay, i tuoi siti preferiti, meteo e salvaschermo.
 
 ![Home con un canale in diretta selezionato](docs/screenshots/home-diretta.png)
 
@@ -12,25 +12,32 @@ Warner Bros. Discovery, YouTube, RaiPlay, i tuoi siti preferiti, meteo e salvasc
 ## Cosa fa
 
 - **Canali in diretta** (Rai 1, 2, 3, Rete 4, Canale 5, Italia 1, Real Time, DMAX, Nove), ognuno
-  con il programma in onda, la barra di avanzamento, la descrizione e l'immagine del programma.
-- **Pannello cambio canale sopra il video**: premi MENU durante una diretta, scegli un altro
-  canale senza tornare alla home; `+` e `−` del telecomando regolano il volume.
+  con il programma in onda, la barra di avanzamento, la descrizione e l'immagine.
+- **Guida TV**: i programmi delle prossime ore per ogni canale; OK sul programma in onda lo apre.
+- **Pannello cambio canale sopra il video**: MENU (o ◄ ►) durante una diretta; il pannello
+  resta a schermo mentre il canale nuovo si carica, con un sipario scuro e il cerchio di
+  caricamento. Dentro anche volume, Guida TV, timer e impostazioni.
+- **Banner del programma** quando parte un canale: titolo, orario e cosa c'è dopo.
 - **App RaiPlay per TV** (la versione HbbTV ufficiale) dentro Chrome, con telecomando e dirette.
 - **YouTube per TV**, Mediaset Infinity, discovery+, La7, Pluto TV, Radio Rai.
-- **I miei siti**: aggiungi qualunque sito con la tastiera a schermo; navigazione "assistita"
-  con le frecce (un riquadro giallo salta tra le cose cliccabili), vista telefono,
-  blocco di pubblicità, popup e banner dei cookie.
-- **Impostazioni dalla TV**: Wi-Fi (ricerca reti e password), volume, città del meteo,
-  risoluzione dello schermo con prova di 15 secondi, salvaschermo, riquadri della home.
-- **Salvaschermo** con le immagini dei programmi in onda, orologio e meteo.
-- **Sempre acceso**: si riaccende da solo dopo un blackout e si riavvia da solo se si blocca.
+- **I miei siti**: qualunque sito con la tastiera a schermo; navigazione "assistita" con le
+  frecce (un riquadro giallo salta tra le cose cliccabili), vista telefono, blocco di
+  pubblicità, popup e banner dei cookie.
+- **Impostazioni dalla TV**, in quattro gruppi: immagine e audio (volume, risoluzione con
+  prova di 15 secondi), accensione e spegnimento (ultimo canale all'accensione, timer,
+  salvaschermo), home e meteo, rete (Wi-Fi con ricerca e password).
+- **Salvaschermo** con le foto dei programmi in onda; dopo un'ora lo schermo si spegne.
+- **Sempre acceso**: si riaccende dopo un blackout, si riavvia da solo se si blocca, riparte
+  dall'ultimo canale guardato.
 
 | | |
 |---|---|
-| ![Pannello cambio canale](docs/screenshots/pannello-canali.png) | ![Salvaschermo](docs/screenshots/salvaschermo.png) |
-| *Pannello cambio canale sopra Rai 1* | *Salvaschermo* |
-| ![Altri servizi](docs/screenshots/altri-servizi.png) | ![Impostazioni](docs/screenshots/impostazioni.png) |
-| *Altri servizi* | *Impostazioni* |
+| ![Guida TV](docs/screenshots/guida.png) | ![Pannello cambio canale](docs/screenshots/pannello-canali.png) |
+| *Guida TV* | *Pannello cambio canale sopra una diretta* |
+| ![Cambio canale](docs/screenshots/cambio-canale.png) | ![Banner del programma](docs/screenshots/banner.png) |
+| *Mentre il canale nuovo si carica* | *Banner all'apertura di un canale* |
+| ![Impostazioni](docs/screenshots/impostazioni.png) | ![Salvaschermo](docs/screenshots/salvaschermo.png) |
+| *Impostazioni* | *Salvaschermo* |
 
 ## Hardware
 
@@ -48,23 +55,24 @@ Su hardware più recente funziona meglio: il limite del Mac mini è la fluidità
 ## Come funziona
 
 ```
-Apple Remote ──► tvd.py ──(DevTools Protocol)──► Google Chrome (kiosk)
-                   │                                 │
-                   ├─ API HTTP 127.0.0.1:8765 ◄──────┤ launcher/index.html (home)
-                   ├─ xrandr, ALSA, wpa_cli          ├─ panel.js  (pannello sopra le dirette)
-                   └─ palinsesti, meteo, loghi        ├─ nav.js    (navigazione assistita)
-                                                      ├─ osk.js    (tastiera a schermo)
-                                                      ├─ shield.js (pubblicità e cookie)
-                                                      └─ hbbtv.js  (app TV HbbTV in Chrome)
+Apple Remote ──► tvd (tvbox/) ──(DevTools Protocol)──► Google Chrome (kiosk)
+                   │                                      │
+                   ├─ API HTTP 127.0.0.1:8765 ◄───────────┤ launcher/ (home, Guida TV, Impostazioni)
+                   ├─ xrandr, ALSA, wpa_cli               └─ launcher/inject/ (nelle pagine dei servizi)
+                   └─ palinsesti, meteo, loghi                 pannello, banner, navigazione assistita,
+                                                                tastiera, pubblicità, app HbbTV
 ```
 
-- **`tvd.py`** legge il telecomando (evdev), apre i servizi, "traveste" Chrome da TV quando
-  serve (RaiPlay per TV, YouTube TV), inietta gli script nelle pagine, controlla Chrome e lo
-  riavvia se si blocca, cambia risoluzione, gestisce Wi-Fi e volume e serve il launcher.
+- **tvd** legge il telecomando, capisce in che **stato** è la TV (home, diretta, pannello,
+  app TV, video, sito…) e usa una **tabella dei tasti** per decidere cosa fare
+  ([tvbox/keys.py](tvbox/keys.py)). Apre i servizi, "traveste" Chrome da TV quando serve
+  (RaiPlay, YouTube TV), inietta gli script nelle pagine, sorveglia Chrome e lo riavvia se si
+  blocca, cambia risoluzione, gestisce Wi-Fi, volume e timer, e serve il launcher.
 - **Il launcher** è una pagina web locale pensata per il telecomando: niente mouse, tutto a
-  frecce, misure in proporzione allo schermo.
-- **Palinsesti**: `onAir.json` di RaiPlay, il servizio now/next di Mediaset e la guida TV di
-  Warner Bros. Discovery. **Meteo**: Open-Meteo. Nessuna chiave o registrazione.
+  frecce, misure in proporzione allo schermo. Le schede dei canali sono le stesse nella home
+  e nel pannello sopra le dirette ([launcher/js/cards.js](launcher/js/cards.js)).
+- **Palinsesti**: RaiPlay, Mediaset e Warner Bros. Discovery (in onda e prossime ore).
+  **Meteo**: Open-Meteo. Nessuna chiave o registrazione.
 - **Sistema**: Xorg senza root, autologin sull'utente `tv`, `systemd-networkd` +
   `wpa_supplicant` per la rete, nessun desktop.
 
@@ -95,31 +103,54 @@ sudo ./prepare-disk.sh /dev/sdX     # chiede conferma scrivendo CANCELLA
 Crea MBR + ext4, Debian 13 minimale con GRUB in modalità BIOS, l'utente `admin` e lancia
 `install.sh` nel chroot. I dettagli sono in [HANDOFF-CLAUDE-CODE.md](HANDOFF-CLAUDE-CODE.md).
 
+### Aggiornare
+
+Dal PC con la cartella del progetto, con il Mac mini acceso in rete:
+
+```bash
+./deploy.sh                 # prove automatiche, copia, installazione (chiede la password di admin)
+./deploy.sh --rollback      # torna alla versione installata prima
+TV_HOST=192.168.1.x ./deploy.sh     # se tv.local non risponde
+```
+
 ## Telecomando
 
-| Tasto | Nei menu | Durante un video | Durante una diretta |
-|---|---|---|---|
-| Frecce | muoversi | ◄ ► indietro/avanti, + − volume | + − volume |
-| Centrale / OK | apri | pausa | pausa |
-| MENU | indietro | indietro | **pannello cambio canale** |
-| MENU tenuto premuto | home | home | home |
-| Centrale tenuto premuto | puntatore (per i siti difficili) | | |
-
-Nel pannello cambio canale: ◄ ► per scegliere (la fila gira in cerchio), OK per cambiare
-canale, + − per il volume, MENU per chiudere.
+| Tasto | Nei menu | Durante un video | Durante una diretta | Nel pannello |
+|---|---|---|---|---|
+| ▲ ▼ (+ −) | muoversi | volume | volume | volume |
+| ◄ ► | muoversi | indietro / avanti | pannello sul canale vicino | scegliere (in cerchio) |
+| Centrale / OK | apri | pausa | pausa | cambia canale |
+| MENU | indietro | indietro | **pannello cambio canale** | chiudi |
+| MENU tenuto premuto | home | home | home | home |
+| Centrale tenuto premuto | puntatore (per i siti difficili) | | | |
 
 ## Configurazione
 
 | File | Cosa contiene |
 |---|---|
-| `/etc/tvbox/config.json` | servizi, canali, sezioni della home, tempi del telecomando |
-| `/etc/tvbox/session.env` | variabili della sessione X |
+| `/etc/tvbox/config.json` | servizi, canali, sezioni della home, identità, tempi del telecomando |
+| `~tv/.config/tvbox/prefs.json` | scelte fatte dalla TV: siti, meteo, schermo, riquadri nascosti, accensione |
 | `/etc/X11/xorg.conf.d/20-tvbox-video.conf` | driver video e risoluzioni per la TV |
-| `~tv/.config/tvbox/` | scelte fatte dalla TV: siti, meteo, schermo, riquadri nascosti |
-| `/home/tv/.tvbox.log` | registro di tvd |
+| `/var/log/tvbox/tvd.log` | registro di tvd (leggibile anche da `admin`) |
 
-Per aggiungere un canale basta una voce in `services` e il suo id in `sections` di
-`config.json`; con `"onair"` compare anche il programma in onda.
+Ogni servizio in `config.json` ha un **tipo** che decide come si comporta col telecomando:
+`hbbtv` (app per TV come RaiPlay), `tvapp` (YouTube TV), `web` (siti normali) o `page`
+(pagine del launcher). Un canale in diretta è un servizio con `"live": true` e `"onair"`:
+
+```json
+"rai1": { "kind": "hbbtv", "identity": "samsung_tv", "live": true, "onair": "rai:Rai 1",
+          "label": "Rai 1", "icon": "tv", "color": "#1e3a8a", "url": "https://www.raiplay.it/hbbtv/…" }
+```
+
+## Sviluppo
+
+```bash
+python3 -m unittest discover -s tests -v     # prove automatiche (senza Chrome né telecomando)
+```
+
+Le prove coprono la logica del telecomando (doppioni, ripetizioni, pressioni lunghe), la
+tabella dei tasti, la configurazione, le preferenze, i palinsesti e la risoluzione.
+`deploy.sh` le esegue prima di ogni installazione.
 
 ## Limiti noti
 
@@ -136,15 +167,17 @@ Per aggiungere un canale basta una voce in `services` e il suo id in `sections` 
 ## Struttura del progetto
 
 ```
-tvd.py                demone principale (telecomando, Chrome, API, Wi-Fi, palinsesti)
+tvd.py                avvio di tvd
+tvbox/                il demone, un modulo per compito (vedi tvbox/__init__.py)
 config.json           servizi e canali
-launcher/             home e script iniettati nelle pagine (+ hls.js in vendor/)
+launcher/             la home: index.html, css/, js/ (+ hls.js in vendor/)
+launcher/inject/      script iniettati nelle pagine dei servizi (pannello, banner, …)
 system/               file di sistema: X, autologin, rete, udev, watchdog, sudoers
-install.sh            installazione su Debian 13
+install.sh            installazione su Debian 13 (--update / --rollback per gli aggiornamenti)
+deploy.sh             aggiornamento dal PC
 prepare-disk.sh       installazione del disco del Mac mini da un altro PC
-diagnostica-setup.sh  diagnostica dei blocchi (netconsole, temperature)
-wifi-setup.sh         Wi-Fi da riga di comando
-prova-*.sh            script di prova usati durante lo sviluppo
+tests/                prove automatiche
+tools/                diagnostica, Wi-Fi da riga di comando e script di prova
 docs/screenshots/     le immagini di questo file
 ```
 
