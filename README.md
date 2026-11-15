@@ -73,7 +73,7 @@ Apple Remote ──► tvd.py ──(DevTools Protocol)──► Google Chrome (
 ### A. Su un Debian 13 amd64 già installato
 
 ```bash
-git clone <questo repository> tvbox && cd tvbox
+git clone https://github.com/Nefer97/TV-Box.git tvbox && cd tvbox
 sudo ./install.sh
 sudo reboot
 ```
