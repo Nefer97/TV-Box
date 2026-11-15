@@ -5,7 +5,7 @@
 //   __tvp.open({channels:[{id,label,color,title,start,end,image,desc}], current, vol, videoLow})
 //   __tvp.move('left'|'right')   __tvp.ok() -> azione per tvd   __tvp.set(chiave, valore)   __tvp.close()
 (function () {
-  const V = 10;                       // versione: una più nuova sostituisce quella già caricata
+  const V = 11;                       // versione: una più nuova sostituisce quella già caricata
   if (window.__tvp && window.__tvp.v === V) return;
   try { window.__tvp && window.__tvp.close(); } catch (e) {}
   const old = document.getElementById('__tvpanel');
@@ -15,6 +15,10 @@
   // solo quello che è del pannello: le schede hanno lo stile comune (cards.css)
   const CSS = `
   :host { all: initial; }
+  /* sipario: copre la pagina nuova (es. Mediaset parte bianca) finché il video non parte */
+  .curtain { position: fixed; inset: 0; transition: opacity .6s ease;
+    background: radial-gradient(120% 120% at 20% 0%, var(--bg2), var(--bg1)); }
+  .curtain.gone { opacity: 0; }
   .wrap { position: fixed; left: 0; right: 0; bottom: 0; padding: 7vh 5vw 3.2vh; --card-h: 17vh;
     background: linear-gradient(to top, rgba(11,16,32,.97) 0%, rgba(11,16,32,.93) 62%, rgba(11,16,32,0) 100%);
     font-family: var(--font); color: var(--fg); }
@@ -107,6 +111,7 @@
     keys.innerHTML = '<span><b>◄ ►</b>scegli</span><span><b>OK</b>cambia canale</span>' +
       '<span><b>+ −</b>volume</span><span><b>MENU</b>chiudi</span><span><b>Tieni MENU</b>home</span>';
     w.append(head, vp, det, keys);
+    if (data.curtain) root.appendChild(el('div', 'curtain'));
     root.appendChild(w);
     // il popover sta nello strato più alto: si vede anche sopra un video a schermo intero
     const parent = document.body || document.documentElement;
@@ -146,9 +151,24 @@
       try { host.showPopover(); } catch (e) {}
     }, 300);
   }
+  let curtainT = 0;
+  function watchCurtain() {
+    clearInterval(curtainT);
+    if (!data.curtain) return;
+    const t0 = Date.now();
+    curtainT = setInterval(() => {
+      const playing = [...document.querySelectorAll('video')].some(v => !v.paused && v.readyState >= 3 && v.currentTime > 0);
+      if (!playing && Date.now() - t0 < 12000) return;
+      clearInterval(curtainT);
+      data.curtain = false;
+      const c = root && root.querySelector('.curtain');
+      if (c) { c.classList.add('gone'); setTimeout(() => c.remove(), 700); }
+    }, 300);
+  }
   function close() {
     clearTimeout(timer);
     clearInterval(guard);
+    clearInterval(curtainT);
     open = false;
     if (host) { try { host.hidePopover(); } catch (e) {} host.remove(); }
   }
@@ -168,6 +188,7 @@
       render();
       arm();
       keep();
+      watchCurtain();
       return true;
     },
     close() { close(); return true; },

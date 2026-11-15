@@ -426,6 +426,7 @@ class TV:
         js = panel_script()
         data = self.panel_data()
         data["current"] = sid
+        data["curtain"] = True              # fondo scuro finché il video nuovo non parte
         boot = (f"{js}\n;(function(){{var d={json.dumps(data)};"
                 "(function go(){if(!document.body)return setTimeout(go,25);window.__tvp.open(d);})();})();")
         pending = None
