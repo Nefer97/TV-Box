@@ -5,7 +5,7 @@
 //   __tvp.open({channels:[{id,label,color,title,start,end,image,desc}], current, vol, videoLow})
 //   __tvp.move('left'|'right')   __tvp.ok() -> azione per tvd   __tvp.set(chiave, valore)   __tvp.close()
 (function () {
-  const V = 12;                       // versione: una più nuova sostituisce quella già caricata
+  const V = 13;                       // versione: una più nuova sostituisce quella già caricata
   if (window.__tvp && window.__tvp.v === V) return;
   try { window.__tvp && window.__tvp.close(); } catch (e) {}
   const old = document.getElementById('__tvpanel');
@@ -16,7 +16,7 @@
   const CSS = `
   :host { all: initial; }
   /* sipario: copre la pagina nuova (es. Mediaset parte bianca) finché il video non parte */
-  .curtain { position: fixed; inset: 0; transition: opacity .6s ease;
+  .curtain { position: fixed; inset: 0; transition: opacity .6s ease; font-family: var(--font);
     background: radial-gradient(120% 120% at 20% 0%, var(--bg2), var(--bg1)); }
   .curtain.gone { opacity: 0; }
   .curtain .load { position: absolute; left: 0; right: 0; top: 24vh; display: flex; flex-direction: column;

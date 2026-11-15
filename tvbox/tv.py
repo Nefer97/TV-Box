@@ -41,7 +41,21 @@ BLOCKLISTS = {
                  "*facebook.net*", "*criteo*", "*teads*", "*smartclip*", "*adsrvr*"],
 }
 
-NO_SERVICE = normalize_service("", {}, {})      # pagina che non appartiene a nessun servizio
+NO_SERVICE = normalize_service("", {}, {})
+
+# script "prenotato" nella pagina del canale nuovo. Nel primo istante la pagina non ha ancora
+# l'elemento radice: si aspetta che nasca (MutationObserver) per colorarlo subito di blu.
+BOOT_BG = """(function () {
+  var paint = function () { var e = document.documentElement;
+    if (e) { e.style.setProperty('background', '#0b1020', 'important'); return true; } return false; };
+  if (!paint()) { var mo = new MutationObserver(function () { if (paint()) mo.disconnect(); });
+                  mo.observe(document, { childList: true }); }
+})();
+"""
+BOOT_OPEN = """(function go() {
+  if (!document.body || !window.__tvp) return setTimeout(go, 25);
+  try { window.__tvp.open(d); } catch (e) { console.error('[pannello]', e); }
+})(); })();"""      # pagina che non appartiene a nessun servizio
 
 
 class TV:
@@ -429,9 +443,9 @@ class TV:
         data["curtain"] = True              # fondo scuro finché il video nuovo non parte
         # la pagina nuova nasce già blu (prima di qualsiasi contenuto: niente lampo bianco),
         # poi il pannello con il sipario appena c'è il corpo della pagina
-        boot = ("document.documentElement.style.setProperty('background','#0b1020','important');\n"
-                f"{js}\n;(function(){{var d={json.dumps(data)};"
-                "(function go(){if(!document.body)return setTimeout(go,25);window.__tvp.open(d);})();})();")
+        # solo nella pagina principale (non nei riquadri interni di pubblicità e statistiche)
+        boot = ("if (window.top === window) {\n" + BOOT_BG + js +
+                f"\n;(function(){{var d={json.dumps(data)};" + BOOT_OPEN + "\n}")
         pending = None
         try:
             pending = self.cdp.call("Page.addScriptToEvaluateOnNewDocument", {"source": boot}).get("identifier")
