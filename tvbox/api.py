@@ -96,9 +96,12 @@ def make_routes(tv):
 
     def prefs(q):
         """Scelte semplici dalla TV (per ora: cosa fare all'accensione)."""
-        if q.get("key") == "startup" and q.get("value") in ("last", "home"):
-            tv.prefs.set("startup", q["value"])
-        return {"startup": tv.prefs.get("startup")}
+        k, v = q.get("key"), q.get("value")
+        if k == "startup" and v in ("last", "home"):
+            tv.prefs.set("startup", v)
+        elif k == "saver_off" and (v or "").isdigit():
+            tv.prefs.set("saver_off", int(v))
+        return {"startup": tv.prefs.get("startup"), "saver_off": tv.prefs.get("saver_off")}
 
     def sleep(q):
         if "minutes" in q:

@@ -58,19 +58,25 @@ function next() {                          // foto successiva, con dissolvenza
   img.src = x.d.image_big;
 }
 export function saverStart() {
+  if (state.asleep) return;                // schermo spento dal timer: niente salvaschermo
   $('#saver').classList.add('show');
+  window.__tvSaverSince = Date.now();      // tvd spegne lo schermo dopo tanto salvaschermo
   next();
   clearInterval(timer);
   timer = setInterval(next, 25000);
 }
 export function saverStop() {
   $('#saver').classList.remove('show');
+  window.__tvSaverSince = 0;
   clearInterval(timer);
 }
 
+// schermo riacceso da tvd: si riparte da svegli (il salvaschermo riconta da adesso)
+export function saverAwake() { lastInput = Date.now(); state.asleep = false; }
+
 export function initSaver() {
   setInterval(() => {
-    if (!on() && state.page === 'home' && !overlayOpen() && !(window.__osk && window.__osk.isOpen())
+    if (!on() && !state.asleep && state.page === 'home' && !overlayOpen() && !(window.__osk && window.__osk.isOpen())
         && saverMin() > 0 && Date.now() - lastInput > saverMin() * 60000) saverStart();
     else if (on()) text();
   }, 30000);

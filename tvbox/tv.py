@@ -581,12 +581,13 @@ class TV:
             self.sleep_warned = True
             self.toast("Spegnimento tra 1 minuto · premi un tasto per annullare")
 
-    def sleep_now(self):
-        """Fine del timer: si torna alla home e lo schermo si spegne (segnale video fermo);
-        il primo tasto del telecomando lo riaccende."""
+    def sleep_now(self, why="timer"):
+        """Fine del timer (o salvaschermo acceso troppo a lungo): si torna alla home e lo schermo
+        si spegne (segnale video fermo); il primo tasto del telecomando lo riaccende. La home
+        sa di essere "addormentata" (#sleep): niente salvaschermo a schermo spento."""
         self.sleep_at, self.sleep_warned = 0.0, False
-        log.info("timer di spegnimento: schermo spento")
-        self.home()
+        log.info("schermo spento (%s)", why)
+        self.home(page="sleep")
         time.sleep(1)
         self.display.blank(True)
         self.asleep = True
@@ -594,7 +595,20 @@ class TV:
     def wake(self):
         self.asleep = False
         self.display.blank(False)
+        try:
+            self.cdp.eval("window.__tvWake && __tvWake()", timeout=3)
+        except Exception:
+            pass
         log.info("schermo riacceso")
+
+    def _saver_tick(self, url):
+        """Salvaschermo acceso da troppo tempo (Impostazioni, di serie 1 ora): schermo spento."""
+        off = self.prefs.get("saver_off")
+        if not off or self.asleep or not self.on_launcher(url):
+            return
+        since = self.cdp.eval("window.__tvSaverSince || 0", timeout=3) or 0
+        if since and time.time() * 1000 - since > off * 60000:
+            self.post(self.sleep_now, "salvaschermo")
 
     # ---------- all'accensione: ultimo canale ----------
     def _resume(self):
@@ -680,6 +694,7 @@ class TV:
                 self._sleep_tick()
                 url = self.url()
                 self._auto_fullscreen_tick(url)
+                self._saver_tick(url)
                 if self.display.video_mode:
                     self._video_res_tick(not self.on_launcher(url) and self.is_player())
                 if self.shield_script:               # popup in nuove schede: chiusi

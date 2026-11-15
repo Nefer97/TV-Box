@@ -21,6 +21,7 @@ export const state = {
   ONAIR: {},           // programmi in onda
   page: 'home',
   busy: false,         // un'operazione in corso: MENU non chiude la finestra
+  asleep: false,       // schermo spento da tvd (timer): niente salvaschermo finché non si sveglia
   show: null,          // impostata da app.js: show(pagina)
 };
 export const $ = sel => document.querySelector(sel);

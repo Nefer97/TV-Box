@@ -10,6 +10,7 @@ Contenuto:
     screen  {"mode": "auto" | "LxA", "video_low": bool}         risoluzione
     startup "last" | "home"                                     all'accensione: ultimo canale o home
     last_channel  "rai1" | None                                 canale in diretta lasciato acceso
+    saver_off  minuti                                           schermo spento dopo tanto salvaschermo (0 = mai)
 """
 import copy
 import os
@@ -25,6 +26,7 @@ DEFAULTS = {
     "screen": {"mode": "auto", "video_low": True},
     "startup": "last",
     "last_channel": None,
+    "saver_off": 60,
 }
 
 
@@ -94,6 +96,8 @@ class Prefs:
             out["startup"] = d["startup"]
         if isinstance(d.get("last_channel"), str):
             out["last_channel"] = d["last_channel"]
+        if isinstance(d.get("saver_off"), int) and 0 <= d["saver_off"] <= 24 * 60:
+            out["saver_off"] = d["saver_off"]
         return out
 
     # ---------- accesso ----------

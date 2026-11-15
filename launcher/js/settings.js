@@ -101,6 +101,20 @@ async function startupMenu() {
     ['Mostra la home', 'home', set('home')]], r && r.startup);
 }
 
+// ---------- schermo spento dopo tanto salvaschermo ----------
+const offLabel = m => (m ? `dopo ${m >= 60 ? m / 60 + (m === 60 ? ' ora' : ' ore') : m + ' minuti'} di salvaschermo` : 'mai');
+async function saverOffVal() {
+  const r = await api('prefs');
+  $('#saveroff-val').textContent = offLabel(r ? r.saver_off : 60);
+  return r;
+}
+async function saverOffMenu() {
+  const r = await saverOffVal();
+  const set = m => async () => { await api('prefs?key=saver_off&value=' + m); hideOverlay(); saverOffVal(); };
+  choose('Spegni lo schermo dopo', [30, 60, 120].map(m => [offLabel(m), m, set(m)])
+    .concat([['Mai', 0, set(0)]]), r && r.saver_off);
+}
+
 // ---------- timer di spegnimento ----------
 async function sleepVal() {
   const r = await api('sleep');
@@ -127,6 +141,7 @@ export const ACTIONS = {
   saver: saverMenu,
   startup: startupMenu,
   sleep: sleepMenu,
+  'saver-off': saverOffMenu,
   info: refreshInfo,
   wifi: () => state.show('wifi'),
   'home-edit': () => state.show('homeedit'),
@@ -143,6 +158,7 @@ export async function settingsPage() {
   $('#saver-val').textContent = saverLabel();
   startupVal();
   sleepVal();
+  saverOffVal();
   // riassunto sotto ogni gruppo
   const [v, sc, st, sl, w, m] = await Promise.all(['volume', 'screen', 'prefs', 'sleep', 'wifi', 'meteo'].map(api));
   $('#sum-av').textContent = [v && v.volume != null ? `Volume ${v.volume}%` : '',

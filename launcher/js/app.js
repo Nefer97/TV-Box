@@ -3,7 +3,7 @@ import { $, api, centerInRow, hideOverlay, move, overlay, overlayOpen, state, st
 import { build, greeting, showDetail, tick, updateMeteo, updateOnAir, updateStatus } from './home.js';
 import { guidePage } from './guide.js';
 import { homeEditPage, sitiPage, sitoApri, wifiPage } from './lists.js';
-import { initSaver } from './saver.js';
+import { initSaver, saverAwake } from './saver.js';
 import { ACTIONS, changeVolume, settingsPage } from './settings.js';
 
 const TITLES = { altri: 'Altri servizi', settings: 'Impostazioni', wifi: 'Wi-Fi', siti: 'I miei siti',
@@ -102,6 +102,8 @@ window.addEventListener('pageshow', () => { state.busy = false; $('#overlay').cl
   if (!state.CFG) { $('#title').textContent = 'Errore: servizio TV non attivo'; return; }
   build();
   const start = location.hash.slice(1);                           // tvd può aprire Impostazioni o Guida
+  state.asleep = start === 'sleep';                                // ...o la home a schermo spento
+  window.__tvWake = saverAwake;                                    // tvd: schermo riacceso
   show(['settings', 'guide'].includes(start) ? start : 'home');
   if (location.hash) history.replaceState(null, '', location.pathname);
   updateOnAir(); setInterval(updateOnAir, 60000);
