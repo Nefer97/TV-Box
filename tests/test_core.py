@@ -145,9 +145,25 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(s["canale5"]["block"], ["trackers"])
 
     def test_canali_in_diretta(self):
-        ch = self.cfg.live_channels()
-        self.assertEqual(ch[:3], ["rai1", "rai2", "rai3"])
-        self.assertNotIn("rai2", self.cfg.live_channels(hidden=["rai2"]))
+        sel = ["rai1", "rai2", "rai2", "inesistente", "canale5"]
+        self.assertEqual(self.cfg.live_channels(sel), ["rai1", "rai2", "canale5"])   # niente doppioni
+        self.assertNotIn("rai2", self.cfg.live_channels(sel, hidden=["rai2"]))
+
+    def test_catalogo(self):
+        c = self.cfg.channels
+        self.assertGreaterEqual(len(c), 35)
+        self.assertEqual(c["rai4"]["kind"], "hbbtv")
+        self.assertIn("rai4.json", c["rai4"]["url"])
+        self.assertEqual(c["iris"]["onair"], "ms:KI")
+        self.assertEqual(c["hgtv"]["onair"], "wbd:hgtvit")
+        self.assertNotIn("onair", c["giallo"])
+        self.assertTrue(all(s["live"] for s in c.values()))
+
+    def test_sezione_canali_della_home(self):
+        ui = self.cfg.ui(["iris", "rai1"])
+        live = [s for s in ui["sections"] if s.get("channels")][0]
+        self.assertEqual(live["items"], ["iris", "rai1"])
+        self.assertIn("la5", ui["services"])
 
     def test_ui_per_il_launcher(self):
         ui = self.cfg.ui()

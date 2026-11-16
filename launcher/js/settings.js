@@ -145,6 +145,7 @@ export const ACTIONS = {
   info: refreshInfo,
   wifi: () => state.show('wifi'),
   'home-edit': () => state.show('homeedit'),
+  channels: () => state.show('channels'),
   'restart-ui': () => { overlay('Ricarico l\'interfaccia…'); api('system?action=restart-ui'); },
   reboot: () => confirmAct('Riavviare il Mac mini?', 'reboot', 'Riavvio…'),
   poweroff: () => confirmAct('Spegnere il Mac mini?', 'poweroff', 'Spegnimento…'),

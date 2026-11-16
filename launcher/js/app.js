@@ -3,15 +3,15 @@ import { $, api, centerInRow, hideOverlay, move, overlay, overlayOpen, state, st
 import { build, greeting, showDetail, tick, updateMeteo, updateOnAir, updateStatus } from './home.js';
 import { guidePage } from './guide.js';
 import { msPage, seriesPage } from './mediaset.js';
-import { homeEditPage, sitiPage, sitoApri, wifiPage } from './lists.js';
+import { channelsPage, homeEditPage, sitiPage, sitoApri, wifiPage } from './lists.js';
 import { initSaver, saverAwake } from './saver.js';
 import { ACTIONS, changeVolume, settingsPage } from './settings.js';
 
 const TITLES = { altri: 'Altri servizi', settings: 'Impostazioni', wifi: 'Wi-Fi', siti: 'I miei siti',
-  homeedit: 'Riquadri della home', guide: 'Guida TV', mediaset: 'Mediaset Infinity', msserie: 'Mediaset Infinity', 'set-av': 'Immagine e audio',
+  homeedit: 'Riquadri della home', guide: 'Guida TV', channels: 'Canali in diretta', mediaset: 'Mediaset Infinity', msserie: 'Mediaset Infinity', 'set-av': 'Immagine e audio',
   'set-power': 'Accensione e spegnimento', 'set-home': 'Home e meteo', 'set-net': 'Rete e assistenza' };
 // MENU: pagina a cui si torna (e voce da selezionare)
-const PARENT = { wifi: ['set-net', 'wifi'], homeedit: ['set-home', 'home-edit'], siti: ['altri'],
+const PARENT = { wifi: ['set-net', 'wifi'], homeedit: ['set-home', 'home-edit'], channels: ['set-home', 'channels'], siti: ['altri'],
   settings: ['home'], altri: ['home'], guide: ['home'], mediaset: ['home'], msserie: ['mediaset'],
   'set-av': ['settings', 'set-av'], 'set-power': ['settings', 'set-power'],
   'set-home': ['settings', 'set-home'], 'set-net': ['settings', 'set-net'] };
@@ -19,7 +19,7 @@ const PARENT = { wifi: ['set-net', 'wifi'], homeedit: ['set-home', 'home-edit'],
 const ON_ENTER = { settings: settingsPage, 'set-av': settingsPage, 'set-power': settingsPage,
   'set-home': settingsPage, 'set-net': settingsPage,
   wifi: wifiPage, siti: sitiPage, homeedit: () => homeEditPage(), guide: guidePage,
-  mediaset: msPage, msserie: seriesPage };
+  mediaset: msPage, msserie: seriesPage, channels: () => channelsPage() };
 
 function show(p) {
   const prev = state.page;

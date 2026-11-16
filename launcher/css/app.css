@@ -107,6 +107,9 @@ body.withdetail #bgimg.show { opacity: .42; }
 .volctl .vol { min-width: 4.5vw; text-align: right; }
 #wifi-status { font-size: 2.8vh; line-height: 1.5; margin: 0 0 2.4vh; color: var(--fg); }
 #wifi-status .muted { color: var(--muted); }
+.listhead { font-size: 2.2vh; font-weight: 700; color: var(--muted); letter-spacing: .05em;
+  text-transform: uppercase; margin: 1.6vh 0 .2vh 1vw; }
+#page-channels .settings { max-height: 62vh; }
 .note { font-size: 2vh; color: var(--muted); line-height: 1.5; margin-top: 2vh; max-width: 70vw; }
 
 /* ---------- Guida TV ---------- */

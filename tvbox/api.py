@@ -28,7 +28,7 @@ def make_routes(tv):
     meteo = Meteo(tv.prefs)
 
     def config(q):
-        return dict(tv.cfg.ui(), hidden=tv.prefs.get("hidden"),
+        return dict(tv.cfg.ui(tv.prefs.get("channels")), hidden=tv.prefs.get("hidden"),
                     my_sites=[x for x in tv.sites.list() if x.get("home")])
 
     def home(q):
@@ -89,7 +89,7 @@ def make_routes(tv):
     def guide(q):
         """Guida TV: canali in diretta e, per quello chiesto, i programmi delle prossime ore."""
         chans = [{"id": sid, "label": tv.services[sid]["label"], "color": tv.services[sid].get("color")}
-                 for sid in tv.cfg.live_channels(tv.prefs.get("hidden"))]
+                 for sid in tv.channel_list()]
         sid = q.get("id") or (chans[0]["id"] if chans else "")
         return {"channels": chans, "id": sid, "programs": tv.epg.guide(sid, hours=int(q.get("hours", 12)))
                 if sid in tv.services else []}
@@ -125,6 +125,30 @@ def make_routes(tv):
             return {"ok": True}
         return tv.mediaset.rails()
 
+    def channels(q):
+        """Catalogo dei canali: quali sono nella home e in che ordine (Impostazioni → Canali)."""
+        from .channels import GROUPS, clean_selection
+        cat = tv.cfg.channels
+        sel = clean_selection(tv.prefs.get("channels"), cat)
+        cid, a = q.get("id", ""), q.get("action")
+        if cid in cat and a in ("add", "remove", "up", "down"):
+            if a == "add" and cid not in sel:
+                sel.append(cid)
+            elif a == "remove" and cid in sel and len(sel) > 1:
+                sel.remove(cid)
+            elif a in ("up", "down") and cid in sel:
+                i = sel.index(cid)
+                j = i - 1 if a == "up" else i + 1
+                if 0 <= j < len(sel):
+                    sel[i], sel[j] = sel[j], sel[i]
+            sel = tv.prefs.set("channels", sel)
+        groups = [{"id": g, "title": t, "items": [{"id": c, "label": s["label"], "on": c in sel,
+                                                  "pos": sel.index(c) + 1 if c in sel else None,
+                                                  "guide": bool(s.get("onair"))}
+                                                 for c, s in cat.items() if s.get("group") == g]}
+                  for g, t in GROUPS]
+        return {"selected": sel, "groups": groups}
+
     def system(q):
         a = q.get("action")
         if a == "restart-ui":
@@ -138,7 +162,7 @@ def make_routes(tv):
         "onair": lambda q: tv.epg.onair(), "meteo": meteo.api, "sites": tv.sites.api,
         "volume": lambda q: {"volume": tv.volume(int(q.get("delta", "0") or 0))},
         "info": info, "wifi": wifi_, "screen": screen, "system": system,
-        "guide": guide, "prefs": prefs, "sleep": sleep, "mediaset": mediaset,
+        "guide": guide, "prefs": prefs, "sleep": sleep, "mediaset": mediaset, "channels": channels,
     }
 
 

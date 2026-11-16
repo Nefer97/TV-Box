@@ -1,5 +1,5 @@
 // lists.js — pagine a elenco: Wi-Fi, I miei siti, Schermata iniziale.
-import { $, api, hideOverlay, item, overlay, q, state, store } from './core.js';
+import { $, api, el, hideOverlay, item, overlay, q, state, store } from './core.js';
 import { build, rebuild } from './home.js';
 
 // ======================================================================== Wi-Fi
@@ -135,6 +135,55 @@ async function sitoRimuovi(x) {
   await rebuild();
   hideOverlay();
   sitiPage();
+}
+
+// ======================================================================== Canali in diretta
+// In alto i canali nella home, nell'ordine (OK: sposta / togli); sotto, per gruppo, quelli da
+// aggiungere (OK: aggiunto in fondo). Ogni modifica ridisegna la home.
+export async function channelsPage(focusId, r) {
+  r = r || await api('channels');
+  const list = $('#channels-list');
+  list.innerHTML = '';
+  if (!r) { list.appendChild(el('div', 'gwait', 'Servizio TV non raggiungibile')); return; }
+  const all = {};
+  r.groups.forEach(g => g.items.forEach(c => { all[c.id] = Object.assign({ group: g.title }, c); }));
+  const head = t => list.appendChild(el('div', 'listhead', t));
+  head('Nella home, in quest\'ordine');
+  r.selected.forEach((id, i) => {
+    const c = all[id];
+    const b = item(`${i + 1}.  ${c.label}`, `${c.group}${c.guide ? '' : ' · senza guida TV'}`, () => channelMenu(c, r.selected.length));
+    b.dataset.cid = id;
+    list.appendChild(b);
+  });
+  r.groups.forEach(g => {
+    const rest = g.items.filter(c => !c.on);
+    if (!rest.length) return;
+    head(`${g.title} · da aggiungere`);
+    rest.forEach(c => {
+      const b = item('+  ' + c.label, c.guide ? 'OK per aggiungerlo alla home' : 'OK per aggiungerlo · senza guida TV',
+        () => channelDo(c.id, 'add', c.id));
+      b.dataset.cid = c.id;
+      b.classList.add('off');
+      list.appendChild(b);
+    });
+  });
+  const f = focusId && list.querySelector(`[data-cid="${focusId}"]`);
+  const t = f || list.querySelector('[tabindex]');
+  if (t && state.page === 'channels') { t.focus(); t.scrollIntoView({ block: 'center' }); }
+}
+async function channelDo(id, action, focusId) {
+  const r = await api(`channels?action=${action}&id=${q(id)}`);
+  await rebuild();                                       // la home cambia subito
+  hideOverlay();
+  channelsPage(focusId, r);
+  return r;
+}
+function channelMenu(c, n) {
+  const opts = [];
+  if (c.pos > 1) opts.push(['Sposta prima', async () => { await channelDo(c.id, 'up', c.id); }]);
+  if (c.pos < n) opts.push(['Sposta dopo', async () => { await channelDo(c.id, 'down', c.id); }]);
+  if (n > 1) opts.push(['Togli dalla home', () => channelDo(c.id, 'remove', null)]);
+  overlay(`${c.label}\nn° ${c.pos} nella home`, opts.concat([['Annulla', hideOverlay]]), 0);
 }
 
 // ======================================================================== Schermata iniziale

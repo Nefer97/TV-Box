@@ -55,8 +55,11 @@ class Config:
         self.path = path
         self.raw = data
         ids = data.get("identities") or {}
-        self.services = {sid: normalize_service(sid, s, ids)
-                         for sid, s in (data.get("services") or {}).items()}
+        from .channels import catalog
+        self.channels = catalog(ids)                      # tutti i canali in diretta disponibili
+        self.services = dict(self.channels)
+        self.services.update({sid: normalize_service(sid, s, ids)
+                              for sid, s in (data.get("services") or {}).items()})
         home = data.get("home") or {}
         self.sections = home.get("sections") or []
         self.other = home.get("other") or []
@@ -80,18 +83,15 @@ class Config:
             node = node[part]
         return node
 
-    def live_channels(self, hidden=()):
-        """Canali con palinsesto, nell'ordine della home (per il pannello sopra le dirette)."""
-        out = []
-        for sec in self.sections:
-            for sid in sec.get("items", []):
-                s = self.services.get(sid)
-                if s and s.get("onair") and sid not in hidden and sid not in out:
-                    out.append(sid)
-        return out
+    def live_channels(self, selection, hidden=()):
+        """I canali scelti dall'utente, nell'ordine scelto (home, pannello, Guida TV)."""
+        from .channels import clean_selection
+        return [c for c in clean_selection(selection, self.channels) if c not in hidden]
 
-    def ui(self):
-        """Quello che serve al launcher per disegnare la home (stesso formato della V1)."""
-        return {"sections": self.sections, "other_services": self.other,
+    def ui(self, selection=()):
+        """Quello che serve al launcher per disegnare la home: la sezione dei canali in diretta
+        ("channels": true) prende i canali scelti dall'utente."""
+        secs = [dict(s, items=self.live_channels(selection)) if s.get("channels") else s for s in self.sections]
+        return {"sections": secs, "other_services": self.other,
                 "services": {sid: {k: s[k] for k in UI_FIELDS if k in s}
                              for sid, s in self.services.items()}}

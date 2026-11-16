@@ -35,8 +35,7 @@
     "sections": [
       { "title": "", "big": true,
         "items": ["raiplay", "mediaset", "youtube", "altri", "impostazioni"] },
-      { "title": "Canali in diretta",
-        "items": ["rai1", "rai2", "rai3", "rete4", "canale5", "italia1", "realtime", "dmax", "nove"] }
+      { "title": "Canali in diretta", "channels": true }
     ],
     "other": ["siti", "mediaset_web", "discovery", "raiplay_web", "la7", "raiplaysound", "plutotv", "netflix"]
   },
@@ -58,38 +57,8 @@
                       "icon": "gear", "color": "#374151" },
     "siti":         { "kind": "page", "page": "siti", "label": "I miei siti", "icon": "globe", "color": "#0e7490" },
 
-    "rai1":      { "kind": "hbbtv", "identity": "samsung_tv", "live": true, "onair": "rai:Rai 1",
-                   "label": "Rai 1", "icon": "tv", "color": "#1e3a8a",
-                   "url": "https://www.raiplay.it/hbbtv/wsA6DXk6W7Khjpn3/RaiPlay2020/index.html?type=RaiPlay%20Diretta%20Item&path_id=%2Fdirette%2Frai1.json" },
-    "rai2":      { "kind": "hbbtv", "identity": "samsung_tv", "live": true, "onair": "rai:Rai 2",
-                   "label": "Rai 2", "icon": "tv", "color": "#1e3a8a",
-                   "url": "https://www.raiplay.it/hbbtv/wsA6DXk6W7Khjpn3/RaiPlay2020/index.html?type=RaiPlay%20Diretta%20Item&path_id=%2Fdirette%2Frai2.json" },
-    "rai3":      { "kind": "hbbtv", "identity": "samsung_tv", "live": true, "onair": "rai:Rai 3",
-                   "label": "Rai 3", "icon": "tv", "color": "#1e3a8a",
-                   "url": "https://www.raiplay.it/hbbtv/wsA6DXk6W7Khjpn3/RaiPlay2020/index.html?type=RaiPlay%20Diretta%20Item&path_id=%2Fdirette%2Frai3.json" },
-    "rainews24": { "kind": "hbbtv", "identity": "samsung_tv", "live": true, "onair": "rai:Rai News 24",
-                   "label": "Rai News 24", "icon": "tv", "color": "#1e3a8a",
-                   "url": "https://www.raiplay.it/hbbtv/wsA6DXk6W7Khjpn3/RaiPlay2020/index.html?type=RaiPlay%20Diretta%20Item&path_id=%2Fdirette%2Frainews24.json" },
 
-    "canale5":   { "kind": "web", "live": true, "onair": "ms:C5", "block": ["trackers"],
-                   "label": "Canale 5", "icon": "tv", "color": "#115e59",
-                   "url": "https://mediasetinfinity.mediaset.it/diretta/canale5_cC5" },
-    "italia1":   { "kind": "web", "live": true, "onair": "ms:I1", "block": ["trackers"],
-                   "label": "Italia 1", "icon": "tv", "color": "#115e59",
-                   "url": "https://mediasetinfinity.mediaset.it/diretta/italia1_cI1" },
-    "rete4":     { "kind": "web", "live": true, "onair": "ms:R4", "block": ["trackers"],
-                   "label": "Rete 4", "icon": "tv", "color": "#115e59",
-                   "url": "https://mediasetinfinity.mediaset.it/diretta/rete4_cR4" },
 
-    "realtime":  { "kind": "web", "live": true, "onair": "wbd:realtime",
-                   "label": "Real Time", "icon": "tv", "color": "#9d174d",
-                   "url": "https://www.discoveryplus.com/channel/watch/1b4dfb81-d38a-5508-a4f3-ab9938aa0c8c/2c96b2f2-ff68-5662-964d-825a8506e626" },
-    "dmax":      { "kind": "web", "live": true, "onair": "wbd:dmaxit",
-                   "label": "DMAX", "icon": "tv", "color": "#9a3412",
-                   "url": "https://www.discoveryplus.com/channel/watch/da3cc7e5-a1e9-5c03-ac00-edc598104362/012782b6-b7c5-5db4-ae2a-23465bdab0d4" },
-    "nove":      { "kind": "web", "live": true, "onair": "wbd:nove",
-                   "label": "Nove", "icon": "tv", "color": "#1e40af",
-                   "url": "https://www.discoveryplus.com/channel/watch/daf976fa-2a48-5fcb-99ac-7c6e3dc340d5/772eea69-b375-5448-8fcc-4bcd29b7e2a0" },
 
     "discovery":    { "kind": "web", "label": "discovery+", "subtitle": "Real Time, DMAX, Nove… gratis",
                       "icon": "play", "color": "#1d4ed8", "auto_fullscreen": true,

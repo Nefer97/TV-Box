@@ -211,8 +211,9 @@ def upcoming(progs, now=None, hours=12):
 class EPG:
     """Programmi in onda per tutti i canali, aggiornati al massimo una volta al minuto."""
 
-    def __init__(self, services):
+    def __init__(self, services, enabled=None):
         self.services = services
+        self.enabled = enabled or (lambda: list(services))   # canali di cui scaricare il programma in onda
         self.lock = threading.Lock()
         self.t = 0.0
         self.data = {}
@@ -220,7 +221,7 @@ class EPG:
         self.guides = {}                    # "rai:Rai 1" -> (istante, programmi della giornata)
 
     def keys(self):
-        return {s["onair"] for s in self.services.values() if s.get("onair")}
+        return {self.services[i]["onair"] for i in self.enabled() if self.services.get(i, {}).get("onair")}
 
     def onair(self):
         with self.lock:

@@ -73,7 +73,7 @@ class TV:
         self.display.on_trial_expired = lambda: self.post(self.display.revert)
         self.cdp = CDP(cfg.opt("chrome.cdp_port", 9222), inject_scripts(cfg.opt("chrome.force_h264", True)))
         self.browser = Browser(cfg, self.launcher_url, self.display.scale_factor)
-        self.epg = EPG(self.services)
+        self.epg = EPG(self.services, enabled=self.channel_list)
         self.sites = Sites(prefs)
         self.mediaset = Mediaset(prefs)
         self.input = vinput
@@ -98,6 +98,10 @@ class TV:
         self.sleep_at = 0.0                # timer di spegnimento: istante (0 = spento)
         self.sleep_warned = False
         self.asleep = False                # schermo spento dal timer
+
+    def channel_list(self):
+        """I canali in diretta scelti dall'utente, in ordine."""
+        return self.cfg.live_channels(self.prefs.get("channels"), self.prefs.get("hidden"))
 
     # ---------- coda delle azioni ----------
     def post(self, fn, *args):
@@ -137,7 +141,7 @@ class TV:
         if url.startswith(self.launcher_url):
             return keys.Context(on_launcher=True, pointer=self.pointer)
         s = self.service_for(url)
-        live = bool(s.get("onair")) and s.get("id") == self.current
+        live = bool(s.get("live")) and s.get("id") == self.current
         player = bool(s.get("player_keys")) and self.is_player()
         return keys.Context(panel=self.panel_active(), pointer=self.pointer, kind=s["kind"],
                             live=live, player=player, assist=bool(s.get("assist")))
@@ -372,7 +376,7 @@ class TV:
             threading.Thread(target=self._panel_unbook, args=(sid, pending), daemon=True).start()
         if s["live"] and s["kind"] == "web":
             threading.Thread(target=self._kick_live, daemon=True).start()
-        if s.get("onair"):                    # canale in diretta: riparte da qui all'accensione
+        if s["live"]:                         # canale in diretta: riparte da qui all'accensione
             self.prefs.set("last_channel", sid)
             if not self._switching:
                 threading.Thread(target=self._banner, args=(sid,), daemon=True).start()
@@ -437,8 +441,9 @@ class TV:
         except Exception as ex:
             log.warning("palinsesti: %s", ex)
         chans = []
-        for sid in self.cfg.live_channels(self.prefs.get("hidden")):
-            s, o = self.services[sid], od.get(self.services[sid]["onair"]) or {}
+        for sid in self.channel_list():
+            s = self.services[sid]
+            o = od.get(s.get("onair") or "") or {}
             chans.append({"id": sid, "label": s["label"], "color": s.get("color"),
                           "title": o.get("title", ""), "start": o.get("start", 0), "end": o.get("end", 0),
                           "image": o.get("image", ""), "desc": (o.get("desc") or "")[:300]})
