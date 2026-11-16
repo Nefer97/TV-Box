@@ -2,10 +2,10 @@
 // tvd lo inietta solo quando serve, insieme a js/cards.js (le schede, uguali alla home) e
 // allo stile css/tokens.css + css/cards.css (window.__tvCardsCSS). I tasti arrivano da tvd:
 // la pagina sotto non li vede e il video continua dietro.
-//   __tvp.open({channels:[{id,label,color,title,start,end,image,desc}], current, vol, videoLow})
+//   __tvp.open({channels:[{id,label,color,title,start,end,image,desc}], current, videoLow, sleep})
 //   __tvp.move('left'|'right')   __tvp.ok() -> azione per tvd   __tvp.set(chiave, valore)   __tvp.close()
 (function () {
-  const V = 17;                       // versione: una più nuova sostituisce quella già caricata
+  const V = 18;                       // versione: una più nuova sostituisce quella già caricata
   if (window.__tvp && window.__tvp.v === V) return;
   try { window.__tvp && window.__tvp.close(); } catch (e) {}
   const old = document.getElementById('__tvpanel');
@@ -28,7 +28,7 @@
     background: linear-gradient(to top, rgba(11,16,32,.97) 0%, rgba(11,16,32,.93) 62%, rgba(11,16,32,0) 100%);
     font-family: var(--font); color: var(--fg); }
   .head { display: flex; align-items: center; margin: 0 0 1.4vh; }
-  .clock { font-size: 3.4vh; font-weight: 800; letter-spacing: -.01em; }
+  .clock { margin-left: auto; font-size: 3.4vh; font-weight: 800; letter-spacing: -.01em; }
   .viewport { overflow: hidden; padding: 1.4vh 1.2vw; margin: -1.4vh -1.2vw;
     -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 5vw), transparent 100%); }
   .viewport.scrolled { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 4vw, #000 calc(100% - 5vw), transparent 100%); }
@@ -43,16 +43,9 @@
   .detail { margin-top: 2.4vh; min-height: 9vh; max-width: 70vw; }
   .detail .dtitle { font-size: 3.2vh; }
   .detail .ddesc { -webkit-line-clamp: 1; font-size: 2vh; margin-top: .5vh; }
-  .keys { margin-top: 2.2vh; }
-  /* volume: si regola con + e − del telecomando */
-  .vol { display: flex; align-items: center; gap: .8vw; margin: 0 2.4vw 0 auto; font-size: 2.2vh;
-    font-weight: 600; color: var(--muted); transition: color .15s; }
-  .vol .vb { width: 11vw; height: 1vh; border-radius: .5vh; background: rgba(255,255,255,.18); overflow: hidden; }
-  .vol .vb i { display: block; height: 100%; background: var(--accent); border-radius: .5vh; transition: width .12s; }
-  .vol .n { min-width: 3.6vw; text-align: right; }
-  .vol.hot { color: #fff; }`;
+  .keys { margin-top: 2.2vh; }`;
 
-  let host = null, root = null, data = null, idx = 0, timer = 0, hot = false, hotT = 0, open = false;
+  let host = null, root = null, data = null, idx = 0, timer = 0, open = false;
   const TIMEOUT = 20000;
   const el = (tag, cls, text) => {
     const e = document.createElement(tag);
@@ -83,16 +76,7 @@
     return e;
   }
 
-  function volBox() {
-    const v = el('div', 'vol' + (hot ? ' hot' : ''));
-    v.appendChild(el('span', '', '🔊'));
-    const vb = el('span', 'vb'), i = el('i');
-    i.style.width = (data.vol || 0) + '%';
-    vb.appendChild(i);
-    v.appendChild(vb);
-    v.appendChild(el('span', 'n', data.vol != null ? data.vol + '%' : ''));
-    return v;
-  }
+
 
   function render() {
     if (!host) {
@@ -109,7 +93,7 @@
     const h = el('div', 'sec-title');
     h.appendChild(el('span', 'dot'));
     h.appendChild(document.createTextNode('Canali in diretta'));
-    head.append(h, volBox(), el('div', 'clock', clock()));
+    head.append(h, el('div', 'clock', clock()));   // il volume lo mostra la barra in alto a destra (osd.js)
     const vp = el('div', 'viewport'), row = el('div', 'row'), now = Date.now();
     entries().forEach(x => {
       if (!x.ch) { row.appendChild(C.action(x)); return; }
@@ -240,16 +224,11 @@
       if (x.k === 'video') return { act: 'video', on: !data.videoLow };
       return { act: x.k };
     },
-    set(k, v) {                      // aggiorna un valore senza perdere la scheda scelta
+    set(k, v) {                      // aggiorna un valore (busy, videoLow, sleep) e ridisegna
       if (!open) return false;
       arm();
       data[k] = v;
-      if (k !== 'vol') { render(); return true; }
-      hot = true;                    // solo l'indicatore del volume: le immagini non lampeggiano
-      const o = root.querySelector('.vol');
-      if (o) o.replaceWith(volBox());
-      clearTimeout(hotT);
-      hotT = setTimeout(() => { hot = false; const e = root && root.querySelector('.vol'); if (e) e.classList.remove('hot'); }, 1200);
+      render();
       return true;
     },
   };

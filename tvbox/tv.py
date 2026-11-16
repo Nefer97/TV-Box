@@ -486,7 +486,9 @@ class TV:
         self.cdp.js("__tvp.move", key, timeout=3)
 
     def panel_volume(self, key):
-        self.cdp.js("__tvp.set", "vol", self.volume(self._step(key)), timeout=3)
+        v = self.volume(self._step(key))
+        if v is not None:
+            self.osd_volume(v)                      # stessa barra del volume di quando si guarda
 
     def panel_ok(self, key=None):
         r = self.cdp.eval("window.__tvp ? __tvp.ok() : null", timeout=3)
