@@ -257,7 +257,17 @@ class TV:
     def player_volume(self, key):
         v = self.volume(self._step(key))
         if v is not None:
-            self.toast(f"🔊  Volume {v}%")
+            self.osd_volume(v)
+
+    def osd_volume(self, v):
+        """Barra del volume in alto a destra (inject/osd.js), aggiornata a ogni pressione."""
+        try:
+            if not self.cdp.eval(f"!!(window.__tvosd && __tvosd.volume && __tvosd.volume({int(v)}))", timeout=3):
+                js = overlay_script("osd.js")
+                if js:
+                    self.cdp.eval(f"{js}\n;window.__tvosd.volume({int(v)})", timeout=5)
+        except Exception as ex:
+            log.debug("volume a schermo: %s", ex)
 
     def player_seek(self, key):
         sec = -int(self.cfg.opt("player.seek_back_s", 10)) if key == "left" \
@@ -367,8 +377,9 @@ class TV:
         self.panel = self.pointer = False
         self._prepare(s)
         pending = None
-        if s["live"] and not self._switching:    # diretta aperta dalla home: solo il sipario
-            pending = self._book({"channels": [{"id": sid, "label": s["label"], "color": s.get("color")}],
+        if (s["live"] or s.get("curtain")) and not self._switching:   # diretta o episodio: il sipario
+            label = s.get("curtain_label") or s["label"]
+            pending = self._book({"channels": [{"id": sid, "label": label, "color": s.get("color")}],
                                   "current": sid, "curtain": True, "curtainOnly": True})
         self.current, self.opened_url = sid, s["url"]
         self.cdp.call("Page.navigate", {"url": s["url"]})
@@ -392,12 +403,13 @@ class TV:
             "shield": True, "block": ["ads"], "mobile": bool(saved.get("mobile"))}, {})
         self.open("__sito")
 
-    def open_episode(self, url, series):
+    def open_episode(self, url, series, label=""):
         """Episodio Mediaset scelto nella sezione Mediaset: la pagina del video del sito, a tutto
-        schermo, senza tracciamenti; MENU torna alla pagina della serie nella TV."""
+        schermo, senza tracciamenti, con il sipario finché non parte; MENU torna alla serie."""
         self.services["__episodio"] = normalize_service("__episodio", {
             "kind": "web", "label": "Mediaset Infinity", "url": url, "auto_fullscreen": True,
-            "block": ["trackers"], "return_to": "ms:" + series}, {})
+            "block": ["trackers"], "return_to": "ms:" + series, "curtain": True,
+            "curtain_label": label or "l'episodio", "color": "#0f766e"}, {})
         self.open("__episodio")
         threading.Thread(target=self._kick_live, daemon=True).start()   # avvio con l'audio
 

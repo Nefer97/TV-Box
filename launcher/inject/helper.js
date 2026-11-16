@@ -35,9 +35,11 @@
       let d = document.getElementById('__tvtoast');
       if (!d) {
         d = document.createElement('div'); d.id = '__tvtoast';
-        d.style.cssText = 'position:fixed;left:50%;bottom:8vh;transform:translateX(-50%);' +
-          'z-index:2147483647;background:rgba(0,0,0,.82);color:#fff;font:600 34px/1.2 sans-serif;' +
-          'padding:18px 36px;border-radius:18px;pointer-events:none;transition:opacity .3s';
+        // stesso stile degli altri riquadri della TV (pannello, banner, volume)
+        d.style.cssText = 'position:fixed;left:50%;bottom:9vh;transform:translateX(-50%);' +
+          'z-index:2147483647;background:rgba(11,16,32,.9);color:#f4f6fb;' +
+          'font:700 3.2vh/1.2 "Noto Sans","DejaVu Sans",sans-serif;padding:1.8vh 2.6vw;border-radius:2.4vh;' +
+          'box-shadow:0 1.6vh 4vh rgba(0,0,0,.5);pointer-events:none;transition:opacity .25s;white-space:nowrap';
         (document.fullscreenElement && document.fullscreenElement.tagName !== 'VIDEO'
           ? document.fullscreenElement : document.documentElement).appendChild(d);
       }

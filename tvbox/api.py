@@ -121,7 +121,8 @@ def make_routes(tv):
             if not is_episode_url(q.get("url")):
                 return {"ok": False, "error": "Episodio non valido"}
             tv.mediaset.remember(q)
-            tv.post(tv.open_episode, q["url"], q.get("series", ""))
+            label = " · ".join(x for x in (q.get("title"), q.get("ep")) if x)
+            tv.post(tv.open_episode, q["url"], q.get("series", ""), label)
             return {"ok": True}
         return tv.mediaset.rails()
 

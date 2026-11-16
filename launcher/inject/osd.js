@@ -3,7 +3,7 @@
 // (window.__tvCardsCSS). Non riceve tasti: sparisce da solo.
 //   __tvosd.show({label, color, now: {title, start, end, image}, next: {title, start}})
 (function () {
-  const V = 2;
+  const V = 3;
   if (window.__tvosd && window.__tvosd.v === V) return;
   const C = window.TVCards;
   const CSS = `
@@ -91,5 +91,45 @@
     if (host) { try { host.hidePopover(); host.showPopover(); } catch (e) {} }
   }, true);
 
-  window.__tvosd = { v: V, show, hide };
+  // ---------- barra del volume (in alto a destra, si aggiorna a ogni + −) ----------
+  const VCSS = `
+  :host { all: initial; }
+  .vol { position: fixed; top: 6vh; right: 4vw; display: flex; align-items: center; gap: 1.4vw;
+    padding: 1.8vh 1.8vw; border-radius: 2.4vh; font-family: var(--font); color: var(--fg);
+    background: rgba(11,16,32,.9); box-shadow: 0 1.6vh 4vh rgba(0,0,0,.5);
+    opacity: 0; transform: translateY(-1.5vh); transition: opacity .2s ease, transform .2s ease; }
+  .vol.in { opacity: 1; transform: none; }
+  .vol svg { width: 4vh; height: 4vh; flex: 0 0 auto; }
+  .bar { width: 18vw; height: 1.1vh; border-radius: .6vh; background: rgba(255,255,255,.18); overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: .6vh; background: var(--accent); transition: width .12s ease; }
+  .n { min-width: 4.5vw; text-align: right; font-size: 3.2vh; font-weight: 800; font-variant-numeric: tabular-nums; }`;
+  const SPK = '<path d="M11 5 6 9H2v6h4l5 4z" fill="currentColor"/>';
+  const WAVES = '<path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
+  const MUTE = '<path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
+  let vhost = null, vroot = null, vt = 0;
+  function volume(v) {
+    v = Math.max(0, Math.min(100, Math.round(v)));
+    if (!vhost || !vhost.isConnected) {
+      vhost = document.createElement('div');
+      vhost.id = '__tvvol';
+      vhost.setAttribute('popover', 'manual');
+      vhost.style.cssText = 'all:initial;position:fixed;inset:0 0 auto auto;margin:0;padding:0;border:0;' +
+        'background:transparent;z-index:2147483647;overflow:visible';
+      vroot = vhost.attachShadow({ mode: 'open' });
+      vroot.innerHTML = '<style>' + (window.__tvCardsCSS || '') + VCSS + '</style>' +
+        '<div class="vol"><svg viewBox="0 0 24 24"></svg><div class="bar"><i></i></div><div class="n"></div></div>';
+      (document.body || document.documentElement).appendChild(vhost);
+    }
+    try { if (!vhost.matches(':popover-open')) vhost.showPopover(); } catch (e) {}
+    const box = vroot.querySelector('.vol');
+    vroot.querySelector('svg').innerHTML = SPK + (v ? WAVES : MUTE);
+    vroot.querySelector('.bar i').style.width = v + '%';
+    vroot.querySelector('.n').textContent = v;
+    requestAnimationFrame(() => box.classList.add('in'));
+    clearTimeout(vt);
+    vt = setTimeout(() => { box.classList.remove('in'); }, 2000);
+    return true;
+  }
+
+  window.__tvosd = { v: V, show, hide, volume };
 })();
