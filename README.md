@@ -2,8 +2,8 @@
 
 **Una Smart TV fatta in casa con un Mac mini del 2007.**
 Debian 13, Google Chrome in modalità kiosk e un demone Python trasformano un vecchio Mac mini
-in un box TV comandato dall'Apple Remote: canali in diretta Rai, Mediaset e Warner Bros.
-Discovery con guida TV, YouTube, RaiPlay, i tuoi siti preferiti, meteo e salvaschermo.
+in un box TV comandato dall'Apple Remote: 39 canali in diretta Rai, Mediaset e Discovery con
+guida TV, fiction e serie di Mediaset Infinity, YouTube, RaiPlay, i tuoi siti, meteo e salvaschermo.
 
 ![Home con un canale in diretta selezionato](docs/screenshots/home-diretta.png)
 
@@ -11,8 +11,12 @@ Discovery con guida TV, YouTube, RaiPlay, i tuoi siti preferiti, meteo e salvasc
 
 ## Cosa fa
 
-- **Canali in diretta** (Rai 1, 2, 3, Rete 4, Canale 5, Italia 1, Real Time, DMAX, Nove), ognuno
-  con il programma in onda, la barra di avanzamento, la descrizione e l'immagine.
+- **Canali in diretta**: un catalogo di 39 canali (Rai, Mediaset, Discovery); scegli dalla TV quali
+  mettere nella home e in che ordine. Ognuno con programma in onda, avanzamento, descrizione e immagine.
+- **Mediaset Infinity per la TV**: fiction e serie in righe di locandine, pagina della serie con
+  stagioni ed episodi, "Continua a guardare"; l'episodio parte a tutto schermo.
+- **Dirette che si riparano da sole**: se il video resta fermo la TV riapre il canale, e se il sito
+  chiede di accedere lo mostra invece dello schermo nero.
 - **Guida TV**: i programmi delle prossime ore per ogni canale; OK sul programma in onda lo apre.
 - **Pannello cambio canale sopra il video**: MENU (o ◄ ►) durante una diretta; il pannello
   resta a schermo mentre il canale nuovo si carica, con un sipario scuro e il cerchio di
@@ -36,8 +40,12 @@ Discovery con guida TV, YouTube, RaiPlay, i tuoi siti preferiti, meteo e salvasc
 | *Guida TV* | *Pannello cambio canale sopra una diretta* |
 | ![Cambio canale](docs/screenshots/cambio-canale.png) | ![Banner del programma](docs/screenshots/banner.png) |
 | *Mentre il canale nuovo si carica* | *Banner all'apertura di un canale* |
-| ![Impostazioni](docs/screenshots/impostazioni.png) | ![Salvaschermo](docs/screenshots/salvaschermo.png) |
-| *Impostazioni* | *Salvaschermo* |
+| ![Mediaset Infinity](docs/screenshots/mediaset.png) | ![Una serie Mediaset](docs/screenshots/mediaset-serie.png) |
+| *Mediaset Infinity: fiction e serie* | *Stagioni ed episodi di una serie* |
+| ![Impostazioni](docs/screenshots/impostazioni.png) | ![Canali in diretta](docs/screenshots/canali.png) |
+| *Impostazioni* | *Scelta e ordine dei canali* |
+| ![Salvaschermo](docs/screenshots/salvaschermo.png) | |
+| *Salvaschermo* | |
 
 ## Hardware
 
@@ -133,6 +141,10 @@ TV_HOST=192.168.1.x ./deploy.sh     # se tv.local non risponde
 | `/etc/X11/xorg.conf.d/20-tvbox-video.conf` | driver video e risoluzioni per la TV |
 | `/var/log/tvbox/tvd.log` | registro di tvd (leggibile anche da `admin`) |
 
+I canali in diretta vengono dal catalogo in [tvbox/channels.py](tvbox/channels.py) (indirizzi e
+palinsesti di Rai, Mediaset e Discovery); quali compaiono e in che ordine si sceglie dalla TV
+(Impostazioni → Home e meteo → Canali in diretta).
+
 Ogni servizio in `config.json` ha un **tipo** che decide come si comporta col telecomando:
 `hbbtv` (app per TV come RaiPlay), `tvapp` (YouTube TV), `web` (siti normali) o `page`
 (pagine del launcher). Un canale in diretta è un servizio con `"live": true` e `"onair"`:
@@ -146,11 +158,17 @@ Ogni servizio in `config.json` ha un **tipo** che decide come si comporta col te
 
 ```bash
 python3 -m unittest discover -s tests -v     # prove automatiche (senza Chrome né telecomando)
+bash tools/uitest.sh                         # prove della grafica in Chromium sul PC (serve internet)
 ```
 
-Le prove coprono la logica del telecomando (doppioni, ripetizioni, pressioni lunghe), la
-tabella dei tasti, la configurazione, le preferenze, i palinsesti e la risoluzione.
-`deploy.sh` le esegue prima di ogni installazione.
+Le prove automatiche coprono la logica del telecomando (doppioni, ripetizioni, pressioni lunghe),
+la tabella dei tasti, la configurazione, le preferenze, i palinsesti, il catalogo Mediaset e la
+sorveglianza delle dirette. Le prove della grafica aprono home, Guida TV, Impostazioni, canali e
+Mediaset come col telecomando e controllano contenuti, misure ed errori JavaScript.
+`deploy.sh` le esegue entrambe prima di ogni installazione.
+
+`tools/vmtest.sh` prova un'installazione da zero in una macchina virtuale (Debian 13 ufficiale):
+è lenta e scalda il PC, quindi di serie usa un solo processore a priorità bassa.
 
 ## Limiti noti
 
@@ -168,7 +186,8 @@ tabella dei tasti, la configurazione, le preferenze, i palinsesti e la risoluzio
 
 ```
 tvd.py                avvio di tvd
-tvbox/                il demone, un modulo per compito (vedi tvbox/__init__.py)
+tvbox/                il demone, un modulo per compito (vedi tvbox/__init__.py):
+                        canali, Mediaset, pannello, timer, sorveglianza delle dirette…
 config.json           servizi e canali
 launcher/             la home: index.html, css/, js/ (+ hls.js in vendor/)
 launcher/inject/      script iniettati nelle pagine dei servizi (pannello, banner, …)
@@ -177,7 +196,8 @@ install.sh            installazione su Debian 13 (--update / --rollback per gli 
 deploy.sh             aggiornamento dal PC
 prepare-disk.sh       installazione del disco del Mac mini da un altro PC
 tests/                prove automatiche
-tools/                diagnostica, Wi-Fi da riga di comando e script di prova
+tools/                prove della grafica (uitest), installazione in VM (vmtest),
+                        diagnostica, Wi-Fi da riga di comando
 docs/screenshots/     le immagini di questo file
 ```
 

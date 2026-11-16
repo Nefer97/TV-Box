@@ -90,10 +90,16 @@ await open('mediaset');
 await check('righe di locandine', `document.querySelectorAll('.poster').length >= 10`);
 await check('logo o titolo della serie scelta', `!!document.getElementById('ms-name').textContent`);
 await check('misure delle locandine', SIZES);
+await press('right');
+await check('foto della serie sullo sfondo', `document.getElementById('ms-bg').classList.contains('on')`);
+await check('logo della serie', `document.getElementById('ms-logo').classList.contains('ok')`);
+await sleep(800);
 await shot('mediaset');
 await press('ok');
 await check('pagina della serie con episodi', `document.querySelectorAll('.msep').length >= 1`);
 await check('episodio scelto leggibile (fondo bianco)', `getComputedStyle(document.activeElement).backgroundColor === 'rgb(255, 255, 255)'`);
+await until(`document.getElementById('mss-logo').classList.contains('ok')`, 8000);
+await sleep(1500);
 await shot('serie');
 
 console.log('errori JavaScript:', errors.length ? errors : 'nessuno');
