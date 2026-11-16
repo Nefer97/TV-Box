@@ -20,7 +20,7 @@ class Watch:
         if now - self.opened_at < GRACE or (st or {}).get("user") or (t is not None and t != self.last_t):
             self.last_t, self.moved_at = t, now
             return False
-        if now - self.moved_at < STALL:
+        if now - max(self.moved_at, self.opened_at + GRACE) < STALL:     # il tempo di partenza non conta
             return False
         self.done = True
         return True
