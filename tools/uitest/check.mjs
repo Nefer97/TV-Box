@@ -84,6 +84,11 @@ await check('gruppo Home e meteo', `document.body.dataset.page === 'set-home'`);
 await press('ok');
 await check('canali in diretta: elenco', `document.querySelectorAll('#channels-list .btn').length >= 20`, 15000);
 await shot('canali');
+await press('back');
+await check('di nuovo nel gruppo Home e meteo', `document.body.dataset.page === 'set-home'`, 4000);
+await press('down', 'ok');
+await check('riquadri della home: servizi, nessun canale', `(() => { const t = [...document.querySelectorAll('#homeedit-list .btn')].map(b => b.textContent);
+  return t.length >= 5 && t.some(x => x.includes('YouTube')) && !t.some(x => /Rai 1|Canale 5/.test(x)); })()`, 6000);
 
 console.log('mediaset');
 await open('mediaset');

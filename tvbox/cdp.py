@@ -137,7 +137,7 @@ class CDP:
 
     def js(self, fn, *args, timeout=4, gesture=False):
         """Chiama una funzione JS con argomenti passati in JSON (niente stringhe montate a mano):
-        js("__tvp.move", "left") -> window.__tvp && __tvp.move("left")."""
+        js("__nav.move", "left") -> (window.__nav ? __nav.move("left") : null)."""
         obj = fn.rsplit(".", 1)[0]
         call = f"{fn}({', '.join(json.dumps(a) for a in args)})"
         return self.eval(f"(window.{obj} ? {call} : null)", timeout=timeout, gesture=gesture)

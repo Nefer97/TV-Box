@@ -4,7 +4,6 @@ I tasti arrivano dal telecomando come eventi; dispatch() capisce lo stato (keys.
 legge nella tabella quale azione fare (keys.action_for) e chiama il metodo con quel nome.
 Tutte le azioni girano una alla volta nel thread "worker" (coda), come in V1.
 """
-import json
 import queue
 import re
 import subprocess
@@ -13,16 +12,18 @@ import time
 from urllib.parse import urlparse
 
 from . import keys
-from .browser import Browser, inject_scripts, overlay_script, panel_script
+from .actions import Actions
+from .browser import Browser, inject_scripts
 from .cdp import CDP
 from .config import normalize_service
 from .display import Display
 from .epg import EPG
-from .actions import Actions
-from .health import HealthMixin, Watch
-from .panel import PanelMixin
-from .sleep import SleepMixin
+from .health import HealthMixin
+from .layer import LayerMixin
 from .mediaset import Mediaset
+from .panel import PanelMixin
+from .session import Session
+from .sleep import SleepMixin
 from .sites import Sites, normalize_url
 from .util import log
 
@@ -49,7 +50,7 @@ BLOCKLISTS = {
 NO_SERVICE = normalize_service("", {}, {})      # pagina che non appartiene a nessun servizio
 
 
-class TV(Actions, PanelMixin, SleepMixin, HealthMixin):
+class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
     def __init__(self, cfg, prefs, vinput=None):
         self.cfg, self.prefs = cfg, prefs
         self.launcher_url = f"http://127.0.0.1:{cfg.opt('http_port', 8765)}/"
@@ -66,8 +67,7 @@ class TV(Actions, PanelMixin, SleepMixin, HealthMixin):
         self.remote = None                 # RemoteLogic (per /api/info)
         self.actions = queue.Queue()
         # stato
-        self.current = None                # id del servizio aperto
-        self.opened_url = None
+        self.session = None                # cosa si sta guardando (session.Session), None = home
         self.pointer = False
         self.panel = False
         self.mode = keys.LAUNCHER          # ultimo stato calcolato (riusato nelle ripetizioni)
@@ -80,16 +80,19 @@ class TV(Actions, PanelMixin, SleepMixin, HealthMixin):
         self._player_since = 0.0
         self._noplayer_since = 0.0
         self._resumed = False              # ultimo canale già riaperto all'avvio
-        self._health = None                # sorveglianza della diretta aperta (health.Watch)
-        self._reopens = []
-        self._switching = False            # cambio canale dal pannello in corso (niente banner)
+        self._reopens = []                 # riaperture recenti delle dirette ferme
         self.sleep_at = 0.0                # timer di spegnimento: istante (0 = spento)
         self.sleep_warned = False
         self.asleep = False                # schermo spento dal timer
 
     def channel_list(self):
         """I canali in diretta scelti dall'utente, in ordine."""
-        return self.cfg.live_channels(self.prefs.get("channels"), self.prefs.get("hidden"))
+        return self.cfg.live_channels(self.prefs.get("channels"))
+
+    @property
+    def current(self):
+        """Id del canale o servizio che si sta guardando (None: home, sito, episodio)."""
+        return self.session.sid if self.session else None
 
     # ---------- coda delle azioni ----------
     def post(self, fn, *args):
@@ -129,7 +132,7 @@ class TV(Actions, PanelMixin, SleepMixin, HealthMixin):
         if url.startswith(self.launcher_url):
             return keys.Context(on_launcher=True, pointer=self.pointer)
         s = self.service_for(url)
-        live = bool(s.get("live")) and s.get("id") == self.current
+        live = bool(self.session and self.session.live and s is self.session.service)
         player = bool(s.get("player_keys")) and self.is_player()
         return keys.Context(panel=self.panel_active(), pointer=self.pointer, kind=s["kind"],
                             live=live, player=player, assist=bool(s.get("assist")))
@@ -145,13 +148,10 @@ class TV(Actions, PanelMixin, SleepMixin, HealthMixin):
         return (url if url is not None else self.url()).startswith(self.launcher_url)
 
     def service_for(self, url):
-        """Il servizio a cui appartiene la pagina (quello aperto, o uno con lo stesso sito)."""
-        cur = self.services.get(self.current or "")
-        if cur and self.opened_url and url.startswith(self.opened_url.rstrip("/")):
-            return cur
+        """Il servizio a cui appartiene la pagina (quello della visione, o uno con lo stesso sito)."""
+        if self.session and self.session.owns(url):
+            return self.session.service
         host = urlparse(url).hostname or ""
-        if cur and cur.get("url") and urlparse(cur["url"]).hostname == host:
-            return cur
         for s in self.services.values():
             if s.get("url") and urlparse(s["url"]).hostname == host:
                 return s
@@ -167,12 +167,6 @@ class TV(Actions, PanelMixin, SleepMixin, HealthMixin):
             v = False
         self._player_cache = (time.monotonic(), v)
         return v
-
-    def toast(self, msg):
-        try:
-            self.cdp.js("__tv.toast", msg, timeout=2)
-        except Exception:
-            pass
 
     def volume(self, delta=0):
         ctl = self.cfg.opt("audio.mixer", "Master")
@@ -246,66 +240,48 @@ class TV(Actions, PanelMixin, SleepMixin, HealthMixin):
         except Exception as ex:
             log.warning("vista/protezione: %s", ex)
 
-    def _clear_dark(self):
-        if self.dark_default:
-            try:
-                self.cdp.call("Emulation.setDefaultBackgroundColorOverride", {})
-            except Exception:
-                pass
-            self.dark_default = False
-
-    def open(self, sid, keep_dark=False):
+    # ---------- aprire e chiudere una visione ----------
+    def open(self, sid):
+        """Apre un canale o un servizio (id del catalogo o di config.json)."""
         s = self.services.get(sid)
-        if not s or not s.get("url"):
-            return
-        if not keep_dark:
-            self._clear_dark()
-        log.info("apro %s", sid)
-        self.panel = self.pointer = False
-        self._prepare(s)
-        pending = None
-        if (s["live"] or s.get("curtain")) and not self._switching:   # diretta o episodio: il sipario
-            label = s.get("curtain_label") or s["label"]
-            pending = self._book({"channels": [{"id": sid, "label": label, "color": s.get("color")}],
-                                  "current": sid, "curtain": True, "curtainOnly": True})
-        self.current, self.opened_url = sid, s["url"]
-        self._health = Watch(sid, time.monotonic())
-        self.cdp.call("Page.navigate", {"url": s["url"]})
-        if pending:
-            threading.Thread(target=self._panel_unbook, args=(sid, pending), daemon=True).start()
-        if s["live"] and s["kind"] == "web":
-            threading.Thread(target=self._kick_live, daemon=True).start()
-        if s["live"]:                         # canale in diretta: riparte da qui all'accensione
-            self.prefs.set("last_channel", sid)
-            if not self._switching:
-                threading.Thread(target=self._banner, args=(sid,), daemon=True).start()
+        if s and s.get("url"):
+            self.start(Session.for_service(s))
 
     def open_url(self, url):
         """Apre un indirizzo scelto dall'utente (I miei siti)."""
         u = normalize_url(url)
-        if not u:
-            return
-        saved = self.sites.find(u) or {}
-        self.services["__sito"] = normalize_service("__sito", {
-            "kind": "web", "label": urlparse(u).hostname, "url": u, "auto_fullscreen": True,
-            "shield": True, "block": ["ads"], "mobile": bool(saved.get("mobile"))}, {})
-        self.open("__sito")
+        if u:
+            self.start(Session.site(u, mobile=(self.sites.find(u) or {}).get("mobile")))
 
     def open_episode(self, url, series, label=""):
-        """Episodio Mediaset scelto nella sezione Mediaset: la pagina del video del sito, a tutto
-        schermo, senza tracciamenti, con il sipario finché non parte; MENU torna alla serie."""
-        self.services["__episodio"] = normalize_service("__episodio", {
-            "kind": "web", "label": "Mediaset Infinity", "url": url, "auto_fullscreen": True,
-            "block": ["trackers"], "return_to": "ms:" + series, "curtain": True,
-            "curtain_label": label or "l'episodio", "color": "#0f766e"}, {})
-        self.open("__episodio")
-        threading.Thread(target=self._kick_live, daemon=True).start()   # avvio con l'audio
+        """Episodio Mediaset scelto nella sezione Mediaset (MENU torna alla serie)."""
+        self.start(Session.episode(url, series, label))
 
-    def _kick_live(self):
-        """Dirette web: avvia il video con l'audio e lo mette a tutto schermo appena può."""
+    def start(self, sess, panel=None):
+        """Mette a schermo una visione. Le regole (sipario, banner, avvio, ultimo canale) sono
+        della visione; panel = dati del pannello da tenere a schermo (cambio dal pannello)."""
+        log.info("apro %s", sess)
+        self.panel = self.pointer = False
+        self.session = sess
+        self._prepare(sess.service)
+        if sess.curtain or panel:                # la pagina nuova nasce con sipario e/o pannello
+            self.book(curtain=sess.title if sess.curtain else None, panel=panel)
+        else:
+            self.clear_dark()
+        self.cdp.call("Page.navigate", {"url": sess.url})
+        if sess.kick:
+            threading.Thread(target=self._kick_live, args=(sess,), daemon=True).start()
+        if sess.remember:
+            self.prefs.set("last_channel", sess.sid)
+        if sess.banner and not panel:
+            threading.Thread(target=self._banner, args=(sess,), daemon=True).start()
+
+    def _kick_live(self, sess):
+        """Video delle dirette web e degli episodi: lo avvia con l'audio e lo mette a tutto
+        schermo appena può."""
         deadline = time.monotonic() + 30
         time.sleep(3)
-        while time.monotonic() < deadline:
+        while time.monotonic() < deadline and self.session is sess:
             try:
                 if self.cdp.eval("!!(window.__tv && __tv.kick())", timeout=4, gesture=True):
                     return
@@ -317,9 +293,9 @@ class TV(Actions, PanelMixin, SleepMixin, HealthMixin):
         log.info("HOME")
         self.panel = self.pointer = False
         self.display.set_lowres(False)
-        self.current = self.opened_url = None
+        self.session = None
         self.prefs.set("last_channel", None)            # spento dalla home: si riparte dalla home
-        self._clear_dark()
+        self.clear_dark()
         self._prepare(NO_SERVICE)
         self.cdp.close_other_pages()
         self.cdp.call("Page.navigate", {"url": self.launcher_url + (f"#{page}" if page else "")})
@@ -372,8 +348,12 @@ class TV(Actions, PanelMixin, SleepMixin, HealthMixin):
     def _auto_fullscreen_tick(self, url):
         if self.on_launcher(url):
             return
-        s = self.services.get(self.current or "") or self.service_for(url)
-        if s["kind"] != "web" or not (s.get("auto_fullscreen") or s["live"]):
+        if self.session:
+            auto = self.session.auto_fullscreen
+        else:
+            s = self.service_for(url)
+            auto = s["kind"] == "web" and bool(s.get("auto_fullscreen"))
+        if not auto:
             return
         if self.cdp.eval("!!(window.__tv && __tv.autoCandidate())", timeout=3):
             log.info("schermo intero automatico")

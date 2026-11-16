@@ -23,7 +23,7 @@ class FakeTV:
         self.cfg = Config.load([ROOT + "/config.json"]); self.prefs = Prefs(tempfile.mkdtemp())
         self.services = self.cfg.services; self.sites = Sites(self.prefs); self.mediaset = Mediaset(self.prefs)
         self.epg = EPG(self.services, enabled=self.channel_list); self.remote = None
-    def channel_list(self): return self.cfg.live_channels(self.prefs.get("channels"), self.prefs.get("hidden"))
+    def channel_list(self): return self.cfg.live_channels(self.prefs.get("channels"))
     def post(self, *a): pass
     def sleep_left(self): return 0
     def sleep_set(self, m): return {"minutes": m}
@@ -38,6 +38,11 @@ class H(http.server.SimpleHTTPRequestHandler):
     def log_message(s, *a): pass
     def do_GET(s):
         u = urlparse(s.path)
+        if u.path.startswith("/__test/"):            # pagine finte per tvtest.py (pages/)
+            name = os.path.basename(u.path)
+            try: body = open(os.path.join(ROOT, "tools/uitest/pages", name), "rb").read()
+            except OSError: return s.send_error(404)
+            s.send_response(200); s.send_header("Content-Type", "text/html; charset=utf-8"); s.send_header("Content-Length", str(len(body))); s.end_headers(); return s.wfile.write(body)
         if not u.path.startswith("/api/"): return super().do_GET()
         ep, q = u.path[5:], {k: v[0] for k, v in parse_qs(u.query).items()}
         res = STUB[ep] if ep in STUB else ROUTES[ep](q)

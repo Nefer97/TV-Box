@@ -1,7 +1,8 @@
 #!/bin/bash
-# uitest.sh — prove della grafica sul PC: launcher vero + API vere (TV finta) in Chromium senza
-# schermo. Serve internet (palinsesti, catalogo Mediaset) e Chromium + Node già presenti:
-# non installa niente. Se mancano, avvisa e non blocca.
+# uitest.sh — prove sul PC in Chromium senza schermo (servono Chromium e Node già presenti: non
+# installa niente; se mancano, avvisa e non blocca):
+#   1. grafica: launcher vero + API vere con una TV finta (check.mjs; serve internet)
+#   2. dialogo tvd ↔ Chrome: la vera classe TV con canali finti (tvtest.py; niente internet)
 #   bash tools/uitest.sh            (le foto restano in /tmp/tvbox-uitest)
 set -u
 cd "$(dirname "$0")/.."
@@ -22,4 +23,6 @@ for _ in $(seq 30); do
   curl -s -o /dev/null "http://127.0.0.1:$CDP/json/version" && curl -s -o /dev/null "http://127.0.0.1:$SRV/" && break
   sleep 0.5
 done
-node tools/uitest/check.mjs $CDP $SRV "$OUT"
+node tools/uitest/check.mjs $CDP $SRV "$OUT" || exit 1
+# il dialogo tvd ↔ Chrome con la vera classe TV e canali finti (niente internet)
+python3 -u tools/uitest/tvtest.py $CDP $SRV "$OUT"

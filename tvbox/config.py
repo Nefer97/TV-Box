@@ -83,15 +83,15 @@ class Config:
             node = node[part]
         return node
 
-    def live_channels(self, selection, hidden=()):
+    def live_channels(self, selection):
         """I canali scelti dall'utente, nell'ordine scelto (home, pannello, Guida TV)."""
         from .channels import clean_selection
-        return [c for c in clean_selection(selection, self.channels) if c not in hidden]
+        return clean_selection(selection, self.channels)
 
     def ui(self, selection=()):
         """Quello che serve al launcher per disegnare la home: la sezione dei canali in diretta
         ("channels": true) prende i canali scelti dall'utente."""
         secs = [dict(s, items=self.live_channels(selection)) if s.get("channels") else s for s in self.sections]
-        return {"sections": secs, "other_services": self.other,
+        return {"sections": secs, "other": self.other,
                 "services": {sid: {k: s[k] for k in UI_FIELDS if k in s}
                              for sid, s in self.services.items()}}

@@ -1,11 +1,8 @@
 """Preferenze dell'utente (scelte fatte dalla TV), tutte in ~/.config/tvbox/prefs.json.
 
-La V1 le teneva in quattro file (siti.json, home.json, meteo.json, screen.json): al primo
-avvio vengono lette e riunite qui; i file vecchi restano dove sono (copia di sicurezza).
-
 Contenuto:
     sites   [{"label", "url", "home": bool, "mobile": bool}]   I miei siti
-    hidden  ["id", ...]                                         riquadri nascosti
+    hidden  ["id", ...]                                         riquadri nascosti (non i canali)
     meteo   {"name", "lat", "lon"} | None                       città del meteo
     screen  {"mode": "auto" | "LxA", "video_low": bool}         risoluzione
     startup "last" | "home"                                     all'accensione: ultimo canale o home
@@ -13,15 +10,20 @@ Contenuto:
     saver_off  minuti                                           schermo spento dopo tanto salvaschermo (0 = mai)
     ms_history [{"series","title","poster","episode","n","t"}]  Mediaset: Continua a guardare
     channels   ["rai1", ...]                                    canali in diretta scelti, in ordine
+
+Versioni del file: 2 = V2/V3; 3 = V4 (i canali non si nascondono più con "hidden": un canale
+nascosto con la V3 esce dalla scelta dei canali).
 """
 import copy
 import os
 import threading
 
+from .channels import DEFAULT as DEFAULT_CHANNELS, IDS as CHANNEL_IDS
 from .util import USER_DIR, log, read_json, write_json
 
+VERSION = 3
 DEFAULTS = {
-    "version": 2,
+    "version": VERSION,
     "sites": [],
     "hidden": [],
     "meteo": None,
@@ -30,7 +32,7 @@ DEFAULTS = {
     "last_channel": None,
     "saver_off": 60,
     "ms_history": [],
-    "channels": ["rai1", "rai2", "rai3", "rete4", "canale5", "italia1", "realtime", "dmax", "nove"],
+    "channels": list(DEFAULT_CHANNELS),
 }
 
 
@@ -41,35 +43,30 @@ class Prefs:
         self.lock = threading.RLock()
         self.data = self._load()
 
-    # ---------- lettura / migrazione ----------
+    # ---------- lettura ----------
     def _load(self):
         d = read_json(self.path)
-        if isinstance(d, dict):
-            return self._clean(d)
-        d = self._from_v1()
-        try:
-            write_json(self.path, d)
-            log.info("preferenze: create in %s", self.path)
-        except OSError as ex:
-            log.warning("preferenze non salvate: %s", ex)
+        if not isinstance(d, dict):
+            d = {}
+        old = d.get("version")
+        d = self._clean(self._upgrade(d))
+        if old != VERSION:
+            try:
+                write_json(self.path, d)
+                log.info("preferenze: %s (versione %s)", self.path, VERSION)
+            except OSError as ex:
+                log.warning("preferenze non salvate: %s", ex)
         return d
 
-    def _from_v1(self):
-        old = lambda name: read_json(os.path.join(self.folder, name))   # noqa: E731
-        d = copy.deepcopy(DEFAULTS)
-        sites = old("siti.json")
-        if isinstance(sites, list):
-            d["sites"] = sites
-        home = old("home.json")
-        if isinstance(home, dict):
-            d["hidden"] = home.get("hidden", [])
-        meteo = old("meteo.json")
-        if isinstance(meteo, dict):
-            d["meteo"] = meteo
-        screen = old("screen.json")
-        if isinstance(screen, dict):
-            d["screen"].update({k: screen[k] for k in ("mode", "video_low") if k in screen})
-        return self._clean(d)
+    @staticmethod
+    def _upgrade(d):
+        """Dalla versione 2: i canali nascosti escono dalla scelta e da "hidden"."""
+        if d.get("version") == 2 and isinstance(d.get("hidden"), list):
+            gone = {x for x in d["hidden"] if x in CHANNEL_IDS}
+            if isinstance(d.get("channels"), list):
+                d["channels"] = [x for x in d["channels"] if x not in gone]
+            d["hidden"] = [x for x in d["hidden"] if x not in gone]
+        return d
 
     @staticmethod
     def _clean(d):
@@ -83,7 +80,7 @@ class Prefs:
                 for x in sites if isinstance(x, dict) and isinstance(x.get("url"), str)]
         hidden = d.get("hidden")
         if isinstance(hidden, list):
-            out["hidden"] = [x for x in hidden if isinstance(x, str)]
+            out["hidden"] = [x for x in hidden if isinstance(x, str) and x not in CHANNEL_IDS]
         m = d.get("meteo")
         if isinstance(m, dict) and {"name", "lat", "lon"} <= m.keys():
             try:
@@ -104,7 +101,7 @@ class Prefs:
             out["saver_off"] = d["saver_off"]
         ch = d.get("channels")
         if isinstance(ch, list):
-            out["channels"] = [x for x in ch if isinstance(x, str)][:60]
+            out["channels"] = [x for x in ch if isinstance(x, str)][:60] or list(DEFAULT_CHANNELS)
         h = d.get("ms_history")
         if isinstance(h, list):
             out["ms_history"] = [x for x in h if isinstance(x, dict) and isinstance(x.get("series"), str)

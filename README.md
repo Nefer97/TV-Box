@@ -116,7 +116,7 @@ Crea MBR + ext4, Debian 13 minimale con GRUB in modalità BIOS, l'utente `admin`
 Dal PC con la cartella del progetto, con il Mac mini acceso in rete:
 
 ```bash
-./deploy.sh                 # prove automatiche, copia, installazione (chiede la password di admin)
+./deploy.sh                 # prove, verifica degli indirizzi, copia, installazione (chiede la password di admin)
 ./deploy.sh --rollback      # torna alla versione installata prima
 TV_HOST=192.168.1.x ./deploy.sh     # se tv.local non risponde
 ```
@@ -136,8 +136,8 @@ TV_HOST=192.168.1.x ./deploy.sh     # se tv.local non risponde
 
 | File | Cosa contiene |
 |---|---|
-| `/etc/tvbox/config.json` | servizi, canali, sezioni della home, identità, tempi del telecomando |
-| `~tv/.config/tvbox/prefs.json` | scelte fatte dalla TV: siti, meteo, schermo, riquadri nascosti, accensione |
+| `/etc/tvbox/config.json` | servizi, sezioni della home, identità, tempi del telecomando |
+| `~tv/.config/tvbox/prefs.json` | scelte fatte dalla TV: canali, siti, meteo, schermo, riquadri nascosti, accensione |
 | `/etc/X11/xorg.conf.d/20-tvbox-video.conf` | driver video e risoluzioni per la TV |
 | `/var/log/tvbox/tvd.log` | registro di tvd (leggibile anche da `admin`) |
 
@@ -147,25 +147,31 @@ palinsesti di Rai, Mediaset e Discovery); quali compaiono e in che ordine si sce
 
 Ogni servizio in `config.json` ha un **tipo** che decide come si comporta col telecomando:
 `hbbtv` (app per TV come RaiPlay), `tvapp` (YouTube TV), `web` (siti normali) o `page`
-(pagine del launcher). Un canale in diretta è un servizio con `"live": true` e `"onair"`:
+(pagine del launcher):
 
 ```json
-"rai1": { "kind": "hbbtv", "identity": "samsung_tv", "live": true, "onair": "rai:Rai 1",
-          "label": "Rai 1", "icon": "tv", "color": "#1e3a8a", "url": "https://www.raiplay.it/hbbtv/…" }
+"la7": { "kind": "web", "label": "La7 diretta", "icon": "tv", "color": "#9a3412",
+         "auto_fullscreen": true, "url": "https://www.la7.it/dirette-tv" }
 ```
+
+Requisiti e architettura (come è fatta tvbox e perché) sono in [docs/](docs/).
 
 ## Sviluppo
 
 ```bash
 python3 -m unittest discover -s tests -v     # prove automatiche (senza Chrome né telecomando)
-bash tools/uitest.sh                         # prove della grafica in Chromium sul PC (serve internet)
+bash tools/uitest.sh                         # grafica e dialogo tvd ↔ Chrome in Chromium sul PC
+python3 tools/checklinks.py                  # gli indirizzi di Rai, Mediaset e Discovery funzionano ancora?
 ```
 
 Le prove automatiche coprono la logica del telecomando (doppioni, ripetizioni, pressioni lunghe),
-la tabella dei tasti, la configurazione, le preferenze, i palinsesti, il catalogo Mediaset e la
-sorveglianza delle dirette. Le prove della grafica aprono home, Guida TV, Impostazioni, canali e
-Mediaset come col telecomando e controllano contenuti, misure ed errori JavaScript.
-`deploy.sh` le esegue entrambe prima di ogni installazione.
+la tabella dei tasti, la configurazione, le preferenze, i palinsesti, il catalogo Mediaset, le
+regole di "cosa si sta guardando" e la sorveglianza delle dirette. Le prove della grafica aprono
+home, Guida TV, Impostazioni, canali e Mediaset come col telecomando e controllano contenuti,
+misure ed errori JavaScript. Poi la vera classe TV guida Chromium con tre canali finti (pagine
+locali con un video disegnato al momento): sipario, schermo intero, banner, volume, pannello,
+cambio canale, pausa, diretta ferma riaperta, episodio e ritorno alla serie.
+`deploy.sh` esegue tutto prima di ogni installazione; gli indirizzi esterni danno solo un avviso.
 
 `tools/vmtest.sh` prova un'installazione da zero in una macchina virtuale (Debian 13 ufficiale):
 è lenta e scalda il PC, quindi di serie usa un solo processore a priorità bassa.
@@ -187,17 +193,19 @@ Mediaset come col telecomando e controllano contenuti, misure ed errori JavaScri
 ```
 tvd.py                avvio di tvd
 tvbox/                il demone, un modulo per compito (vedi tvbox/__init__.py):
-                        canali, Mediaset, pannello, timer, sorveglianza delle dirette…
+                        visione, strato TV, canali, Mediaset, timer, sorveglianza…
 config.json           servizi e canali
 launcher/             la home: index.html, css/, js/ (+ hls.js in vendor/)
-launcher/inject/      script iniettati nelle pagine dei servizi (pannello, banner, …)
+launcher/inject/      script iniettati nelle pagine dei servizi (strato TV, player, …)
 system/               file di sistema: X, autologin, rete, udev, watchdog, sudoers
 install.sh            installazione su Debian 13 (--update / --rollback per gli aggiornamenti)
 deploy.sh             aggiornamento dal PC
 prepare-disk.sh       installazione del disco del Mac mini da un altro PC
 tests/                prove automatiche
-tools/                prove della grafica (uitest), installazione in VM (vmtest),
-                        diagnostica, Wi-Fi da riga di comando
+tools/                prove della grafica e del dialogo con Chrome (uitest), indirizzi
+                        esterni (checklinks), installazione in VM (vmtest), diagnostica,
+                        Wi-Fi da riga di comando
+docs/                 requisiti, architettura e screenshot
 docs/screenshots/     le immagini di questo file
 ```
 

@@ -1,4 +1,5 @@
 """Avvio di Google Chrome in modalità kiosk e script iniettati nelle pagine."""
+import functools
 import json
 import os
 import signal
@@ -25,19 +26,17 @@ def inject_scripts(force_h264=True):
     return out
 
 
-def overlay_script(name):
-    """Un riquadro sopra le pagine (inject/<name>) con le schede e lo stile della home."""
+@functools.lru_cache(maxsize=1)
+def layer_script():
+    """Lo strato TV (inject/layer.js) con le schede e lo stile della home (js/cards.js,
+    css/tokens.css, css/cards.css). Letto una volta: cambia solo con un aggiornamento."""
     parts = [read_text(os.path.join(LAUNCHER_DIR, f)) for f in
-             ("js/cards.js", "css/tokens.css", "css/cards.css", "inject/" + name)]
+             ("js/cards.js", "css/tokens.css", "css/cards.css", "inject/layer.js")]
     if not all(parts):
-        return None
+        log.error("strato TV: file mancanti")
+        return ""
     cards_js, tokens, cards_css, js = parts
     return cards_js + "\n;window.__tvCardsCSS = " + json.dumps(tokens + "\n" + cards_css) + ";\n" + js
-
-
-def panel_script():
-    """Pannello cambio canale (inject/panel.js)."""
-    return overlay_script("panel.js")
 
 
 class Browser:

@@ -190,8 +190,9 @@ function channelMenu(c, n) {
 export function homeEditPage(focusId) {
   const CFG = state.CFG, list = $('#homeedit-list'), hidden = new Set(CFG.hidden || []), where = {};
   list.innerHTML = '';
-  CFG.sections.forEach(sec => sec.items.forEach(id => { where[id] = sec.title || 'Home'; }));
-  (CFG.other_services || []).forEach(id => { where[id] = where[id] || 'Altri servizi'; });
+  // i canali non sono qui: si scelgono in "Canali in diretta"
+  CFG.sections.filter(sec => !sec.channels).forEach(sec => sec.items.forEach(id => { where[id] = sec.title || 'Home'; }));
+  (CFG.other || []).forEach(id => { where[id] = where[id] || 'Altri servizi'; });
   Object.keys(where).forEach(id => {
     const s = CFG.services[id];
     if (!s || id === 'impostazioni') return;
