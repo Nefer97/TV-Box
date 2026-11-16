@@ -49,9 +49,25 @@
   };
   T.toggle = () => {
     const v = T.main(); if (!v) return false;
-    if (v.paused) { v.play().catch(() => {}); T.toast('▶  Riproduci'); }
-    else { v.pause(); T.toast('❚❚  Pausa'); }
+    if (v.paused) { delete v.dataset.tvUserPaused; v.play().catch(() => {}); T.toast('▶  Riproduci'); }
+    else { v.dataset.tvUserPaused = '1'; v.pause(); T.toast('❚❚  Pausa'); }   // pausa voluta: non è un blocco
     return true;
+  };
+  // stato del video per la sorveglianza di tvd (dirette che si fermano)
+  T.health = () => {
+    const v = T.main();
+    if (!v) return { video: false };
+    return { video: true, t: v.currentTime, paused: v.paused, user: !!v.dataset.tvUserPaused,
+             ended: v.ended, ready: v.readyState };
+  };
+  // il sito sta chiedendo di accedere? (finestra in primo piano con "accedi", "login"…)
+  T.loginWall = () => {
+    for (const d of document.querySelectorAll('[role=dialog],[aria-modal=true],[class*=modal i],[class*=popup i],[class*=overlay i],[class*=login i]')) {
+      const r = d.getBoundingClientRect();
+      if (r.width < innerWidth * 0.2 || r.height < innerHeight * 0.15) continue;
+      if (/\b(accedi|accesso|registrati|login|sign in)\b/i.test(d.innerText || '')) return true;
+    }
+    return false;
   };
   T.seek = (d) => {
     const v = T.main(); if (!v) return false;

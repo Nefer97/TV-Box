@@ -20,6 +20,7 @@ from tvbox.epg import (parse_mediaset, parse_mediaset_listings, parse_rai, parse
 from tvbox.prefs import Prefs  # noqa: E402
 from tvbox.remote import RemoteLogic  # noqa: E402
 from tvbox.sites import normalize_url  # noqa: E402
+from tvbox.health import Watch, may_reopen  # noqa: E402
 from tvbox.mediaset import episodes_of, is_episode_url, parse_series  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -340,6 +341,38 @@ class MediasetTest(unittest.TestCase):
         self.assertTrue(is_episode_url("https://mediasetinfinity.mediaset.it/video/x/ep_F1"))
         self.assertFalse(is_episode_url("https://evil.it/video/x"))
         self.assertFalse(is_episode_url("https://mediasetinfinity.mediaset.it/diretta/canale5"))
+
+
+class HealthTest(unittest.TestCase):
+    def test_partenza_e_avanzamento(self):
+        w = Watch("canale5", 0)
+        self.assertFalse(w.step({"t": None}, 10))                # ancora in partenza
+        for k in range(30, 120, 2):
+            self.assertFalse(w.step({"t": k}, k))                # avanza: tutto bene
+
+    def test_fermo_una_volta_sola(self):
+        w = Watch("canale5", 0)
+        w.step({"t": 5}, 26)
+        self.assertFalse(w.step({"t": 5}, 40))                   # fermo da 14 s: si aspetta
+        self.assertTrue(w.step({"t": 5}, 47))                    # fermo da 21 s: bloccato
+        self.assertFalse(w.step({"t": 5}, 60))                   # già gestito
+
+    def test_pausa_voluta(self):
+        w = Watch("canale5", 0)
+        for k in range(26, 200, 2):
+            self.assertFalse(w.step({"t": 5, "user": True}, k))
+
+    def test_nessun_video(self):
+        w = Watch("canale5", 0)
+        w.step({}, 26)
+        self.assertTrue(w.step({}, 50))                          # nero senza video: bloccato
+
+    def test_riaperture(self):
+        ok, h = may_reopen([0, 100, 200], 300)
+        self.assertFalse(ok)
+        ok, h = may_reopen([0, 100, 200], 700)
+        self.assertTrue(ok)
+        self.assertEqual(h, [200])
 
 
 if __name__ == "__main__":

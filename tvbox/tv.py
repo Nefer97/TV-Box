@@ -18,6 +18,7 @@ from .cdp import CDP
 from .config import normalize_service
 from .display import Display
 from .epg import EPG
+from .health import Watch, may_reopen
 from .mediaset import Mediaset
 from .sites import Sites, normalize_url
 from .util import log
@@ -94,6 +95,8 @@ class TV:
         self._player_since = 0.0
         self._noplayer_since = 0.0
         self._resumed = False              # ultimo canale già riaperto all'avvio
+        self._health = None                # sorveglianza della diretta aperta (health.Watch)
+        self._reopens = []
         self._switching = False            # cambio canale dal pannello in corso (niente banner)
         self.sleep_at = 0.0                # timer di spegnimento: istante (0 = spento)
         self.sleep_warned = False
@@ -382,6 +385,7 @@ class TV:
             pending = self._book({"channels": [{"id": sid, "label": label, "color": s.get("color")}],
                                   "current": sid, "curtain": True, "curtainOnly": True})
         self.current, self.opened_url = sid, s["url"]
+        self._health = Watch(sid, time.monotonic())
         self.cdp.call("Page.navigate", {"url": s["url"]})
         if pending:
             threading.Thread(target=self._panel_unbook, args=(sid, pending), daemon=True).start()
@@ -643,6 +647,35 @@ class TV:
         if since and time.time() * 1000 - since > off * 60000:
             self.post(self.sleep_now, "salvaschermo")
 
+    # ---------- dirette che si riparano da sole ----------
+    def _health_tick(self, url):
+        """Ogni 2 s: il video della diretta avanza? Fermo da 20 s (senza una pausa voluta):
+        si toglie l'allargamento; se il sito chiede di accedere lo si dice, altrimenti si
+        riapre il canale (al massimo 3 volte in 10 minuti)."""
+        h, s = self._health, self.services.get(self.current or "", {})
+        if not h or h.cid != self.current or not (s.get("live") or s.get("curtain")) or h.done:
+            return
+        if self.panel or self.asleep or self.on_launcher(url):
+            return
+        now = time.monotonic()
+        st = self.cdp.eval("window.__tv && __tv.health ? __tv.health() : null", timeout=3) or {}
+        if not h.step(st, now):
+            return
+        log.warning("diretta ferma: %s (%s)", self.current, st)
+        self.cdp.eval("window.__tv && __tv.exitFull()", timeout=3)
+        time.sleep(1)
+        if self.cdp.eval("!!(window.__tv && __tv.loginWall && __tv.loginWall())", timeout=3):
+            self.toast("Il sito chiede di accedere · tieni premuto OK per il puntatore")
+            return
+        ok, self._reopens = may_reopen(self._reopens, now)
+        if not s.get("live") or not ok:
+            self.toast("Il video si è fermato · MENU per tornare indietro")
+            return
+        self._reopens.append(now)
+        self.toast("La diretta si è fermata: la riavvio")
+        time.sleep(1.5)
+        self.post(self.open, self.current)
+
     # ---------- all'accensione: ultimo canale ----------
     def _resume(self):
         self._resumed = True
@@ -728,6 +761,7 @@ class TV:
                 url = self.url()
                 self._auto_fullscreen_tick(url)
                 self._saver_tick(url)
+                self._health_tick(url)
                 if self.display.video_mode:
                     self._video_res_tick(not self.on_launcher(url) and self.is_player())
                 if self.shield_script:               # popup in nuove schede: chiusi
