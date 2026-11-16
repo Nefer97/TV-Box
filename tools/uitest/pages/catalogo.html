@@ -1,0 +1,49 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Catalogo di prova</title>
+<!-- Sito finto per tvtest.py, fatto come i cataloghi alla Netflix: file di locandine che
+     mostrano 5 titoli alla volta (gli altri dopo la freccina, che è solo un'icona) e
+     anteprime che si allargano al passaggio del mouse. -->
+<style>
+  body { margin: 0; background: #141414; color: #fff; font: 18px sans-serif; }
+  h2 { margin: 30px 40px 10px; }
+  .slider { position: relative; overflow: hidden; margin: 0 40px; height: 150px; }
+  .track { display: flex; gap: 12px; transition: transform .3s; }
+  .tile { flex: 0 0 210px; height: 140px; background: #333; border-radius: 6px; cursor: pointer;
+          display: flex; align-items: flex-end; padding: 8px; box-sizing: border-box; }
+  .tile.big { transform: scale(1.6); z-index: 5; background: #555; }
+  .handle { position: absolute; top: 0; bottom: 0; width: 36px; background: rgba(0,0,0,.5); cursor: pointer; }
+  .handleNext { right: 0; } .handlePrev { left: 0; }
+</style>
+<h2>Popolari</h2>
+<div class="slider" id="s1"><div class="track"></div>
+  <span class="handle handlePrev" role="button" aria-label="Vedi titoli precedenti"></span>
+  <span class="handle handleNext" role="button" aria-label="Vedi altri titoli"></span></div>
+<h2>Novità</h2>
+<div class="slider" id="s2"><div class="track"></div>
+  <span class="handle handlePrev" role="button" aria-label="Vedi titoli precedenti"></span>
+  <span class="handle handleNext" role="button" aria-label="Vedi altri titoli"></span></div>
+<script>
+  window.__hovered = 0; window.__paged = 0; window.__opened = '';
+  document.querySelectorAll('.slider').forEach((sl, k) => {
+    const tr = sl.querySelector('.track');
+    let page = 0;
+    for (let i = 1; i <= 15; i++) {
+      const t = document.createElement('div');
+      t.className = 'tile'; t.textContent = (k ? 'Novità ' : 'Titolo ') + i;
+      t.style.visibility = i <= 5 ? 'visible' : 'hidden';          // fuori dalla pagina: non esistono a schermo
+      t.onmouseover = () => { window.__hovered++; t.classList.add('big'); };
+      t.onmouseout = () => t.classList.remove('big');
+      t.onclick = () => { window.__opened = t.textContent; };
+      tr.appendChild(t);
+    }
+    const show = () => {
+      tr.style.transform = `translateX(${-page * 5 * 222}px)`;
+      [...tr.children].forEach((t, i) => { t.style.visibility = Math.floor(i / 5) === page ? 'visible' : 'hidden'; });
+      sl.querySelector('.handlePrev').style.display = page ? '' : 'none';     // come Netflix: niente "indietro" all'inizio
+    };
+    show();
+    sl.querySelector('.handleNext').onclick = () => { if (page < 2) { page++; window.__paged++; show(); } };
+    sl.querySelector('.handlePrev').onclick = () => { if (page > 0) { page--; window.__paged++; show(); } };
+  });
+</script>

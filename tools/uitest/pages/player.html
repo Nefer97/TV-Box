@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Player di prova</title>
+<!-- Player finto per tvtest.py: video a tutta finestra (come Netflix) e il pulsante
+     "Salta intro" che sparisce quando lo si preme. -->
+<style>
+  body { margin: 0; background: #000; overflow: hidden; }
+  video { position: fixed; inset: 0; width: 100vw; height: 100vh; }
+  button { position: fixed; right: 60px; bottom: 120px; font: 22px sans-serif; padding: 14px 26px; }
+</style>
+<video id="v" autoplay muted playsinline></video>
+<button id="skip" aria-label="Salta intro">Salta intro</button>
+<script>
+  window.__skipped = 0;
+  const c = document.createElement('canvas'); c.width = 320; c.height = 180;
+  const g = c.getContext('2d'); let k = 0;
+  document.getElementById('v').srcObject = c.captureStream(25);
+  setInterval(() => { g.fillStyle = `hsl(${(k++ * 5) % 360},60%,35%)`; g.fillRect(0, 0, 320, 180); }, 40);
+  document.getElementById('skip').onclick = e => { window.__skipped++; e.target.remove(); };
+</script>

@@ -173,7 +173,11 @@
     if (r.top < 60 || r.bottom > innerHeight - 60 || r.left < 0 || r.right > innerWidth)
       el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
     try { el.focus({ preventScroll: true }); } catch (e) {}
-    try { el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })); } catch (e) {}
+    // passaggio del mouse simulato (menu che si aprono al passaggio), salvo i siti dove fa
+    // partire anteprime che si allargano sopra le locandine vicine (servizio con "hover": false)
+    if (!(window.__tvFlags && window.__tvFlags.hover === false)) {
+      try { el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })); } catch (e) {}
+    }
     place();
     clearInterval(raf); let n = 0;
     raf = setInterval(() => { place(); if (++n > 12) clearInterval(raf); }, 60);  // segue lo scroll
@@ -201,9 +205,54 @@
         if (far < innerHeight * 0.9) best = near;
       }
     }
+    // file di locandine che mostrano pochi titoli alla volta (Netflix, caroselli): a fine fila
+    // si preme la freccina della fila invece di saltare a un'altra riga o fuori dallo schermo
+    if (dir === 'left' || dir === 'right') {
+      const pg = pager(dir, from);
+      if (pg && (!best || best.el === pg || pg.contains(best.el) || !sameRow(from, best.r) || !inView(best.r))) {
+        pageRow(dir, from, pg);
+        return 'paged';
+      }
+    }
     if (best) { focusEl(best.el); schedule(); return 'moved'; }
     scrollBy(dir);
     return 'scroll';
+  }
+
+  // ---------- caroselli ----------
+  const sameRow = (a, b) => Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > Math.min(a.height, b.height) * 0.5;
+  const PAGER = {
+    right: /next|success|avanti|altri|forward|destra|right/i,
+    left: /prev|precedent|indietro|back|sinistra|left/i,
+  };
+  // la freccina della fila: senza testo (solo un'icona), alla stessa altezza della scheda e
+  // dal lato giusto, riconoscibile dal nome ("Vedi altri titoli", "next", handleNext…)
+  const isPager = (el, dir) => (el.innerText || '').trim().length <= 2 && PAGER[dir].test(
+    [el.getAttribute('aria-label'), el.getAttribute('title'), typeof el.className === 'string' ? el.className : ''].join(' '));
+  function pager(dir, from) {
+    let best = null, bd = Infinity;
+    for (const el of document.querySelectorAll('button, [role=button], a, [aria-label], [class*=next i], [class*=prev i], [class*=handle i], [class*=arrow i]')) {
+      if (!isPager(el, dir)) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width < 4 || r.height < 4) continue;
+      if (Math.min(r.bottom, from.bottom) - Math.max(r.top, from.top) < from.height * 0.4) continue;
+      const cx = r.left + r.width / 2, fx = from.left + from.width / 2;   // centri: la scheda può essere ingrandita
+      if (dir === 'right' ? cx <= fx : cx >= fx) continue;
+      const d = dir === 'right' ? r.left - from.right : from.left - r.right;
+      if (d < bd) { bd = d; best = el; }
+    }
+    return best;
+  }
+  function pageRow(dir, from, el) {
+    el.click();
+    // la fila scorre: poi si sceglie il primo titolo nuovo (da sinistra andando avanti)
+    setTimeout(() => {
+      rebuild();
+      const row = candidates().filter(c => inView(c.r) && sameRow(from, c.r) && c.r.left >= -2 && c.r.right <= innerWidth + 2)
+        .sort((a, b) => dir === 'right' ? a.r.left - b.r.left : b.r.left - a.r.left);
+      const pick = row.find(c => !c.el.contains(el) && !isPager(c.el, 'left') && !isPager(c.el, 'right')) || row[0];
+      if (pick) focusEl(pick.el);
+    }, 750);
   }
 
   // ---------- OK ----------

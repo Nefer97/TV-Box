@@ -91,10 +91,10 @@ viene registrato per il prossimo documento e nasce con la pagina, già blu e con
 
 | Script | Compito |
 |---|---|
-| `helper.js` (`__tv`) | video principale, pausa/salti, schermo intero senza la scritta di Chrome, stato per la sorveglianza, richiesta di accesso |
+| `helper.js` (`__tv`) | video principale, pausa/salti, schermo intero senza la scritta di Chrome, stato per la sorveglianza, richiesta di accesso, pulsanti "Salta intro" / "Episodio successivo" |
 | `h264.js` | chiede ai siti H.264 (il Mac lo decodifica meglio) |
 | `osk.js` | tastiera a schermo nei campi di testo |
-| `nav.js` (`__nav`) | navigazione assistita: il riquadro giallo |
+| `nav.js` (`__nav`) | navigazione assistita: il riquadro giallo; a fine fila preme la freccina dei caroselli (Netflix) |
 | `shield.js` | cookie, finestre e riquadri pubblicitari (solo per i siti) |
 | `hbbtv.js` + hls.js | simulatore HbbTV per le app per TV (solo se Chrome si presenta come TV) |
 
@@ -133,7 +133,7 @@ Moduli ES in `js/`: `core.js` (API, stato, navigazione con le frecce), `home.js`
 | Voglio… | File |
 |---|---|
 | un canale nuovo | `tvbox/channels.py` (+ `tools/checklinks.py` lo verifica da solo) |
-| un servizio nuovo nella home | `config.json` |
+| un servizio nuovo nella home | `config.json` (per player esigenti: `"player_control": "keys"`, `"hover": false`, vedi `tvbox/config.py`) |
 | cambiare cosa fa un tasto | `tvbox/keys.py` (`KEYMAP`) |
 | un riquadro nuovo sopra le pagine | un pezzo in `layer.js` + un metodo che chiama `self.layer(...)` |
 | una regola nuova per dirette/episodi | `tvbox/session.py` + `tests/` |
@@ -142,7 +142,8 @@ Moduli ES in `js/`: `core.js` (API, stato, navigazione con le frecce), `home.js`
 
 ## 11. Rimasti come sono (scelte consapevoli)
 
-- `nav.js`, `osk.js`, `shield.js`, `hbbtv.js` vengono dalla V1: funzionano e non sono stati
-  riscritti; non hanno prove automatiche proprie.
+- `osk.js`, `shield.js`, `hbbtv.js` vengono dalla V1: funzionano e non sono stati riscritti;
+  non hanno prove automatiche proprie. `nav.js` è provato da `tvtest.py` su un catalogo finto
+  (file di locandine con freccina, anteprime, player con "Salta intro").
 - Le pagine delle Impostazioni sono in parte scritte in `index.html` e in parte generate in JS
   (elenchi): è voluto, le voci fisse restano leggibili nell'HTML.

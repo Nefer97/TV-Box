@@ -11,6 +11,12 @@ Ogni servizio ha un "kind" che decide come si comporta col telecomando:
 
 Le identità (user agent) hanno un nome in "identities" e i servizi le citano con
 "identity"; "block" elenca liste di indirizzi da bloccare ("ads", "trackers").
+
+Per i siti con un player esigente:
+    "player_control": "keys"   pausa e salti con i tasti del sito (spazio, frecce) invece di
+                               comandare il video direttamente (Netflix va in errore, M7375)
+    "hover": false             il riquadro giallo non simula il passaggio del mouse (niente
+                               anteprime che si allargano e coprono le locandine vicine)
 """
 import json
 import os
@@ -23,7 +29,8 @@ CANDIDATES = [os.environ.get("TV_CONFIG", ""), "/etc/tvbox/config.json",
 KIND_DEFAULTS = {
     "hbbtv": {"assist": False, "player_keys": False, "auto_fullscreen": False, "back": "tvkey"},
     "tvapp": {"assist": False, "player_keys": False, "auto_fullscreen": False, "back": "esc"},
-    "web":   {"assist": True, "player_keys": True, "auto_fullscreen": False, "back": "history"},
+    "web":   {"assist": True, "player_keys": True, "auto_fullscreen": False, "back": "history",
+              "player_control": "video", "hover": True},
     "page":  {"assist": False, "player_keys": False, "auto_fullscreen": False, "back": "history"},
 }
 

@@ -177,6 +177,43 @@ tv.start(Session.site(PAGE + "?n=7"))
 check("sito: niente sipario", lambda: "n=7" in tv.url() and not has("curtain")(), 6)
 tv.toast("Avviso di prova")
 check("avviso: nello strato TV", has("toast"), 3)
+
+# sito alla Netflix: file di locandine con la freccina, anteprime al passaggio, player con i
+# suoi tasti e "Salta intro"
+TEST = f"http://localhost:{srv_port}/__test/"
+cfg.services["provaflix"] = normalize_service("provaflix", {
+    "kind": "web", "label": "Provaflix", "url": TEST + "catalogo.html", "player_control": "keys", "hover": False}, {})
+tv.open("provaflix")
+check("sito: pagina del catalogo", lambda: "catalogo" in tv.url() and mode() == keys.SITE, 6)
+
+
+def focused():
+    return js("window.__nav && __nav.current() ? __nav.current().textContent : ''") or ""
+
+
+for _ in range(5):
+    key("right")
+    time.sleep(0.25)
+check("riquadro giallo: quinta locandina", lambda: focused() == "Titolo 5", 3)
+key("right")
+check("fine fila: preme la freccina e va al titolo nuovo", lambda: js("window.__paged") == 1 and focused() == "Titolo 6", 4)
+check("niente anteprime al passaggio (hover: false)", lambda: js("window.__hovered") == 0)
+key("ok")
+check("OK: apre il titolo scelto", lambda: js("window.__opened") == "Titolo 6", 4)
+key("left")
+check("indietro nella fila: freccina e titolo precedente", lambda: js("window.__paged") == 2 and focused() == "Titolo 5", 4)
+key("down")
+check("giù: fila successiva", lambda: focused().startswith("Novità"), 3)
+
+tv.cdp.call("Page.navigate", {"url": TEST + "player.html"})
+check("player: stato video", lambda: "player" in tv.url() and mode() == keys.PLAYER, 10)
+key("ok")
+check("OK: preme \"Salta intro\"", lambda: js("window.__skipped") == 1, 4)
+n_keys = len(tv.input.keys)
+key("ok")
+check("OK senza pulsanti: pausa con i tasti del sito", lambda: tv.input.keys[n_keys:] == ["space"], 3)
+key("left")
+check("◄: salto con i tasti del sito", lambda: tv.input.keys[-1] == "left", 3)
 tv.home()
 check("home: di nuovo il launcher", lambda: mode() == keys.LAUNCHER, 6)
 

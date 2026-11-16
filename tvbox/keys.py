@@ -75,8 +75,9 @@ KEYMAP = {
     LIVE_SITE:   {**_arrows("nav_move"), "ok": "nav_ok", "menu": "panel_open", "play": "player_toggle"},
     TVAPP_HBBTV: {**_arrows("key_arrow"), "ok": "key_enter", "menu": "tv_back", "play": "tv_play"},
     TVAPP:       {**_arrows("key_arrow"), "ok": "key_enter", "menu": "key_esc", "play": "player_toggle"},
+    # OK nel video: "Salta intro" / "Episodio successivo" se ci sono, altrimenti pausa
     PLAYER:      {"up": "player_volume", "down": "player_volume", "left": "player_seek", "right": "player_seek",
-                  "ok": "player_toggle", "menu": "page_back", "play": "player_toggle"},
+                  "ok": "player_ok", "menu": "page_back", "play": "player_toggle"},
     SITE:        {**_arrows("nav_move"), "ok": "nav_ok", "menu": "page_back", "play": "player_toggle"},
     WEB:         {**_arrows("key_arrow"), "ok": "key_enter", "menu": "page_back", "play": "player_toggle"},
 }

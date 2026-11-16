@@ -2,6 +2,7 @@
 
 Sono i metodi che la tabella keys.KEYMAP nomina; la classe TV li eredita da Actions.
 """
+from .util import log
 
 
 class Actions:
@@ -55,9 +56,27 @@ class Actions:
         self.cdp.call("Input.dispatchMouseEvent", dict(base, type="mouseMoved", button="none"))
         self.cdp.call("Input.dispatchMouseEvent", dict(base, type="mousePressed"))
         self.cdp.call("Input.dispatchMouseEvent", dict(base, type="mouseReleased"))
+        if self.flags.get("hover") is False:         # il mouse non resta sopra: niente anteprime
+            w, h = (self.cdp.eval("[innerWidth, innerHeight]", timeout=3) or [1280, 720])
+            self.cdp.call("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": w - 1, "y": h - 1, "button": "none"})
 
     # ---------- azioni: video ----------
+    def _by_keys(self):
+        """Il sito vuole i suoi tasti per il player? (servizio con "player_control": "keys")"""
+        return self.service_for(self.url()).get("player_control") == "keys"
+
+    def player_ok(self, key=None):
+        """OK sul video: preme "Salta intro", "Salta riassunto", "Episodio successivo"… se il
+        player li sta mostrando; altrimenti pausa / riproduci."""
+        r = self.cdp.eval("window.__tv && __tv.skipButton ? __tv.skipButton() : null", timeout=3)
+        if isinstance(r, dict) and "x" in r:
+            log.info("player: %s", r.get("label"))
+            return self.click_at(r["x"], r["y"])
+        self.player_toggle()
+
     def player_toggle(self, key=None):
+        if self._by_keys():
+            return self.input.key("space")
         r = self.cdp.eval("window.__tv ? __tv.toggle() : false", timeout=3, gesture=True)
         if r == "play":
             self.toast("▶  Riproduci")
@@ -72,6 +91,8 @@ class Actions:
             self.osd_volume(v)
 
     def player_seek(self, key):
+        if self._by_keys():                          # salti del sito (Netflix: 10 s)
+            return self.input.key(key)
         sec = -int(self.cfg.opt("player.seek_back_s", 10)) if key == "left" \
             else int(self.cfg.opt("player.seek_forward_s", 30))
         if self.cdp.js("__tv.seek", sec, timeout=3):

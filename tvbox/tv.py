@@ -4,6 +4,7 @@ I tasti arrivano dal telecomando come eventi; dispatch() capisce lo stato (keys.
 legge nella tabella quale azione fare (keys.action_for) e chiama il metodo con quel nome.
 Tutte le azioni girano una alla volta nel thread "worker" (coda), come in V1.
 """
+import json
 import queue
 import re
 import subprocess
@@ -73,7 +74,8 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         self.mode = keys.LAUNCHER          # ultimo stato calcolato (riusato nelle ripetizioni)
         self.default_ua = None
         self.view_override = False
-        self.shield_script = None
+        self.flags_script = None           # impostazioni del servizio per gli script della pagina
+        self.flags = {}
         self.blocked = []
         self.dark_default = False          # fondo di Chrome blu (solo durante i cambi canale)
         self._player_cache = (0.0, False)
@@ -208,14 +210,19 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
             "deviceScaleFactor": dpr * scale, "scale": scale})
         self.view_override = True
 
-    def set_shield(self, on):
-        """shield.js (cookie, popup, riquadri pubblicitari) acceso solo dove serve."""
-        if on and not self.shield_script:
-            r = self.cdp.call("Page.addScriptToEvaluateOnNewDocument", {"source": "window.__tvShield = 1;"})
-            self.shield_script = r.get("identifier")
-        elif not on and self.shield_script:
-            self.cdp.call("Page.removeScriptToEvaluateOnNewDocument", {"identifier": self.shield_script})
-            self.shield_script = None
+    def set_flags(self, s):
+        """Impostazioni del servizio per gli script delle pagine nuove (window.__tvFlags):
+        shield = protezione da cookie, popup e pubblicità (shield.js); hover = il riquadro
+        giallo simula il passaggio del mouse (nav.js)."""
+        flags = {"shield": bool(s.get("shield")), "hover": s.get("hover", True) is not False}
+        if flags == self.flags and self.flags_script:
+            return
+        if self.flags_script:
+            self.cdp.call("Page.removeScriptToEvaluateOnNewDocument", {"identifier": self.flags_script})
+            self.flags_script = None
+        src = f"window.__tvFlags = {json.dumps(flags)};" + ("window.__tvShield = 1;" if flags["shield"] else "")
+        self.flags_script = self.cdp.call("Page.addScriptToEvaluateOnNewDocument", {"source": src}).get("identifier")
+        self.flags = flags
 
     def set_blocked(self, names):
         urls = [u for n in names for u in BLOCKLISTS.get(n, [])]
@@ -235,7 +242,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         self.cdp.call("Emulation.setUserAgentOverride", {"userAgent": ua or ""})   # "" = Chrome normale
         try:
             self.set_view(s)
-            self.set_shield(bool(s.get("shield")))
+            self.set_flags(s)
             self.set_blocked(s.get("block") or [])
         except Exception as ex:
             log.warning("vista/protezione: %s", ex)
@@ -365,7 +372,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         while True:
             if not self.browser.alive():
                 self.cdp.drop()
-                self.blocked, self.shield_script, self.view_override = [], None, False
+                self.blocked, self.flags_script, self.flags, self.view_override = [], None, {}, False
                 self.dark_default = False
                 log.warning("Chrome non attivo: riavvio")
                 self.browser.start()
@@ -392,7 +399,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
                 self._health_tick(url)
                 if self.display.video_mode:
                     self._video_res_tick(not self.on_launcher(url) and self.is_player())
-                if self.shield_script:               # popup in nuove schede: chiusi
+                if self.flags.get("shield"):         # popup in nuove schede: chiusi
                     self.cdp.close_other_pages()
             except Exception as ex:
                 if time.monotonic() - self.browser.started_at >= 60:

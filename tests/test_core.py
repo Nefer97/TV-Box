@@ -148,6 +148,13 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(s["altri"]["kind"], "page")
         self.assertEqual(s["canale5"]["block"], ["trackers"])
 
+    def test_siti_con_player_esigente(self):
+        n = self.cfg.services["netflix"]
+        self.assertEqual((n["player_control"], n["hover"]), ("keys", False))
+        la7 = self.cfg.services["la7"]
+        self.assertEqual((la7["player_control"], la7["hover"]), ("video", True))     # di serie
+        self.assertEqual(keys.action_for(keys.PLAYER, "ok"), "player_ok")              # "Salta intro" o pausa
+
     def test_canali_in_diretta(self):
         sel = ["rai1", "rai2", "rai2", "inesistente", "canale5"]
         self.assertEqual(self.cfg.live_channels(sel), ["rai1", "rai2", "canale5"])   # niente doppioni

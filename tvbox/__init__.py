@@ -26,4 +26,4 @@ Requisiti e architettura: docs/REQUISITI.md, docs/ARCHITETTURA.md.
     api       API HTTP per il launcher
     main      avvio
 """
-VERSION = "4.1.0"
+VERSION = "4.2.0"

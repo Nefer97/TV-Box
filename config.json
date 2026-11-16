@@ -71,7 +71,8 @@
                       "url": "https://www.raiplaysound.it/" },
     "plutotv":      { "kind": "web", "label": "Pluto TV", "icon": "tv", "color": "#854d0e",
                       "url": "https://pluto.tv/it/live-tv" },
-    "netflix":      { "kind": "web", "label": "Netflix (sperimentale)", "icon": "play", "color": "#7f1d1d",
+    "netflix":      { "kind": "web", "label": "Netflix", "icon": "play", "color": "#7f1d1d",
+                      "player_control": "keys", "hover": false,
                       "url": "https://www.netflix.com/browse" }
   }
 }

@@ -53,6 +53,22 @@
     }
     return false;
   };
+  // pulsanti che il player mostra per poco: "Salta intro", "Salta riassunto", "Episodio
+  // successivo"… Se ce n'è uno visibile, OK lo preme (tvd fa un clic vero nel suo centro).
+  const SKIP = /^(salta( l'| la | il )?(intro|introduzione|sigla|riassunto|recap|titoli)?|skip( intro| recap| credits)?|(guarda (il |l')?)?(episodio successivo|prossimo episodio)|next episode)\b/i;
+  T.skipButton = () => {
+    for (const b of document.querySelectorAll('button, [role=button], a')) {
+      const t = ((b.getAttribute('aria-label') || '') + ' ' + (b.innerText || '')).trim().replace(/\s+/g, ' ');
+      const label = [b.getAttribute('aria-label'), b.innerText].map(x => (x || '').trim()).find(x => SKIP.test(x));
+      if (!label || t.length > 60) continue;
+      const r = b.getBoundingClientRect();
+      if (r.width < 20 || r.height < 12 || r.bottom < 0 || r.top > innerHeight) continue;
+      const cs = getComputedStyle(b);
+      if (cs.visibility === 'hidden' || +cs.opacity < 0.1) continue;
+      return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), label };
+    }
+    return null;
+  };
   T.seek = (d) => {
     const v = T.main(); if (!v) return false;
     let t = v.currentTime + d; const s = v.seekable;
