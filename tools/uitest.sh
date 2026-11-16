@@ -13,6 +13,7 @@ fi
 SRV=8799; CDP=9333
 OUT=/tmp/tvbox-uitest; mkdir -p "$OUT"
 PROFILE="$HOME/snap/chromium/common/tvbox-uitest"; mkdir -p "$PROFILE"
+rm -rf "$PROFILE/Default/Cache" "$PROFILE/Default/Code Cache"   # sempre i file appena modificati
 python3 tools/uitest/server.py $SRV >"$OUT/server.log" 2>&1 &
 SPID=$!
 "$CHROME" --headless=new --remote-debugging-port=$CDP --user-data-dir="$PROFILE" \

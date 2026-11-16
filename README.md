@@ -3,7 +3,7 @@
 **Una Smart TV fatta in casa con un Mac mini del 2007.**
 Debian 13, Google Chrome in modalità kiosk e un demone Python trasformano un vecchio Mac mini
 in un box TV comandato dall'Apple Remote: 39 canali in diretta Rai, Mediaset e Discovery con
-guida TV, fiction e serie di Mediaset Infinity, YouTube, RaiPlay, i tuoi siti, meteo e salvaschermo.
+guida TV, fiction, serie, programmi e cartoni di Mediaset Infinity, YouTube, RaiPlay, i tuoi siti, meteo e salvaschermo.
 
 ![Home con un canale in diretta selezionato](docs/screenshots/home-diretta.png)
 
@@ -13,7 +13,7 @@ guida TV, fiction e serie di Mediaset Infinity, YouTube, RaiPlay, i tuoi siti, m
 
 - **Canali in diretta**: un catalogo di 39 canali (Rai, Mediaset, Discovery); scegli dalla TV quali
   mettere nella home e in che ordine. Ognuno con programma in onda, avanzamento, descrizione e immagine.
-- **Mediaset Infinity per la TV**: fiction e serie in righe di locandine, pagina della serie con
+- **Mediaset Infinity per la TV**: fiction, serie, programmi TV, cartoni, documentari e approfondimento in righe di locandine, pagina della serie con
   stagioni ed episodi, "Continua a guardare"; l'episodio parte a tutto schermo.
 - **Dirette che si riparano da sole**: se il video resta fermo la TV riapre il canale, e se il sito
   chiede di accedere lo mostra invece dello schermo nero.
@@ -41,7 +41,7 @@ guida TV, fiction e serie di Mediaset Infinity, YouTube, RaiPlay, i tuoi siti, m
 | ![Cambio canale](docs/screenshots/cambio-canale.png) | ![Banner del programma](docs/screenshots/banner.png) |
 | *Mentre il canale nuovo si carica* | *Banner all'apertura di un canale* |
 | ![Mediaset Infinity](docs/screenshots/mediaset.png) | ![Una serie Mediaset](docs/screenshots/mediaset-serie.png) |
-| *Mediaset Infinity: fiction e serie* | *Stagioni ed episodi di una serie* |
+| *Mediaset Infinity: il catalogo* | *Stagioni ed episodi di una serie* |
 | ![Impostazioni](docs/screenshots/impostazioni.png) | ![Canali in diretta](docs/screenshots/canali.png) |
 | *Impostazioni* | *Scelta e ordine dei canali* |
 | ![Salvaschermo](docs/screenshots/salvaschermo.png) | |

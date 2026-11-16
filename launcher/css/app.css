@@ -162,7 +162,7 @@ body[data-page="mediaset"] main, body[data-page="msserie"] main { padding-top: 0
 .msmeta { font-size: 2.1vh; font-weight: 700; color: #7dd3fc; margin-top: 1.6vh; letter-spacing: .02em; }
 .msdesc { font-size: 2.2vh; line-height: 1.45; color: #e2e8f0; margin-top: 1vh; text-shadow: 0 .2vh .8vh rgba(0,0,0,.7);
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.msrails { height: 52vh; overflow: hidden; }
+.msrails { height: 52vh; overflow: hidden; margin: 0 -1.2vw; padding: 0 1.2vw; }   /* spazio per la cornice della prima locandina */
 .msrail { padding-bottom: 2vh; }
 .msrail h2.sec-title { margin: 1vh 0 1.2vh; color: #cbd5e1; }
 .poster { flex: 0 0 9.4vw; width: 9.4vw; height: 14.1vw; border-radius: 1.4vh; position: relative; outline: none;

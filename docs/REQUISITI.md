@@ -43,7 +43,8 @@ requisito si aggiorna prima questo file, poi il codice. Come è costruita: [ARCH
 - R11. **Guida TV**: per ogni canale scelto i programmi delle prossime ore.
 
 ### Mediaset Infinity
-- R12. Sezione nostra con le **fiction e serie** gratuite (locandine, "Continua a guardare"),
+- R12. Sezione nostra con il catalogo gratuito: **fiction, serie TV, programmi TV, cartoni,
+  documentari e approfondimento** (locandine, "Continua a guardare"),
   pagina della serie con stagioni ed episodi; l'episodio parte a tutto schermo con il sipario;
   MENU torna alla serie.
 

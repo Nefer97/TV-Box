@@ -36,6 +36,8 @@ STUB = {"meteo": {"city": "Roma", "temp": 18, "text": "Sereno", "icon": "🌙"},
 class H(http.server.SimpleHTTPRequestHandler):
     def __init__(s, *a, **k): super().__init__(*a, directory=ROOT + "/launcher", **k)
     def log_message(s, *a): pass
+    def end_headers(s):        # come tvd: Chrome ricontrolla sempre i file (niente copie vecchie)
+        s.send_header("Cache-Control", "no-cache"); super().end_headers()
     def do_GET(s):
         u = urlparse(s.path)
         if u.path.startswith("/__test/"):            # pagine finte per tvtest.py (pages/)

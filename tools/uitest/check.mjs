@@ -93,6 +93,7 @@ await check('riquadri della home: servizi, nessun canale', `(() => { const t = [
 console.log('mediaset');
 await open('mediaset');
 await check('righe di locandine', `document.querySelectorAll('.poster').length >= 10`);
+await check('almeno cinque righe (fiction, serie, programmi, cartoni…)', `document.querySelectorAll('.msrail').length >= 5`);
 await check('logo o titolo della serie scelta', `!!document.getElementById('ms-name').textContent`);
 await check('misure delle locandine', SIZES);
 await press('right');
@@ -106,6 +107,14 @@ await check('episodio scelto leggibile (fondo bianco)', `getComputedStyle(docume
 await until(`document.getElementById('mss-logo').classList.contains('ok')`, 8000);
 await sleep(1500);
 await shot('serie');
+await open('mediaset');
+await check('locandine di nuovo', `document.activeElement.classList.contains('poster')`);
+await press('down', 'down', 'down');
+await check('scendendo: riga Cartoni scelta e visibile', `(() => { const r = document.activeElement.closest('.msrail');
+  const b = document.activeElement.getBoundingClientRect();
+  return r && /Cartoni/i.test(r.querySelector('h2').textContent) && b.top >= 0 && b.bottom <= innerHeight; })()`, 5000);
+await sleep(800);
+await shot('mediaset-cartoni');
 
 console.log('errori JavaScript:', errors.length ? errors : 'nessuno');
 ws.close();

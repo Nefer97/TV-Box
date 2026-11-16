@@ -18,7 +18,7 @@ Requisiti e architettura: docs/REQUISITI.md, docs/ARCHITETTURA.md.
     sleep     timer di spegnimento e schermo spento
     health    dirette che si riparano da sole
     channels  catalogo dei canali in diretta (Rai, Mediaset, Discovery)
-    mediaset  catalogo Mediaset Infinity (fiction e serie)
+    mediaset  catalogo Mediaset Infinity (fiction, serie, programmi, cartoni…)
     epg       palinsesti (Rai, Mediaset, Warner Bros. Discovery)
     wifi      Wi-Fi tramite wpa_cli
     sites     "I miei siti": indirizzi e loghi
@@ -26,4 +26,4 @@ Requisiti e architettura: docs/REQUISITI.md, docs/ARCHITETTURA.md.
     api       API HTTP per il launcher
     main      avvio
 """
-VERSION = "4.0.0"
+VERSION = "4.1.0"
