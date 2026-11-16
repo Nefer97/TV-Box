@@ -121,8 +121,10 @@ class KeysTest(unittest.TestCase):
                 self.assertIsNotNone(keys.action_for(m, k), (m, k))
 
     def test_azioni_esistono_in_tv(self):
-        with open(os.path.join(ROOT, "tvbox", "tv.py"), encoding="utf-8") as f:
-            src = f.read()
+        src = ""
+        for name in ("tv.py", "actions.py", "panel.py", "sleep.py", "health.py"):   # la TV e le sue parti
+            with open(os.path.join(ROOT, "tvbox", name), encoding="utf-8") as f:
+                src += f.read()
         acts = {a for t in list(keys.KEYMAP.values()) + [keys.COMMON] for a in t.values() if a}
         for a in acts:
             self.assertIn(f"def {a}(", src, a)

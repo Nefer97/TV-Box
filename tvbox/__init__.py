@@ -9,7 +9,13 @@
     inputdev  tastiera e mouse virtuali (uinput)
     remote    lettura dell'Apple Remote -> tasti logici
     keys      stati della TV e tabella "tasto -> azione"
-    tv        la TV: stato e azioni
+    tv        la TV: stato, apertura dei servizi, schermo, sorveglianza di Chrome
+    actions   azioni dei tasti (tasti veri, puntatore, video, navigazione assistita)
+    panel     pannello cambio canale, sipario, banner del programma
+    sleep     timer di spegnimento e schermo spento
+    health    dirette che si riparano da sole
+    channels  catalogo dei canali in diretta (Rai, Mediaset, Discovery)
+    mediaset  catalogo Mediaset Infinity (fiction e serie)
     epg       palinsesti (Rai, Mediaset, Warner Bros. Discovery)
     wifi      Wi-Fi tramite wpa_cli
     sites     "I miei siti": indirizzi e loghi
