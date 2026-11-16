@@ -19,6 +19,7 @@ Requisiti e architettura: docs/REQUISITI.md, docs/ARCHITETTURA.md.
     health    dirette che si riparano da sole
     channels  catalogo dei canali in diretta (Rai, Mediaset, Discovery)
     mediaset  catalogo Mediaset Infinity (fiction, serie, programmi, cartoni…)
+    mio       Il mio catalogo: scheletro vuoto di un connettore come mediaset
     epg       palinsesti (Rai, Mediaset, Warner Bros. Discovery)
     wifi      Wi-Fi tramite wpa_cli
     sites     "I miei siti": indirizzi e loghi

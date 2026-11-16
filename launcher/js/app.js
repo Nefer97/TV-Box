@@ -3,23 +3,24 @@ import { $, api, centerInRow, hideOverlay, move, overlay, overlayOpen, state, st
 import { build, greeting, showDetail, tick, updateMeteo, updateOnAir, updateStatus } from './home.js';
 import { guidePage } from './guide.js';
 import { msPage, seriesPage } from './mediaset.js';
+import { mioPage, mioSeriesPage } from './mio.js';
 import { channelsPage, homeEditPage, sitiPage, sitoApri, wifiPage } from './lists.js';
 import { initSaver, saverAwake } from './saver.js';
 import { ACTIONS, changeVolume, settingsPage } from './settings.js';
 
 const TITLES = { altri: 'Altri servizi', settings: 'Impostazioni', wifi: 'Wi-Fi', siti: 'I miei siti',
-  homeedit: 'Riquadri della home', guide: 'Guida TV', channels: 'Canali in diretta', mediaset: 'Mediaset Infinity', msserie: 'Mediaset Infinity', 'set-av': 'Immagine e audio',
+  homeedit: 'Riquadri della home', guide: 'Guida TV', channels: 'Canali in diretta', mediaset: 'Mediaset Infinity', msserie: 'Mediaset Infinity', mio: 'Il mio catalogo', mioserie: 'Il mio catalogo', 'set-av': 'Immagine e audio',
   'set-power': 'Accensione e spegnimento', 'set-home': 'Home e meteo', 'set-net': 'Rete e assistenza' };
 // MENU: pagina a cui si torna (e voce da selezionare)
 const PARENT = { wifi: ['set-net', 'wifi'], homeedit: ['set-home', 'home-edit'], channels: ['set-home', 'channels'], siti: ['altri'],
-  settings: ['home'], altri: ['home'], guide: ['home'], mediaset: ['home'], msserie: ['mediaset'],
+  settings: ['home'], altri: ['home'], guide: ['home'], mediaset: ['home'], msserie: ['mediaset'], mio: ['altri'], mioserie: ['mio'],
   'set-av': ['settings', 'set-av'], 'set-power': ['settings', 'set-power'],
   'set-home': ['settings', 'set-home'], 'set-net': ['settings', 'set-net'] };
 // cosa preparare entrando in una pagina
 const ON_ENTER = { settings: settingsPage, 'set-av': settingsPage, 'set-power': settingsPage,
   'set-home': settingsPage, 'set-net': settingsPage,
   wifi: wifiPage, siti: sitiPage, homeedit: () => homeEditPage(), guide: guidePage,
-  mediaset: msPage, msserie: seriesPage, channels: () => channelsPage() };
+  mediaset: msPage, msserie: seriesPage, mio: mioPage, mioserie: mioSeriesPage, channels: () => channelsPage() };
 
 function show(p) {
   const prev = state.page;
@@ -33,7 +34,7 @@ function show(p) {
   if (target) target.focus();
   setTimeout(() => showDetail(document.activeElement), 0);
   // impostazioni: si aggiornano ogni volta; le liste solo arrivando da un'altra pagina
-  if (ON_ENTER[p] && (p === 'settings' || p.startsWith('set-') || p === 'msserie' || prev !== p)) ON_ENTER[p]();
+  if (ON_ENTER[p] && (p === 'settings' || p.startsWith('set-') || p === 'msserie' || p === 'mioserie' || prev !== p)) ON_ENTER[p]();
 }
 state.show = show;
 
@@ -107,7 +108,8 @@ window.addEventListener('pageshow', () => { state.busy = false; $('#overlay').cl
   state.asleep = start === 'sleep';                                // ...o la home a schermo spento
   window.__tvWake = saverAwake;                                    // tvd: schermo riacceso
   if (start.startsWith('ms:')) { state.msSeries = start.slice(3); show('msserie'); }     // MENU da un episodio
-  else show(['settings', 'guide', 'mediaset'].includes(start) ? start : 'home');
+  else if (start.startsWith('mio:')) { state.mioSeries = start.slice(4); show('mioserie'); }
+  else show(['settings', 'guide', 'mediaset', 'mio'].includes(start) ? start : 'home');
   if (location.hash) history.replaceState(null, '', location.pathname);
   updateOnAir(); setInterval(updateOnAir, 60000);
   updateStatus(); setInterval(updateStatus, 30000);

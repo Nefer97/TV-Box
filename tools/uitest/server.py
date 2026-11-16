@@ -15,13 +15,14 @@ from tvbox.api import make_routes, Binary
 from tvbox.config import Config
 from tvbox.epg import EPG
 from tvbox.mediaset import Mediaset
+from tvbox.mio import Mio
 from tvbox.prefs import Prefs
 from tvbox.sites import Sites
 
 class FakeTV:
     def __init__(self):
         self.cfg = Config.load([ROOT + "/config.json"]); self.prefs = Prefs(tempfile.mkdtemp())
-        self.services = self.cfg.services; self.sites = Sites(self.prefs); self.mediaset = Mediaset(self.prefs)
+        self.services = self.cfg.services; self.sites = Sites(self.prefs); self.mediaset = Mediaset(self.prefs); self.mio = Mio(self.prefs)
         self.epg = EPG(self.services, enabled=self.channel_list); self.remote = None
     def channel_list(self): return self.cfg.live_channels(self.prefs.get("channels"))
     def post(self, *a): pass

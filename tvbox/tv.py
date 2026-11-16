@@ -22,6 +22,7 @@ from .epg import EPG
 from .health import HealthMixin
 from .layer import LayerMixin
 from .mediaset import Mediaset
+from .mio import Mio
 from .panel import PanelMixin
 from .session import Session
 from .sleep import SleepMixin
@@ -64,6 +65,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         self.epg = EPG(self.services, enabled=self.channel_list)
         self.sites = Sites(prefs)
         self.mediaset = Mediaset(prefs)
+        self.mio = Mio(prefs, self.cdp)
         self.input = vinput
         self.remote = None                 # RemoteLogic (per /api/info)
         self.actions = queue.Queue()
@@ -260,9 +262,16 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         if u:
             self.start(Session.site(u, mobile=(self.sites.find(u) or {}).get("mobile")))
 
-    def open_episode(self, url, series, label=""):
-        """Episodio Mediaset scelto nella sezione Mediaset (MENU torna alla serie)."""
-        self.start(Session.episode(url, series, label))
+    def open_episode(self, url, series, label="", **kw):
+        """Episodio scelto nella sezione Mediaset o in Il mio catalogo (MENU torna alla serie)."""
+        self.start(Session.episode(url, series, label, **kw))
+
+    def open_login(self):
+        """Pagina di accesso del sito di Il mio catalogo (LOGIN_URL in tvbox/mio.py)."""
+        from .mio import LOGIN_URL
+        if LOGIN_URL:
+            label = "Accesso a " + self.services.get("mio", {}).get("label", "Il mio catalogo")
+            self.start(Session.login_page(LOGIN_URL, label, back="mio"))
 
     def start(self, sess, panel=None):
         """Mette a schermo una visione. Le regole (sipario, banner, avvio, ultimo canale) sono
@@ -298,6 +307,11 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
 
     def home(self, key=None, page=None):
         log.info("HOME")
+        if self.session and self.session.login:       # si lascia la pagina di accesso: com'è andata?
+            try:
+                self.mio.after_login()
+            except Exception as ex:
+                log.warning("dopo l'accesso: %s", ex)
         self.panel = self.pointer = False
         self.display.set_lowres(False)
         self.session = None

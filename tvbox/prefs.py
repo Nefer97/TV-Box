@@ -9,6 +9,7 @@ Contenuto:
     last_channel  "rai1" | None                                 canale in diretta lasciato acceso
     saver_off  minuti                                           schermo spento dopo tanto salvaschermo (0 = mai)
     ms_history [{"series","title","poster","episode","n","t"}]  Mediaset: Continua a guardare
+    mio_history  come ms_history                               Il mio catalogo: Continua a guardare
     channels   ["rai1", ...]                                    canali in diretta scelti, in ordine
 
 Versioni del file: 2 = V2/V3; 3 = V4 (i canali non si nascondono più con "hidden": un canale
@@ -32,6 +33,7 @@ DEFAULTS = {
     "last_channel": None,
     "saver_off": 60,
     "ms_history": [],
+    "mio_history": [],
     "channels": list(DEFAULT_CHANNELS),
 }
 
@@ -102,10 +104,11 @@ class Prefs:
         ch = d.get("channels")
         if isinstance(ch, list):
             out["channels"] = [x for x in ch if isinstance(x, str)][:60] or list(DEFAULT_CHANNELS)
-        h = d.get("ms_history")
-        if isinstance(h, list):
-            out["ms_history"] = [x for x in h if isinstance(x, dict) and isinstance(x.get("series"), str)
-                                 and isinstance(x.get("episode"), str)][:12]
+        for key in ("ms_history", "mio_history"):
+            h = d.get(key)
+            if isinstance(h, list):
+                out[key] = [x for x in h if isinstance(x, dict) and isinstance(x.get("series"), str)
+                            and isinstance(x.get("episode"), str)][:12]
         return out
 
     # ---------- accesso ----------

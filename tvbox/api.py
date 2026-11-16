@@ -126,6 +126,33 @@ def make_routes(tv):
             return {"ok": True}
         return tv.mediaset.rails()
 
+    def mio(q):
+        """Il mio catalogo (tvbox/mio.py): righe, una serie con i suoi episodi, apertura di un
+        episodio, accesso al sito (login: apre la pagina; logout; status)."""
+        from .mio import is_episode_url
+        a = q.get("action", "rails")
+        if a == "series":
+            return tv.mio.series(q.get("id", ""), q.get("season"))
+        if a == "play":
+            if not is_episode_url(q.get("url")):
+                return {"ok": False, "error": "Episodio non valido"}
+            tv.mio.remember(q)
+            label = " · ".join(x for x in (q.get("title"), q.get("ep")) if x)
+            site = tv.services.get("mio", {}).get("label", "Il mio catalogo")
+            tv.post(lambda: tv.open_episode(q["url"], q.get("series", ""), label,
+                                            site=site, back="mio", color="#9d174d"))
+            return {"ok": True}
+        if a == "login":
+            if not tv.mio.login_state()["available"]:
+                return {"ok": False, "error": "Accesso non previsto (LOGIN_URL vuoto in tvbox/mio.py)"}
+            tv.post(tv.open_login)
+            return {"ok": True}
+        if a == "logout":
+            return dict(tv.mio.logout(), ok=True)
+        if a == "status":
+            return tv.mio.login_state(fresh=True)
+        return tv.mio.rails()
+
     def channels(q):
         """Catalogo dei canali: quali sono nella home e in che ordine (Impostazioni → Canali)."""
         from .channels import GROUPS, clean_selection
@@ -163,7 +190,7 @@ def make_routes(tv):
         "onair": lambda q: tv.epg.onair(), "meteo": meteo.api, "sites": tv.sites.api,
         "volume": lambda q: {"volume": tv.volume(int(q.get("delta", "0") or 0))},
         "info": info, "wifi": wifi_, "screen": screen, "system": system,
-        "guide": guide, "prefs": prefs, "sleep": sleep, "mediaset": mediaset, "channels": channels,
+        "guide": guide, "prefs": prefs, "sleep": sleep, "mediaset": mediaset, "mio": mio, "channels": channels,
     }
 
 

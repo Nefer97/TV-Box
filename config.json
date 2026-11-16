@@ -37,7 +37,7 @@
         "items": ["raiplay", "mediaset", "youtube", "altri", "impostazioni"] },
       { "title": "Canali in diretta", "channels": true }
     ],
-    "other": ["siti", "mediaset_web", "discovery", "raiplay_web", "la7", "raiplaysound", "plutotv", "netflix"]
+    "other": ["siti", "mediaset_web", "discovery", "raiplay_web", "la7", "raiplaysound", "plutotv", "netflix", "mio"]
   },
 
   "services": {
@@ -73,6 +73,8 @@
                       "url": "https://pluto.tv/it/live-tv" },
     "netflix":      { "kind": "web", "label": "Netflix", "icon": "play", "color": "#7f1d1d",
                       "player_control": "keys", "hover": false,
-                      "url": "https://www.netflix.com/browse" }
+                      "url": "https://www.netflix.com/browse" },
+    "mio":          { "kind": "page", "page": "mio", "label": "Il mio catalogo", "subtitle": "Il tuo connettore (tvbox/mio.py)",
+                      "icon": "play", "color": "#9d174d" }
   }
 }
