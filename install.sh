@@ -69,6 +69,17 @@ esac
   echo "Serve Debian amd64: Chrome e Widevine non esistono per Linux a 32 bit."; exit 1; }
 grep -qw lm /proc/cpuinfo || { echo "CPU senza 64 bit (Core Duo): vedi la guida."; exit 1; }
 
+echo "==> Archivio Debian: sezione non-free-firmware (aggiornamenti del processore Intel)"
+# su un Debian installato normalmente spesso manca (prepare-disk.sh invece la mette già)
+for f in /etc/apt/sources.list.d/debian.sources; do
+  if [ -f "$f" ] && ! grep -q non-free-firmware "$f"; then
+    sed -i 's/^\(Components:.*\)$/\1 non-free-firmware/' "$f"
+  fi
+done
+if [ -f /etc/apt/sources.list ] && grep -q "^deb .*debian" /etc/apt/sources.list && ! grep -q non-free-firmware /etc/apt/sources.list; then
+  sed -i '/^deb .*debian/ s/$/ non-free-firmware/' /etc/apt/sources.list
+fi
+
 echo "==> Pacchetti di base"
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -77,8 +88,11 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
   python3 python3-evdev python3-websocket \
   alsa-utils pciutils sudo curl gnupg ca-certificates \
   fonts-noto-core fonts-noto-color-emoji fonts-dejavu-core \
-  zram-tools intel-microcode \
+  zram-tools \
   wpasupplicant wireless-regdb iw
+# utile ma non indispensabile: se proprio non c'è, si va avanti
+DEBIAN_FRONTEND=noninteractive apt-get install -y intel-microcode \
+  || echo "ATTENZIONE: intel-microcode non disponibile, continuo senza"
 
 echo "==> Google Chrome (include il modulo Widevine)"
 install -d -m 0755 /etc/apt/keyrings
