@@ -26,6 +26,8 @@ class FakeTV:
         self.epg = EPG(self.services, enabled=self.channel_list); self.remote = None
     def channel_list(self): return self.cfg.live_channels(self.prefs.get("channels"))
     def post(self, *a): pass
+    def open(self, *a, **k):
+        return None
     def sleep_left(self): return 0
     def sleep_set(self, m): return {"minutes": m}
     def volume(self, d=0): return 60

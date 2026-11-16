@@ -151,7 +151,7 @@ def make_routes(tv):
             return dict(tv.mio.logout(), ok=True)
         if a == "status":
             return tv.mio.login_state(fresh=True)
-        return tv.mio.rails()
+        return tv.mio.rails(q.get("page"))
 
     def channels(q):
         """Catalogo dei canali: quali sono nella home e in che ordine (Impostazioni → Canali)."""
