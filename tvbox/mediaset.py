@@ -16,7 +16,7 @@ from .util import get_json, log
 
 FEED = "https://feed.entertainment.tv.theplatform.eu/f/PR1GhC/"
 SERIES_FIELDS = ("guid,title,description,thumbnails,seriesTvSeasons,tags,updated,"
-                 "mediasetprogram$pageUrl,mediasetprogram$currentSeason")
+                 "mediasetprogram$pageUrl,mediasetprogram$currentSeason,mediasetprogram$genres")
 
 # righe della sezione: (id, titolo, categoria nel catalogo Mediaset)
 RAILS = [("fiction", "Fiction e soap in onda", "Fiction"), ("serie", "Serie TV", "Serie TV")]
@@ -45,6 +45,8 @@ def parse_series(e):
             "poster": _img(th, "image_vertical-264x396", "image_vertical-192x288", "img_s_master_boxart-1080x1440"),
             "hero": _img(th, "img_s_master_16_9-1920x1080", "image_keyframe_poster-1280x720",
                          "image_header_poster-1440x630"),
+            "logo": _img(th, "logo_horizontal-320x128"),          # logo della serie (al posto del titolo)
+            "genres": [g for g in (e.get("mediasetprogram$genres") or []) if isinstance(g, str)][:3],
             "seasons": seasons, "current": ((e.get("mediasetprogram$currentSeason") or {}).get("default")),
             "category": cats[0] if cats else "", "url": _https(e.get("mediasetprogram$pageUrl"))}
 
@@ -134,14 +136,16 @@ class Mediaset:
 
     # ---------- Continua a guardare ----------
     def history(self):
-        return [{"id": h["series"], "title": h["title"], "poster": h["poster"],
-                 "sub": f"Ep. {h['n']}" if h.get("n") is not None else "", "episode": h["episode"]}
+        return [{"id": h["series"], "title": h["title"], "poster": h["poster"], "hero": h.get("hero", ""),
+                 "logo": h.get("logo", ""), "desc": h.get("ep", ""),
+                 "sub": h.get("ep") or (f"Ep. {h['n']}" if h.get("n") is not None else ""), "episode": h["episode"]}
                 for h in self.prefs.get("ms_history")]
 
     def remember(self, q):
         """Ricorda l'episodio aperto (in cima a "Continua a guardare", una voce per serie)."""
         h = {"series": q.get("series", ""), "title": (q.get("title") or "")[:60],
-             "poster": q.get("poster", ""), "episode": q.get("episode", ""),
+             "poster": q.get("poster", ""), "hero": q.get("hero", ""), "logo": q.get("logo", ""),
+             "ep": (q.get("ep") or "")[:60], "episode": q.get("episode", ""),
              "n": int(q["n"]) if (q.get("n") or "").isdigit() else None, "t": int(time.time())}
         if not h["series"]:
             return

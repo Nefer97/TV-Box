@@ -38,14 +38,51 @@ export async function msPage() {
   if (first && state.page === 'mediaset') first.focus();
 }
 
-// in alto: titolo e trama della locandina scelta
-function msDetail(t) {
-  const d = $('#ms-detail'), x = t && t._info;
-  if (!x) return;
-  d.querySelector('.dch').textContent = x.sub ? 'Continua · ' + x.sub : (x.category || 'Mediaset Infinity');
-  d.querySelector('.dtitle').textContent = x.title;
-  d.querySelector('.ddesc').textContent = x.desc || '';
+// logo della serie (immagine) con il titolo scritto come riserva
+function setLogo(img, name, x) {
+  name.textContent = x.title || '';
+  img.classList.remove('ok');
+  img.onload = () => img.classList.add('ok');
+  img.onerror = () => img.classList.remove('ok');
+  if (x.logo) img.src = x.logo; else img.removeAttribute('src');
 }
+const meta = x => [x.category, ...(x.genres || [])].filter((v, i, a) => v && a.indexOf(v) === i).join(' · ');
+
+// sfondo con dissolvenza: cambia solo quando la nuova immagine è pronta
+let bgWant = '', bgTimer = 0;
+function setBg(box, url) {
+  bgWant = url || '';
+  clearTimeout(bgTimer);
+  bgTimer = setTimeout(() => {                 // scorrendo veloce non si scaricano tutte le immagini
+    const want = bgWant;
+    if (!want) { box.classList.remove('on'); return; }
+    const im = new Image();
+    im.onload = () => {
+      if (bgWant !== want) return;
+      box.classList.remove('on');
+      setTimeout(() => { box.style.backgroundImage = `url("${want}")`; box.classList.add('on'); }, 180);
+    };
+    im.src = want;
+  }, 220);
+}
+
+// in alto: immagine, logo, generi e trama della locandina scelta
+function msDetail(t) {
+  const x = t && t._info;
+  if (!x) return;
+  setLogo($('#ms-logo'), $('#ms-name'), x);
+  $('#ms-meta').textContent = x.sub ? `Continua a guardare · ${x.sub}` : meta(x);
+  $('#ms-desc').textContent = x.desc || '';
+  setBg($('#ms-bg'), x.hero);
+}
+
+// orologio piccolo in alto (le pagine Mediaset non hanno l'intestazione)
+function clock() {
+  const t = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+  document.querySelectorAll('.msclock').forEach(e => { e.textContent = t; });
+}
+clock();
+setInterval(clock, 10000);
 
 // ---------- pagina della serie ----------
 async function openSeries(id, episode) {
@@ -59,7 +96,8 @@ export async function seriesPage() {
   const list = $('#mss-eps');
   list.innerHTML = '';
   list.appendChild(el('div', 'gwait', 'Carico gli episodi…'));
-  $('#mss-title').textContent = '';
+  setLogo($('#mss-logo'), $('#mss-title'), {});
+  $('#mss-info').textContent = '';
   $('#mss-desc').textContent = '';
   $('#mss-seasons').innerHTML = '';
   const r = await api(`mediaset?action=series&id=${q(id)}` + (state.msSeason ? `&season=${q(state.msSeason)}` : ''));
@@ -67,8 +105,8 @@ export async function seriesPage() {
   if (!r || r.error) { list.innerHTML = ''; list.appendChild(el('div', 'gwait', (r && r.error) || 'Non disponibile')); return; }
   series = r;
   $('#mss-hero').style.backgroundImage = r.hero ? `url("${r.hero}")` : '';
-  $('#mss-title').textContent = r.title;
-  $('#mss-info').textContent = [r.category, r.seasons.length > 1 ? `${r.seasons.length} stagioni` : '',
+  setLogo($('#mss-logo'), $('#mss-title'), r);
+  $('#mss-info').textContent = [meta(r), r.seasons.length > 1 ? `${r.seasons.length} stagioni` : '',
     r.episodes.length ? `${r.episodes.length} episodi gratuiti` : ''].filter(Boolean).join(' · ');
   $('#mss-desc').textContent = r.desc;
   const ss = $('#mss-seasons');
@@ -110,7 +148,8 @@ async function play(e) {
   state.busy = true;
   overlay(`${series.title}\n${e.title}`);
   const r = await api(`mediaset?action=play&url=${q(e.url)}&series=${q(series.id)}&title=${q(series.title)}` +
-    `&poster=${q(series.poster)}&episode=${q(e.id)}&n=${e.n == null ? '' : e.n}`);
+    `&poster=${q(series.poster)}&hero=${q(series.hero || '')}&logo=${q(series.logo || '')}` +
+    `&episode=${q(e.id)}&n=${e.n == null ? '' : e.n}&ep=${q(e.title)}`);
   if (!r || !r.ok) { state.busy = false; overlay((r && r.error) || 'Non riuscito', [['OK', hideOverlay]]); return; }
   setTimeout(() => { state.busy = false; }, 8000);
 }

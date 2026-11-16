@@ -85,15 +85,28 @@
       <b>Altri servizi → I miei siti</b>.</p>
   </section>
   <!-- Mediaset: righe di locandine; pagina della serie con stagioni ed episodi -->
+  <!-- Mediaset: pagina a tutto schermo (niente intestazione): immagine della serie scelta,
+       logo, generi e trama in alto, righe di locandine sotto -->
   <section class="page" id="page-mediaset">
-    <div id="ms-detail" class="detail msdetail"><div class="dch"></div><div class="dtitle"></div><div class="ddesc"></div></div>
+    <div class="msbg" id="ms-bg"></div>
+    <div class="mstop"><span class="msbrand">Mediaset <b>Infinity</b></span><span class="msclock"></span></div>
+    <div class="msinfo-box">
+      <div class="mslogo"><img id="ms-logo" alt=""><div class="msname" id="ms-name"></div></div>
+      <div class="msmeta" id="ms-meta"></div>
+      <div class="msdesc" id="ms-desc"></div>
+    </div>
     <div class="msrails" id="ms-rails"></div>
   </section>
   <section class="page" id="page-msserie">
-    <div class="mshero" id="mss-hero"></div>
+    <div class="msbg on" id="mss-hero"></div>
+    <div class="mstop"><span class="msbrand">Mediaset <b>Infinity</b></span><span class="msclock"></span></div>
     <div class="msserie">
-      <div class="mshead"><div class="mstitle" id="mss-title"></div><div class="msinfo" id="mss-info"></div>
-        <div class="msdesc" id="mss-desc"></div><div class="mschips" id="mss-seasons"></div></div>
+      <div class="mshead">
+        <div class="mslogo"><img id="mss-logo" alt=""><div class="msname" id="mss-title"></div></div>
+        <div class="msmeta" id="mss-info"></div>
+        <div class="msdesc" id="mss-desc"></div>
+        <div class="mschips" id="mss-seasons"></div>
+      </div>
       <div class="mseps" id="mss-eps"></div>
     </div>
   </section>
