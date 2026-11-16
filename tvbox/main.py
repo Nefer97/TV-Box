@@ -41,6 +41,7 @@ def main():
     tv = TV(cfg, prefs, VirtualInput())
     api.serve(tv, cfg.opt("http_port", 8765))
     threading.Thread(target=tv.worker, daemon=True).start()
+    threading.Thread(target=tv.mediaset.prewarm, daemon=True).start()   # catalogo Mediaset pronto
 
     logic = RemoteLogic(cfg.opt, pointer=lambda: tv.pointer)
     tv.remote = logic

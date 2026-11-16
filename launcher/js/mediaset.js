@@ -1,4 +1,4 @@
-// mediaset.js — sezione Mediaset (fiction e serie): righe di locandine e pagina della serie.
+// mediaset.js — sezione Mediaset (fiction, serie, programmi, cartoni…): righe di locandine e pagina della serie.
 // I dati arrivano da tvd (/api/mediaset, catalogo pubblico Mediaset); OK su un episodio lo apre
 // a tutto schermo sul sito Mediaset, MENU dal video riporta qui (#ms:<serie>).
 import { $, api, el, overlay, hideOverlay, q, state } from './core.js';

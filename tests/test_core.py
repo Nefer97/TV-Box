@@ -345,6 +345,24 @@ class MediasetTest(unittest.TestCase):
         self.assertEqual([(e["n"], e["id"]) for e in eps], [(8, "F815"), (8, "F88"), (7, "F71")])
         self.assertTrue(eps[0]["url"].startswith("https://mediasetinfinity"))
 
+    def test_programma_senza_numeri(self):
+        """Talk show e programmi quotidiani: puntate intere per data, niente clip."""
+        v = lambda g, day, dur: {"guid": g, "title": g, "mediasetprogram$duration": dur,     # noqa: E731
+                                 "mediasetprogram$videoPageUrl": "//mediasetinfinity.mediaset.it/video/x/" + g,
+                                 "mediasetprogram$channelsRights": ["AVOD"],
+                                 "mediasetprogram$publishInfo": {"last_published": f"2026-11-{day:02d}T21:00:00Z"}}
+        eps = episodes_of([v("clip", 15, 180), v("p1", 8, 5400), v("p2", 14, 5300)])
+        self.assertEqual([e["id"] for e in eps], ["p2", "p1"])
+
+    def test_solo_titoli_con_qualcosa_da_vedere(self):
+        from tvbox.mediaset import Mediaset
+        m = Mediaset(None)
+        s = lambda g: {"id": g, "title": g, "current": None, "seasons": [{"id": "season-" + g, "guid": g}]}  # noqa: E731
+        m.playable_cache = {"season-a": (time.monotonic(), True), "season-b": (time.monotonic(), False)}
+        self.assertTrue(m.known(s("a")))
+        self.assertFalse(m.known(s("b")))
+        self.assertIsNone(m.known(s("c")))                                  # non ancora controllato
+
     def test_indirizzo_episodio(self):
         self.assertTrue(is_episode_url("https://mediasetinfinity.mediaset.it/video/x/ep_F1"))
         self.assertFalse(is_episode_url("https://evil.it/video/x"))
