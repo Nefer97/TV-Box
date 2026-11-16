@@ -41,29 +41,35 @@ class HealthMixin:
 
     # ---------- dirette che si riparano da sole ----------
     def _health_tick(self, url):
-        """Ogni 2 s: il video della diretta avanza? Fermo da 20 s (senza una pausa voluta):
-        si toglie l'allargamento; se il sito chiede di accedere lo si dice, altrimenti si
-        riapre il canale (al massimo 3 volte in 10 minuti)."""
-        h, s = self._health, self.services.get(self.current or "", {})
-        if not h or h.cid != self.current or not (s.get("live") or s.get("curtain")) or h.done:
+        """Ogni 2 s: il video della visione (diretta o episodio) avanza? Fermo da 20 s senza una
+        pausa voluta: si toglie l'allargamento; se il sito chiede di accedere lo si dice,
+        altrimenti una diretta viene riaperta (al massimo 3 volte in 10 minuti)."""
+        sess = self.session
+        if not sess or not sess.watch or sess.watch.done:
             return
         if self.panel or self.asleep or self.on_launcher(url):
             return
         now = time.monotonic()
         st = self.cdp.eval("window.__tv && __tv.health ? __tv.health() : null", timeout=3) or {}
-        if not h.step(st, now):
+        if not sess.watch.step(st, now):
             return
-        log.warning("diretta ferma: %s (%s)", self.current, st)
+        log.warning("video fermo: %s (%s)", sess, st)
         self.cdp.eval("window.__tv && __tv.exitFull()", timeout=3)
         time.sleep(1)
         if self.cdp.eval("!!(window.__tv && __tv.loginWall && __tv.loginWall())", timeout=3):
             self.toast("Il sito chiede di accedere · tieni premuto OK per il puntatore")
             return
         ok, self._reopens = may_reopen(self._reopens, now)
-        if not s.get("live") or not ok:
+        if not sess.reopen or not ok:
             self.toast("Il video si è fermato · MENU per tornare indietro")
             return
         self._reopens.append(now)
         self.toast("La diretta si è fermata: la riavvio")
         time.sleep(1.5)
-        self.post(self.open, self.current)
+        self.post(self._reopen, sess)
+
+    def _reopen(self, sess):
+        """Riapre la diretta solo se nel frattempo non si è aperto altro (la richiesta aspetta
+        in coda dietro alle azioni dell'utente)."""
+        if self.session is sess:
+            self.open(sess.sid)

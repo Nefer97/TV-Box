@@ -1,8 +1,9 @@
 #!/bin/bash
 # deploy.sh — dal PC: prova, copia e installa la versione attuale sul Mac mini.
 #
-#   ./deploy.sh                 prove automatiche e della grafica, poi aggiornamento (chiede la password)
-#   ./deploy.sh --no-ui         salta le prove della grafica (es. senza internet)
+#   ./deploy.sh                 prove automatiche, della grafica e del dialogo tvd ↔ Chrome, verifica degli
+#                               indirizzi esterni, poi aggiornamento (chiede la password)
+#   ./deploy.sh --no-ui         salta prove della grafica e indirizzi (es. senza internet)
 #   ./deploy.sh --rollback      torna alla versione installata prima
 #   TV_HOST=192.168.1.x ./deploy.sh     se tv.local non risponde
 #
@@ -27,6 +28,8 @@ python3 -m unittest discover -s tests -q
 if [ "${1:-}" != "--no-ui" ]; then
   echo "==> Prove della grafica (Chromium sul PC)"
   bash tools/uitest.sh || { echo "Prove della grafica fallite: niente installazione (foto in /tmp/tvbox-uitest)"; exit 1; }
+  echo "==> Indirizzi esterni (Rai, Mediaset, Discovery)"
+  python3 tools/checklinks.py | grep -v "^  ok" || true     # solo un avviso: la TV si installa lo stesso
 fi
 
 echo "==> Pacchetto"

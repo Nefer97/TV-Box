@@ -22,6 +22,7 @@ from tvbox.remote import RemoteLogic  # noqa: E402
 from tvbox.sites import normalize_url  # noqa: E402
 from tvbox.health import Watch, may_reopen  # noqa: E402
 from tvbox.mediaset import episodes_of, is_episode_url, parse_series  # noqa: E402
+from tvbox.session import Session  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -150,7 +151,6 @@ class ConfigTest(unittest.TestCase):
     def test_canali_in_diretta(self):
         sel = ["rai1", "rai2", "rai2", "inesistente", "canale5"]
         self.assertEqual(self.cfg.live_channels(sel), ["rai1", "rai2", "canale5"])   # niente doppioni
-        self.assertNotIn("rai2", self.cfg.live_channels(sel, hidden=["rai2"]))
 
     def test_catalogo(self):
         c = self.cfg.channels
@@ -183,20 +183,26 @@ class ConfigTest(unittest.TestCase):
 
 
 class PrefsTest(unittest.TestCase):
-    def test_migrazione_dalla_v1(self):
+    def test_file_nuovo(self):
         with tempfile.TemporaryDirectory() as d:
-            w = lambda n, o: wjson(os.path.join(d, n), o)   # noqa: E731
-            w("siti.json", [{"label": "Prova", "url": "https://prova.it", "home": True}])
-            w("home.json", {"hidden": ["la7"]})
-            w("meteo.json", {"name": "Roma", "lat": 41.9, "lon": 12.5})
-            w("screen.json", {"mode": "1280x720", "video_low": False})
             p = Prefs(d)
-            self.assertEqual(p.get("sites")[0]["url"], "https://prova.it")
-            self.assertTrue(p.get("sites")[0]["home"])
-            self.assertEqual(p.get("hidden"), ["la7"])
-            self.assertEqual(p.get("meteo")["name"], "Roma")
-            self.assertEqual(p.get("screen"), {"mode": "1280x720", "video_low": False})
+            self.assertEqual(p.get("channels")[:3], ["rai1", "rai2", "rai3"])
             self.assertTrue(os.path.exists(os.path.join(d, "prefs.json")))
+
+    def test_dalla_versione_2(self):
+        """V3 -> V4: un canale nascosto con "hidden" esce dalla scelta dei canali."""
+        with tempfile.TemporaryDirectory() as d:
+            wjson(os.path.join(d, "prefs.json"), {"version": 2, "hidden": ["rai2", "la7"],
+                                                 "channels": ["rai1", "rai2", "canale5"]})
+            p = Prefs(d)
+            self.assertEqual(p.get("channels"), ["rai1", "canale5"])
+            self.assertEqual(p.get("hidden"), ["la7"])
+            self.assertEqual(Prefs(d).get("channels"), ["rai1", "canale5"])   # salvato
+
+    def test_scelta_vuota(self):
+        with tempfile.TemporaryDirectory() as d:
+            wjson(os.path.join(d, "prefs.json"), {"version": 3, "channels": []})
+            self.assertTrue(Prefs(d).get("channels"))                      # mai senza canali
 
     def test_file_rovinato(self):
         with tempfile.TemporaryDirectory() as d:
@@ -207,8 +213,8 @@ class PrefsTest(unittest.TestCase):
 
     def test_update_e_rilettura(self):
         with tempfile.TemporaryDirectory() as d:
-            Prefs(d).update("hidden", lambda h: h + ["rai2"])
-            self.assertEqual(Prefs(d).get("hidden"), ["rai2"])
+            Prefs(d).update("hidden", lambda h: h + ["la7", "rai2"])
+            self.assertEqual(Prefs(d).get("hidden"), ["la7"])            # i canali non si nascondono
 
 
 class SitesTest(unittest.TestCase):
@@ -375,6 +381,59 @@ class HealthTest(unittest.TestCase):
         ok, h = may_reopen([0, 100, 200], 700)
         self.assertTrue(ok)
         self.assertEqual(h, [200])
+
+
+class SessionTest(unittest.TestCase):
+    """Le regole di "cosa si sta guardando" (session.py)."""
+
+    def setUp(self):
+        self.cfg = Config.load([os.path.join(ROOT, "config.json")])
+
+    def test_canale(self):
+        v = Session.for_service(self.cfg.services["canale5"], now=0)
+        self.assertEqual((v.what, v.sid, v.title), ("channel", "canale5", "Canale 5"))
+        self.assertTrue(v.live and v.curtain and v.banner and v.guarded and v.reopen and v.remember)
+        self.assertTrue(v.kick and v.auto_fullscreen)                    # diretta web
+        self.assertEqual(v.watch.cid, "canale5")
+
+    def test_canale_rai(self):
+        v = Session.for_service(self.cfg.services["rai1"], now=0)
+        self.assertTrue(v.curtain and v.reopen)
+        self.assertFalse(v.kick or v.auto_fullscreen)                     # app HbbTV: fa tutto lei
+
+    def test_episodio(self):
+        v = Session.episode("https://mediasetinfinity.mediaset.it/video/x/y_F1", "SERIE", "Don Matteo · Ep. 3", now=0)
+        self.assertEqual(v.what, "episode")
+        self.assertIsNone(v.sid)
+        self.assertEqual(v.return_to, "ms:SERIE")
+        self.assertEqual(v.title, "Don Matteo · Ep. 3")
+        self.assertTrue(v.curtain and v.guarded and v.kick and v.auto_fullscreen)
+        self.assertFalse(v.live or v.banner or v.reopen or v.remember)
+        self.assertEqual(v.service["block"], ["trackers"])
+
+    def test_servizio_e_sito(self):
+        v = Session.for_service(self.cfg.services["youtube"], now=0)
+        self.assertEqual(v.what, "service")
+        self.assertFalse(v.curtain or v.guarded or v.remember or v.watch)
+        s = Session.site("https://www.prova.it/a", mobile=True, now=0)
+        self.assertEqual(s.what, "site")
+        self.assertTrue(s.service["mobile"] and s.service["shield"] and s.auto_fullscreen)
+        self.assertEqual(s.service["block"], ["ads"])
+        self.assertFalse(s.curtain or s.guarded)
+
+    def test_pagine_della_visione(self):
+        v = Session.for_service(self.cfg.services["canale5"], now=0)
+        self.assertTrue(v.owns("https://mediasetinfinity.mediaset.it/diretta/canale5_cC5"))
+        self.assertTrue(v.owns("https://mediasetinfinity.mediaset.it/altro"))   # stesso sito
+        self.assertFalse(v.owns("https://www.raiplay.it/"))
+        self.assertFalse(v.owns(""))
+
+    def test_nessun_servizio_finto(self):
+        """Episodi e siti non aggiungono servizi all'elenco (in V3: __episodio, __sito)."""
+        n = len(self.cfg.services)
+        Session.episode("https://mediasetinfinity.mediaset.it/video/x/y_F1", "S", now=0)
+        Session.site("https://www.prova.it/", now=0)
+        self.assertEqual(len(self.cfg.services), n)
 
 
 if __name__ == "__main__":

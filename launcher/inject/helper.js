@@ -1,6 +1,7 @@
 // helper.js — iniettato in ogni pagina prima degli script del sito (window.__tv).
 // Trova il video principale, pausa/salti, schermo intero (anche dopo la pubblicità),
-// avvio automatico delle dirette e piccoli avvisi (toast).
+// avvio automatico delle dirette, stato del video per la sorveglianza. Quello che si vede
+// sopra le pagine (avvisi, pannello, sipario…) è nello strato TV (layer.js).
 (() => {
   if (window.__tv) return;
   const T = {};
@@ -30,28 +31,11 @@
     const v = T.main();
     return !!(v && v.readyState >= 2 && T.area(v) > 0.6);
   };
-  T.toast = (msg) => {
-    try {
-      let d = document.getElementById('__tvtoast');
-      if (!d) {
-        d = document.createElement('div'); d.id = '__tvtoast';
-        // stesso stile degli altri riquadri della TV (pannello, banner, volume)
-        d.style.cssText = 'position:fixed;left:50%;bottom:9vh;transform:translateX(-50%);' +
-          'z-index:2147483647;background:rgba(11,16,32,.9);color:#f4f6fb;' +
-          'font:700 3.2vh/1.2 "Noto Sans","DejaVu Sans",sans-serif;padding:1.8vh 2.6vw;border-radius:2.4vh;' +
-          'box-shadow:0 1.6vh 4vh rgba(0,0,0,.5);pointer-events:none;transition:opacity .25s;white-space:nowrap';
-        (document.fullscreenElement && document.fullscreenElement.tagName !== 'VIDEO'
-          ? document.fullscreenElement : document.documentElement).appendChild(d);
-      }
-      d.textContent = msg; d.style.opacity = '1';
-      clearTimeout(T._tt); T._tt = setTimeout(() => d.style.opacity = '0', 1600);
-    } catch (e) {}
-  };
+  // pausa / riproduci: restituisce 'play' o 'pause' (l'avviso lo mostra tvd)
   T.toggle = () => {
     const v = T.main(); if (!v) return false;
-    if (v.paused) { delete v.dataset.tvUserPaused; v.play().catch(() => {}); T.toast('▶  Riproduci'); }
-    else { v.dataset.tvUserPaused = '1'; v.pause(); T.toast('❚❚  Pausa'); }   // pausa voluta: non è un blocco
-    return true;
+    if (v.paused) { delete v.dataset.tvUserPaused; v.play().catch(() => {}); return 'play'; }
+    v.dataset.tvUserPaused = '1'; v.pause(); return 'pause';      // pausa voluta: non è un blocco
   };
   // stato del video per la sorveglianza di tvd (dirette che si fermano)
   T.health = () => {
@@ -74,7 +58,7 @@
     let t = v.currentTime + d; const s = v.seekable;
     if (s && s.length) t = Math.max(s.start(0), Math.min(s.end(s.length - 1) - 1, t));
     try { v.currentTime = t; } catch (e) {}
-    T.toast((d > 0 ? '▶▶  +' : '◀◀  −') + Math.abs(d) + ' s'); return true;
+    return true;
   };
   T.cssMax = (v) => {
     if (!document.getElementById('__tvmaxstyle')) {

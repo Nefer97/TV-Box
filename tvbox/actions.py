@@ -2,8 +2,6 @@
 
 Sono i metodi che la tabella keys.KEYMAP nomina; la classe TV li eredita da Actions.
 """
-from .browser import overlay_script
-from .util import log
 
 
 class Actions:
@@ -60,7 +58,12 @@ class Actions:
 
     # ---------- azioni: video ----------
     def player_toggle(self, key=None):
-        if not self.cdp.eval("!!(window.__tv && __tv.toggle())", timeout=3, gesture=True):
+        r = self.cdp.eval("window.__tv ? __tv.toggle() : false", timeout=3, gesture=True)
+        if r == "play":
+            self.toast("▶  Riproduci")
+        elif r == "pause":
+            self.toast("❚❚  Pausa")
+        else:
             self.input.key("space")
 
     def player_volume(self, key):
@@ -68,20 +71,11 @@ class Actions:
         if v is not None:
             self.osd_volume(v)
 
-    def osd_volume(self, v):
-        """Barra del volume in alto a destra (inject/osd.js), aggiornata a ogni pressione."""
-        try:
-            if not self.cdp.eval(f"!!(window.__tvosd && __tvosd.volume && __tvosd.volume({int(v)}))", timeout=3):
-                js = overlay_script("osd.js")
-                if js:
-                    self.cdp.eval(f"{js}\n;window.__tvosd.volume({int(v)})", timeout=5)
-        except Exception as ex:
-            log.debug("volume a schermo: %s", ex)
-
     def player_seek(self, key):
         sec = -int(self.cfg.opt("player.seek_back_s", 10)) if key == "left" \
             else int(self.cfg.opt("player.seek_forward_s", 30))
-        self.cdp.js("__tv.seek", sec, timeout=3)
+        if self.cdp.js("__tv.seek", sec, timeout=3):
+            self.toast(("▶▶  +" if sec > 0 else "◀◀  −") + f"{abs(sec)} s")
 
     # ---------- azioni: navigazione assistita ----------
     def nav_move(self, key):
@@ -98,7 +92,7 @@ class Actions:
     def page_back(self, key=None):
         if self.cdp.eval("!!(window.__nav && __nav.back())", timeout=3):
             return                                   # chiusa la tastiera a schermo
-        ret = self.services.get(self.current or "", {}).get("return_to")
+        ret = self.session.return_to if self.session else None
         if ret:                                      # es. episodio Mediaset -> pagina della serie
             return self.home(page=ret)
         if self.cdp.eval("!!(window.__tv && __tv.exitFull())", timeout=3):

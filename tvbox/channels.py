@@ -42,7 +42,8 @@ DISCOVERY = [
     ("discoverychannel", "Discovery Channel", "d90405c0-43b6-51f3-97cb-cb9271b4ef62", "a6169d4c-51f2-569e-86a7-96bad1b74c5d", None, "#1d4ed8"),
     ("discoveryturbo", "Discovery Turbo", "cf0ac36b-c39a-5ae8-8e95-2c651e7c4bf9", "8d896b58-5b3b-5685-8a38-887f17f00764", None, "#b91c1c"),
 ]
-DEFAULT = ["rai1", "rai2", "rai3", "rete4", "canale5", "italia1", "realtime", "dmax", "nove"]
+DEFAULT = ["rai1", "rai2", "rai3", "rete4", "canale5", "italia1", "realtime", "dmax", "nove"]   # di serie
+IDS = [c[0] for c in RAI + MEDIASET_CH + DISCOVERY]                                         # tutti
 GROUPS = [("rai", "Rai"), ("mediaset", "Mediaset"), ("discovery", "Discovery")]
 
 

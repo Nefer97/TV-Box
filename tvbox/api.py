@@ -32,9 +32,9 @@ def make_routes(tv):
                     my_sites=[x for x in tv.sites.list() if x.get("home")])
 
     def home(q):
-        """Riquadri nascosti dalla home o da Altri servizi."""
+        """Riquadri nascosti dalla home o da Altri servizi (i canali si scelgono con channels)."""
         sid, a = q.get("id", ""), q.get("action")
-        if sid and sid != "impostazioni" and a in ("hide", "show"):
+        if sid and sid != "impostazioni" and sid not in tv.cfg.channels and a in ("hide", "show"):
             tv.prefs.update("hidden", lambda h: [x for x in h if x != sid] + ([sid] if a == "hide" else []))
         return {"hidden": tv.prefs.get("hidden")}
 

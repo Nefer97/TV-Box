@@ -1,0 +1,30 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Canale di prova</title>
+<!-- Canale finto per tools/uitest/tvtest.py: una pagina bianca (come Mediaset mentre carica)
+     con un video "in diretta" disegnato al momento. ?n=numero  ?stall=secondi (poi si ferma) -->
+<style>
+  body { margin: 0; background: #fff; font: 20px sans-serif; }
+  #box { padding: 20px; }
+  video { width: 640px; height: 360px; background: #000; }
+</style>
+<div id="box"><h1 id="t"></h1><video id="v" autoplay muted playsinline></video></div>
+<script>
+  const q = new URLSearchParams(location.search), n = q.get('n') || '1', stall = +(q.get('stall') || 0);
+  document.getElementById('t').textContent = 'Canale di prova ' + n;
+  const c = document.createElement('canvas');
+  c.width = 320; c.height = 180;
+  const g = c.getContext('2d'), stream = c.captureStream(25), v = document.getElementById('v'), t0 = Date.now();
+  v.srcObject = stream;
+  let k = 0;
+  setInterval(() => {
+    g.fillStyle = `hsl(${(k++ * 7) % 360},70%,40%)`;
+    g.fillRect(0, 0, 320, 180);
+    g.fillStyle = '#fff';
+    g.fillText('canale ' + n + ' · ' + k, 20, 40);
+    if (stall && Date.now() - t0 > stall * 1000 && !v.dataset.stalled) {
+      v.dataset.stalled = '1';
+      v.pause();                                        // la "diretta" si ferma da sola
+    }
+  }, 40);
+</script>

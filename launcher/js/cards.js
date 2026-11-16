@@ -1,6 +1,6 @@
 // cards.js — schede dei canali in diretta, scritte una volta sola.
 // Script "classico" (non modulo): lo usa la home (launcher) e tvd lo inietta insieme al
-// pannello sopra le dirette (inject/panel.js). Lo stile è in css/cards.css.
+// pannello sopra le dirette (strato TV, inject/layer.js). Lo stile è in css/cards.css.
 //   TVCards.live({id, label, color}, {current, busy})  -> elemento .tvcard
 //   TVCards.fill(card, programma)                       -> titolo, orario, barra, immagine
 //   TVCards.action({k, ic, lbl, sub})                   -> scheda-azione (pannello)

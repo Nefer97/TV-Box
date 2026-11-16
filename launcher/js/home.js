@@ -50,14 +50,16 @@ function tile(id, s, big) {
 }
 
 export function build() {
+  // i riquadri si nascondono da "Riquadri della home"; i canali si scelgono da "Canali in diretta"
   const CFG = state.CFG, hidden = new Set(CFG.hidden || []);
   const ok = id => CFG.services[id] && !hidden.has(id);
+  const known = id => !!CFG.services[id];
   const home = $('#page-home'), detail = $('#detail');
   document.body.appendChild(detail);                  // messo da parte prima di svuotare
   home.innerHTML = '';
   let bigDone = false;
   CFG.sections.forEach(sec => {
-    const items = sec.items.filter(ok);
+    const items = sec.items.filter(sec.channels ? known : ok);
     if (!items.length) return;
     const live = items.some(id => CFG.services[id].live);
     if (sec.title) {
@@ -96,7 +98,7 @@ export function build() {
   home.appendChild(detail);                            // il dettaglio sta sotto i canali
   const altri = $('#altri-row');
   altri.innerHTML = '';
-  (CFG.other_services || []).filter(ok).forEach(id => altri.appendChild(tile(id, CFG.services[id], true)));
+  (CFG.other || []).filter(ok).forEach(id => altri.appendChild(tile(id, CFG.services[id], true)));
 }
 
 export async function rebuild() {

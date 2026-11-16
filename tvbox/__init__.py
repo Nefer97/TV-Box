@@ -1,4 +1,5 @@
 """tvbox — Smart TV per Mac mini: demone tvd suddiviso in moduli.
+Requisiti e architettura: docs/REQUISITI.md, docs/ARCHITETTURA.md.
 
     util      utilità comuni (registro, scaricamenti, file JSON sicuri)
     prefs     preferenze dell'utente, in un unico file
@@ -9,9 +10,11 @@
     inputdev  tastiera e mouse virtuali (uinput)
     remote    lettura dell'Apple Remote -> tasti logici
     keys      stati della TV e tabella "tasto -> azione"
-    tv        la TV: stato, apertura dei servizi, schermo, sorveglianza di Chrome
+    session   cosa si sta guardando (canale, episodio, servizio, sito) e le sue regole
+    tv        la TV: apre e chiude le visioni, schermo, sorveglianza di Chrome
     actions   azioni dei tasti (tasti veri, puntatore, video, navigazione assistita)
-    panel     pannello cambio canale, sipario, banner del programma
+    layer     strato TV sopra le pagine: sipario, banner, volume, avvisi, prenotazione
+    panel     pannello cambio canale (disegnato dallo strato TV)
     sleep     timer di spegnimento e schermo spento
     health    dirette che si riparano da sole
     channels  catalogo dei canali in diretta (Rai, Mediaset, Discovery)
@@ -23,4 +26,4 @@
     api       API HTTP per il launcher
     main      avvio
 """
-VERSION = "3.0.0"
+VERSION = "4.0.0"

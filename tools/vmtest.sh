@@ -37,7 +37,7 @@ write_files:
       echo "TVBOX: install.sh esito \$?"
       python3 -c "import sys; sys.path.insert(0, '/opt/tvbox'); import tvbox.main, tvbox.tv" && echo "TVBOX: moduli ok" || echo "TVBOX: moduli ERRORE"
       python3 -c "import json; json.load(open('/etc/tvbox/config.json'))" && echo "TVBOX: config ok" || echo "TVBOX: config ERRORE"
-      for f in /opt/tvbox/tvd.py /opt/tvbox/launcher/index.html /opt/tvbox/launcher/js/app.js /opt/tvbox/launcher/inject/panel.js /etc/X11/xorg.conf.d/20-tvbox-video.conf /etc/sudoers.d/tvbox /etc/tmpfiles.d/tvbox-reboot.conf; do
+      for f in /opt/tvbox/tvd.py /opt/tvbox/launcher/index.html /opt/tvbox/launcher/js/app.js /opt/tvbox/launcher/inject/layer.js /etc/X11/xorg.conf.d/20-tvbox-video.conf /etc/sudoers.d/tvbox /etc/tmpfiles.d/tvbox-reboot.conf; do
         [ -e "\$f" ] && echo "TVBOX: file ok \$f" || echo "TVBOX: file MANCA \$f"; done
       id tv && echo "TVBOX: utente tv ok"
       dpkg -l google-chrome-stable python3-evdev python3-websocket xserver-xorg-core | awk '/^ii/{print "TVBOX: pacchetto ok "\$2}'
