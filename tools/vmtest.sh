@@ -7,13 +7,16 @@
 # * Non installa niente sul PC: QEMU è una copia estratta in una cartella (QEMU_DIR/x/usr/bin/…).
 # * L'immagine non viene modificata (snapshot): le scritture vanno in un file temporaneo.
 # * Il progetto arriva alla macchina virtuale da un piccolo server locale (10.0.2.2 = il PC).
-# * Senza KVM è lenta (30–90 minuti). L'esito: righe "TVBOX:" alla fine; registro completo in $WORK/serial.log
+# * Senza KVM è lenta (1–3 ore). L'esito: righe "TVBOX:" alla fine; registro completo in $WORK/serial.log
+# * ATTENZIONE: emulare un computer intero scalda il PC. Di serie usa UN solo processore a
+#   priorità bassa (CPUS=1, nice 19): con 4 processori al massimo il PC si è spento di colpo.
 set -u
 cd "$(dirname "$0")/.."
 : "${QEMU_DIR:?indica QEMU_DIR}" "${IMG:?indica IMG (immagine Debian 13 genericcloud qcow2)}"
 WORK=${WORK:-$(mktemp -d /tmp/tvbox-vmtest.XXXX)}
 PORT=${PORT:-8810}
-TIMEOUT_MIN=${TIMEOUT_MIN:-150}
+TIMEOUT_MIN=${TIMEOUT_MIN:-240}
+CPUS=${CPUS:-1}
 echo "Cartella di lavoro: $WORK"
 
 tar czf "$WORK/tvbox.tgz" --exclude=__pycache__ tvd.py tvbox launcher config.json system install.sh
@@ -64,9 +67,9 @@ HPID=$!
 export LD_LIBRARY_PATH="$QEMU_DIR/x/usr/lib/x86_64-linux-gnu:$QEMU_DIR/x/lib/x86_64-linux-gnu"
 export QEMU_MODULE_DIR="$QEMU_DIR/x/usr/lib/x86_64-linux-gnu/qemu"
 export TMPDIR="$WORK"
-"$QEMU_DIR/x/usr/bin/qemu-system-x86_64" \
+nice -n 19 "$QEMU_DIR/x/usr/bin/qemu-system-x86_64" \
   -L "$QEMU_DIR/x/usr/share/qemu" -L "$QEMU_DIR/x/usr/share/seabios" -L "$QEMU_DIR/x/usr/lib/ipxe/qemu" \
-  -accel tcg,thread=multi -cpu max -smp 4 -m 3072 -name tvbox-vmtest \
+  -accel tcg -cpu max -smp "$CPUS" -m 3072 -name tvbox-vmtest \
   -drive "file=$IMG,if=virtio,snapshot=on" -nic user,model=virtio-net-pci \
   -vga std -display none -serial "file:$WORK/serial.log" \
   -smbios "type=1,serial=ds=nocloud;s=http://10.0.2.2:$PORT/" &
