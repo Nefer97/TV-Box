@@ -85,7 +85,7 @@ apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
   xserver-xorg-core xserver-xorg-input-libinput xserver-xorg-legacy xinit \
   x11-xserver-utils matchbox-window-manager unclutter-xfixes \
-  python3 python3-evdev python3-websocket \
+  python3 python3-evdev python3-websocket python3-requests \
   alsa-utils pciutils sudo curl gnupg ca-certificates \
   fonts-noto-core fonts-noto-color-emoji fonts-dejavu-core \
   zram-tools \
