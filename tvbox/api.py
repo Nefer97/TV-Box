@@ -115,6 +115,8 @@ def make_routes(tv):
         """Sezione Mediaset: righe di serie, una serie con i suoi episodi, apertura di un episodio."""
         from .mediaset import is_episode_url
         a = q.get("action", "rails")
+        if a == "search":
+            return tv.mio.search(q.get("q", ""))
         if a == "series":
             return tv.mediaset.series(q.get("id", ""), q.get("season"))
         if a == "play":

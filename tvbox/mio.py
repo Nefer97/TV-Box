@@ -650,6 +650,49 @@ class Mio:
 
         threading.Thread(target=run, name="mio-generi", daemon=True).start()
 
+    def search(self, query):
+        """Ricerca globale per nome su StreamingUnity."""
+        query = _s(query)[:100]
+        if not query:
+            return {"query": "", "items": []}
+
+        try:
+            client = self._client()
+            if client is None:
+                raise RuntimeError(
+                    self._api_error or "scuapi non disponibile"
+                )
+
+            results = client.search(query)
+
+            # SCAPI restituisce normalmente un dizionario di risultati.
+            entries = list(results.values()) if isinstance(results, dict) else _l(results)
+
+            items = []
+            seen = set()
+
+            for entry in entries:
+                item = parse_series(entry)
+
+                if not item["id"] or not item["title"] or not item["poster"]:
+                    continue
+
+                if item["id"] in seen:
+                    continue
+
+                seen.add(item["id"])
+                items.append(item)
+
+            return {"query": query, "items": items}
+
+        except Exception as ex:
+            log.warning("%s ricerca '%s': %s", NAME, query, ex)
+            return {
+                "query": query,
+                "items": [],
+                "error": "Ricerca temporaneamente non disponibile",
+            }
+
     def series(self, sid, season=None):
         try:
             entry = series_entry(
