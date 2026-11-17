@@ -74,7 +74,7 @@
     "netflix":      { "kind": "web", "label": "Netflix", "icon": "play", "color": "#7f1d1d",
                       "player_control": "keys", "hover": false,
                       "url": "https://www.netflix.com/browse" },
-    "mio":          { "kind": "page", "page": "mio", "label": "Il mio catalogo", "subtitle": "Il tuo connettore (tvbox/mio.py)",
-                      "icon": "play", "color": "#9d174d" }
+    "mio":          { "kind": "page", "page": "mio", "label": "StreamingCommunity", "subtitle": "Serie TV, film e anime in streaming",
+                      "icon": "play", "color": "#1a1a1a;",  "auto_fullscreen": true, "url": "https://streaming-community.army/theme/images/logo.png" }
   }
 }
