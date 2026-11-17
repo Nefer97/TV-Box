@@ -196,6 +196,35 @@ body[data-page="mio"] main, body[data-page="mioserie"] main { padding-top: 0; }
 .msep .gnow { display: inline-block; margin: 0 0 0 1vw; vertical-align: .3vh; background: #0284c7; }
 .gnow.seen { background: #475569; }
 
+/* ---------- Mio catalogo barra di ricerca ---------- */
+
+.mio-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 20px;
+}
+
+.mio-search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 18px;
+  border-radius: 8px;
+  border: 1px solid #555;
+  background: #222;
+  color: white;
+  font-size: 18px;
+}
+
+.mio-search-input:focus {
+  outline: 2px solid white;
+  border-color: white;
+}
+
+.mio-search .btn {
+  flex-shrink: 0;
+}
+
 /* ---------- tasti in fondo (solo nella home, quando non c'è il dettaglio) ---------- */
 footer.keys { position: fixed; bottom: 3vh; left: 5vw; right: 5vw; }
 body:not([data-page="home"]) footer, body.withdetail footer { display: none; }

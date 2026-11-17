@@ -11,6 +11,10 @@ let series = null;
 
 let catalogRails = {};             // righe già caricate, per pagina: { home: [...], series: [...] }
 let activeCatalogPage = 'home';
+let searchQuery = '';
+let searchResults = null;
+let searchBusy = false;
+let searchRequest = 0;
 let catalogLoaded = 0;
 const CATALOG_TTL = 30 * 60 * 1000;
 
@@ -75,6 +79,60 @@ function poster(x) {
   return c;
 }
 
+// ---------- barra di ricerca ----------
+
+function renderSearchBar() {
+  const bar = el('div', 'mio-search row');
+
+  const input = el('input', 'mio-search-input');
+  input.type = 'text';
+  input.placeholder = 'Cerca film o serie TV...';
+  input.value = searchQuery;
+  input.setAttribute('aria-label', 'Cerca per nome');
+
+  input.addEventListener('input', () => {
+    searchQuery = input.value;
+  });
+
+  input.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      runSearch();
+    }
+  });
+
+  const button = el('div', 'btn chip', 'CERCA');
+  button.tabIndex = 0;
+  button._act = runSearch;
+
+  bar.append(input, button);
+  return bar;
+}
+
+async function runSearch() {
+  const query = searchQuery.trim();
+  if (!query || searchBusy) return;
+
+  searchBusy = true;
+  searchResults = null;
+
+  const request = ++searchRequest;
+  renderCatalogPage();
+
+  const r = await api(`mio?action=search&q=${q(query)}`);
+
+  if (request !== searchRequest) return;
+
+  searchBusy = false;
+  searchResults = r && Array.isArray(r.items) ? r.items : [];
+
+  renderCatalogPage();
+
+  const first = $('#mio-rails').querySelector('.poster');
+  if (first && state.page === 'mio') first.focus();
+}
+
+
 // ---------- rendering delle tre pagine ----------
 
 const emptyMessages = {
@@ -104,6 +162,29 @@ function renderCatalogPage(focusTab = false) {
   });
 
   box.appendChild(nav);
+  box.appendChild(renderSearchBar());
+  if (searchResults !== null || searchBusy) {
+    if (searchBusy) {
+      box.appendChild(el('div', 'gwait', 'Cerco nel catalogo…'));
+    } else if (!searchResults.length) {
+      box.appendChild(el('div', 'gwait', 'Nessun risultato trovato'));
+    } else {
+      const sec = el('div', 'msrail');
+      sec.appendChild(el('h2', 'sec-title', `Risultati per "${searchQuery}"`));
+
+      const row = el('div', 'row scroller');
+      searchResults.forEach(x => row.appendChild(poster(x)));
+
+      sec.appendChild(row);
+      box.appendChild(sec);
+    }
+
+    if (state.page === 'mio') {
+      const first = box.querySelector('.poster');
+      if (first && !focusTab) first.focus();
+    }
+    return;
+  }
 
   const activeTab = nav.children[catalogPages.findIndex(p => p.id === activeCatalogPage)];
   const rails = catalogRails[activeCatalogPage];
