@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from .util import DESKTOP_UA, USER_DIR, log
 
 try:
-    from scuapi import API as SCAPI
+    from vendor.scuapi import API as SCAPI
 except ImportError:
     SCAPI = None
 
