@@ -36,7 +36,7 @@ echo "==> Pacchetto"
 PKG=$(mktemp --suffix=.tgz)
 trap 'rm -f "$PKG"' EXIT
 tar czf "$PKG" --exclude=__pycache__ --exclude='*.pyc' \
-  tvd.py tvbox launcher config.json system install.sh
+  tvd.py tvbox launcher config.json system install.sh vendor
 
 echo "==> Copia su $HOST"
 scp -q "${SSH_OPTS[@]}" "$PKG" "admin@$HOST:$DIR.tgz"

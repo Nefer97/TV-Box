@@ -19,12 +19,14 @@ PREV=/opt/tvbox.prev
 # così non restano file vecchi. La configurazione in /etc/tvbox: quella di prima in .prev
 install_app() {
   install -d "$DEST" "$DEST/system" /etc/tvbox
-  rm -rf "$DEST/tvbox" "$DEST/launcher"
+  rm -rf "$DEST/tvbox" "$DEST/launcher" "$DEST/vendor"
   install -m 0755 "$SRC/tvd.py" "$DEST/tvd.py"
   install -d "$DEST/tvbox"
   install -m 0644 "$SRC"/tvbox/*.py "$DEST/tvbox/"
   cp -r "$SRC/launcher" "$DEST/launcher"
   find "$DEST/launcher" -type d -exec chmod 0755 {} + ; find "$DEST/launcher" -type f -exec chmod 0644 {} +
+  cp -r "$SRC/vendor" "$DEST/vendor"
+  find "$DEST/vendor" -type d -exec chmod 0755 {} + ; find "$DEST/vendor" -type f -exec chmod 0644 {} +
   install -m 0755 "$SRC/system/xinitrc" "$DEST/system/xinitrc"
   if [ -f /etc/tvbox/config.json ] && ! cmp -s "$SRC/config.json" /etc/tvbox/config.json; then
     cp /etc/tvbox/config.json /etc/tvbox/config.json.prev
