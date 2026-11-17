@@ -233,6 +233,14 @@ check("barra del volume: nessun tasto mandato al sito", lambda: tv.input.keys[n_
 key("play")
 time.sleep(VOLUME_IDLE_S + 0.5)
 check("barra: si chiude da sola", lambda: mode() == keys.SITE, 3)
+# video incorporato avviato con un clic (focus nell'iframe): PLAY è la pausa del player, non il volume
+box = js("(()=>{const b=document.querySelector('iframe').getBoundingClientRect();return [b.x+b.width/2,b.y+b.height/2]})()")
+tv.click_at(*box)
+check("clic nel player incorporato: focus nell'iframe", lambda: js("document.activeElement.tagName") == "IFRAME", 3)
+n_keys = len(tv.input.keys)
+key("play")
+check("PLAY con il player incorporato: barra spaziatrice, niente volume",
+      lambda: tv.input.keys[n_keys:] == ["space"] and mode() == keys.SITE, 3)
 
 tv.cdp.eval("document.querySelector('iframe').requestFullscreen(), true", timeout=4, gesture=True)
 check("iframe a tutto schermo: tasti al player", lambda: mode() == keys.FULLPAGE, 6)

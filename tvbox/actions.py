@@ -94,8 +94,9 @@ class Actions:
 
     # ---------- azioni: barra del volume (PLAY in un sito senza video) ----------
     def site_play(self, key=None):
-        """PLAY in un sito: pausa / riproduci se nella pagina c'è un video, altrimenti la barra
-        del volume (▲ ▼ per regolare, qualunque altro tasto chiude)."""
+        """PLAY in un sito: pausa / riproduci se nella pagina c'è un video (o se il focus è in un
+        player incorporato, es. YouTube: barra spaziatrice), altrimenti la barra del volume
+        (▲ ▼ per regolare, qualunque altro tasto chiude)."""
         if self._by_keys():
             return self.input.key("space")
         r = self.cdp.eval("window.__tv ? __tv.toggle() : false", timeout=3, gesture=True)
@@ -103,6 +104,8 @@ class Actions:
             self.toast("▶  Riproduci")
         elif r == "pause":
             self.toast("❚❚  Pausa")
+        elif self.cdp.eval("document.activeElement && document.activeElement.tagName === 'IFRAME'", timeout=3):
+            self.input.key("space")                  # player incorporato (es. YouTube) avviato con un clic
         else:
             self.volume_open()
 
