@@ -437,7 +437,14 @@ export async function mioSeriesPage() {
     if (e.image) pic.style.backgroundImage = `url("${e.image}")`;
 
     const body = el('div', 'gbody');
-    const t = el('div', 'gtitle', e.title);
+    const seasonNumber = r.season ?? r.season_number ?? '';
+    const episodeNumber = e.n ?? '';
+
+    const prefix = seasonNumber !== '' && episodeNumber !== ''
+      ? `S${seasonNumber}:E${episodeNumber} `
+      : '';
+
+    const t = el('div', 'gtitle', prefix + e.title);
 
     if (i === li) t.appendChild(el('span', 'gnow seen', 'ULTIMO VISTO'));
     if (li > 0 && i === li - 1) t.appendChild(el('span', 'gnow', 'SUCCESSIVO'));

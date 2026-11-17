@@ -9,9 +9,16 @@
     '[role=button], [role=link], [role=tab], [role=menuitem], [role=option], [role=checkbox], ' +
     '[role=switch], [contenteditable=""], [contenteditable=true], [tabindex]:not([tabindex="-1"]), ' +
     '[onclick], label[for]';
-  // player incorporati (YouTube, Vimeo, emittenti…): anche grandi quanto lo schermo, OK ci clicca al centro
+  // player incorporati (YouTube, Vimeo, emittenti…): iframe che ammettono il tutto schermo, o
+  // comunque grandi (oltre il 40% della finestra). Anche grandi quanto lo schermo e anche con
+  // qualcosa sopra (copertura "clicca per avviare"): OK ci clicca al centro
   const FRAME = 'iframe[allowfullscreen], iframe[allow*="fullscreen"]';
-  const isFrame = el => el.tagName === 'IFRAME' && el.matches(FRAME);
+  const isFrame = el => {
+    if (el.tagName !== 'IFRAME') return false;
+    if (el.matches(FRAME)) return true;
+    const r = el.getBoundingClientRect();
+    return r.width * r.height > 0.4 * innerWidth * innerHeight;
+  };
   const TEXT_TYPES = /^(text|search|email|url|tel|password|number|)$/i;
   let cur = null, ring = null, raf = 0;
 
@@ -98,7 +105,7 @@
       if (r.bottom < -lim || r.top > lim + innerHeight || r.width < 6 || r.height < 6) return;
       add(el);
     });
-    document.querySelectorAll(FRAME).forEach(el => { const r = el.getBoundingClientRect(); if (r.width >= 120 && r.height >= 90) add(el); });
+    document.querySelectorAll('iframe').forEach(el => { const r = el.getBoundingClientRect(); if (r.width >= 120 && r.height >= 90 && isFrame(el)) add(el); });
     pointerRoots().forEach(add);
     // tengo il più esterno quando un cliccabile ne contiene un altro
     cache = els.filter(el => { for (let p = el.parentElement; p; p = p.parentElement) if (seen.has(p)) return false; return true; });
@@ -131,7 +138,7 @@
   function pickVisible(dir, list, from) {
     for (let i = 0; i < 6; i++) {
       const b = pick(dir, list, from);
-      if (!b || onTop(b.el, b.r)) return b;
+      if (!b || isFrame(b.el) || onTop(b.el, b.r)) return b;   // sopra un player può esserci una copertura
       list = list.filter(c => c !== b);
     }
     return null;
@@ -197,7 +204,7 @@
     const list = candidates();
     if (!cur || !cur.isConnected || !inView(cur.getBoundingClientRect())) {
       // primo tasto (o elemento sparito): il cliccabile visibile più in alto a sinistra
-      const vis = list.filter(c => inView(c.r) && onTop(c.el, c.r)).sort((a, b) => (a.r.top - b.r.top) || (a.r.left - b.r.left));
+      const vis = list.filter(c => inView(c.r) && (isFrame(c.el) || onTop(c.el, c.r))).sort((a, b) => (a.r.top - b.r.top) || (a.r.left - b.r.left));
       if (vis.length) { focusEl(vis[0].el); return 'first'; }
       scrollBy(dir); return 'scroll';
     }

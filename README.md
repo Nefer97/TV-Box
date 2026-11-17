@@ -134,8 +134,9 @@ TV_HOST=192.168.1.x ./deploy.sh     # se tv.local non risponde
 
 Nei siti: **PLAY** mette in pausa il video della pagina (anche un video incorporato, per esempio
 YouTube, se lo si è avviato con un clic); se non c'è un video apre la **barra del volume** (▲ ▼ per regolare, qualunque altro tasto chiude, si chiude da sola dopo 4 s).
-Il riquadro giallo sa scegliere anche i **player incorporati** (YouTube, Vimeo, emittenti…): OK
-ci clicca al centro. Se un sito va **a tutto schermo con un player suo** che tvd non riconosce
+Il riquadro giallo sa scegliere anche i **player incorporati** (YouTube, Vimeo, emittenti…: iframe
+che ammettono il tutto schermo o comunque grandi), anche con una copertura trasparente sopra: OK
+ci clicca al centro (se c'è una copertura, il primo OK la toglie e il secondo avvia il video). Se un sito va **a tutto schermo con un player suo** che tvd non riconosce
 (per esempio dentro un iframe), oppure se si è cliccato in un player incorporato **grande quasi
 quanto lo schermo**, i tasti vanno al player come da tastiera: ◄ ► frecce (avanti / indietro), OK e PLAY
 barra spaziatrice (pausa); ▲ ▼ restano il volume della TV, MENU indietro.

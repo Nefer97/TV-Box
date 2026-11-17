@@ -1,0 +1,16 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Pagina "guarda" senza allowfullscreen</title>
+<!-- Per tvtest.py: pagina di visione con il player in un iframe di un altro sito (127.0.0.1 invece
+     di localhost) grande quanto la finestra, senza tutto schermo vero. tvd il video non lo vede. -->
+<style>
+  body { margin: 0; background: #000; overflow: hidden; }
+  header { position: fixed; top: 0; left: 0; z-index: 2; padding: 8px; }
+  iframe { position: fixed; inset: 0; width: 100vw; height: 100vh; border: 0; }
+</style>
+<iframe></iframe>
+<header><a href="#indietro" style="color:#fff">← Indietro</a></header>
+<script>
+  document.querySelector('iframe').src =
+    location.href.replace('//localhost:', '//127.0.0.1:').replace(/guarda-[a-z]*\.html.*/, 'player.html');
+</script>

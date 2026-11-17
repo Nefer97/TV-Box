@@ -55,7 +55,7 @@ NO_SERVICE = normalize_service("", {}, {})      # pagina che non appartiene a ne
 # stato della pagina per i tasti: [video grande, tutto schermo, focus in un player incorporato grande]
 FRAME_JS = """[!!(window.__tv && __tv.isPlayer()), !!document.fullscreenElement, (() => {
   const f = document.activeElement;
-  if (!f || f.tagName !== 'IFRAME' || !f.matches('iframe[allowfullscreen], iframe[allow*="fullscreen"]')) return false;
+  if (!f || f.tagName !== 'IFRAME') return false;
   const r = f.getBoundingClientRect();
   return r.width * r.height > 0.6 * innerWidth * innerHeight;
 })()]"""
@@ -175,8 +175,8 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
 
     def _page_state(self):
         """(video grande, pagina a tutto schermo, focus in un player incorporato grande): una sola
-        domanda a Chrome, ricordata 0,7 s. Il player incorporato è un iframe che ammette il tutto
-        schermo, copre più del 60% della finestra e ha il focus (ci si è cliccato dentro)."""
+        domanda a Chrome, ricordata 0,7 s. Il player incorporato è un iframe che copre più del
+        60% della finestra e ha il focus (ci si è cliccato dentro)."""
         t, v = self._player_cache
         if time.monotonic() - t < 0.7:
             return v
