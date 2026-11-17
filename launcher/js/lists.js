@@ -223,6 +223,19 @@ export function homeEditPage(focusId) {
     if (hidden.has(id)) b.classList.add('off');
     list.appendChild(b);
   });
+  // i tuoi siti messi nella home (da "I miei siti"): si tolgono anche da qui
+  (CFG.my_sites || []).forEach(x => {
+    const b = item(x.label, 'Uno dei tuoi siti · nella home', () => overlay(x.label, [
+      ['Togli dalla home', async () => {
+        await api(`sites?action=home&on=0&url=${q(x.url)}`);
+        await rebuild();
+        hideOverlay();
+        homeEditPage();
+      }],
+      ['Annulla', hideOverlay]], 0));
+    b.dataset.hid = 'sito:' + x.url;
+    list.appendChild(b);
+  });
   const f = focusId && list.querySelector(`[data-hid="${focusId}"]`);
   (f || list.querySelector('[tabindex]')).focus();
 }

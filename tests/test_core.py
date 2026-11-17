@@ -216,6 +216,28 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(self.cfg.opt("non.esiste", 5), 5)
 
 
+class ProgressTest(unittest.TestCase):
+    def test_da_dove_riprendere(self):
+        from tvbox.health import resume_point
+        self.assertIsNone(resume_point(None))
+        self.assertIsNone(resume_point([30, 1500, 0]))          # primo minuto: dall'inizio
+        self.assertEqual(resume_point([600, 1500, 0]), 600)
+        self.assertIsNone(resume_point([1450, 1500, 0]))        # ultimi 2 minuti: dall'inizio
+
+    def test_prefs_solo_valori_validi_e_al_massimo_200(self):
+        from tvbox.prefs import PROGRESS_MAX
+        pr = {f"https://x/{i}": [10, 100, i] for i in range(PROGRESS_MAX + 20)}
+        pr.update({"rotto": [1, 2], "zero": [1, 0, 5], "testo": ["a", 1, 2]})
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "prefs.json"), "w") as f:
+                json.dump({"version": 3, "progress": pr}, f)
+            got = Prefs(d).get("progress")
+        self.assertEqual(len(got), PROGRESS_MAX)
+        self.assertNotIn("https://x/0", got)                      # i più vecchi escono
+        self.assertIn(f"https://x/{PROGRESS_MAX + 19}", got)
+        self.assertFalse({"rotto", "zero", "testo"} & got.keys())
+
+
 class PrefsTest(unittest.TestCase):
     def test_servizi_in_home_solo_validi(self):
         with tempfile.TemporaryDirectory() as d:

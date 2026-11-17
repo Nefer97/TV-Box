@@ -197,6 +197,8 @@ def make_routes(tv):
         "config": config, "home": home, "icon": icon, "open": open_, "openurl": openurl,
         "onair": lambda q: tv.epg.onair(), "meteo": meteo.api, "sites": tv.sites.api,
         "volume": lambda q: {"volume": tv.volume(int(q.get("delta", "0") or 0))},
+        # dove si è arrivati negli episodi: {"<url>": {"t": secondi, "d": durata}}
+        "progress": lambda q: {u: {"t": v[0], "d": v[1]} for u, v in (tv.prefs.get("progress") or {}).items()},
         "info": info, "wifi": wifi_, "screen": screen, "system": system,
         "guide": guide, "prefs": prefs, "sleep": sleep, "mediaset": mediaset, "mio": mio, "channels": channels,
     }

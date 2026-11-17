@@ -133,7 +133,9 @@ body.withdetail #bgimg.show { opacity: .42; }
 .gprog:focus .gdesc { -webkit-line-clamp: 2; }
 .gprog .bar { height: .5vh; border-radius: .3vh; margin-top: .8vh; background: rgba(255,255,255,.2); overflow: hidden; max-width: 30vw; }
 .gprog .bar i { display: block; height: 100%; background: var(--live-bar); }
-.gpic { flex: 0 0 11vw; height: 6.2vw; border-radius: 1.2vh; background: #1e293b center/cover no-repeat; }
+.gpic { flex: 0 0 11vw; height: 6.2vw; border-radius: 1.2vh; background: #1e293b center/cover no-repeat; position: relative; overflow: hidden; }
+.gpbar { position: absolute; left: 0; right: 0; bottom: 0; height: .7vh; background: rgba(0,0,0,.55); }
+.gpbar i { display: block; height: 100%; background: var(--live-bar); }
 .gwait { font-size: 2.6vh; color: var(--muted); padding: 2vh 1vw; }
 /* scheda "Guida TV" in fondo ai canali */
 .tvcard.act.guide { background: linear-gradient(160deg, #0f766e, #134e4a); }

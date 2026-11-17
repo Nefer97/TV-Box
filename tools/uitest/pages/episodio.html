@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Episodio di prova</title>
+<!-- Per tvtest.py: episodio di 10 minuti a tutta finestra. Il video è disegnato al momento;
+     durata e posizione sono finte (si possono spostare), come un episodio vero per tvd. -->
+<style>
+  body { margin: 0; background: #000; overflow: hidden; }
+  video { position: fixed; inset: 0; width: 100vw; height: 100vh; }
+</style>
+<video id="v" autoplay muted playsinline></video>
+<script>
+  const v = document.getElementById('v');
+  const c = document.createElement('canvas'); c.width = 320; c.height = 180;
+  const g = c.getContext('2d'); let k = 0, t = 0;
+  v.srcObject = c.captureStream(25);
+  setInterval(() => { g.fillStyle = `hsl(${(k++ * 5) % 360},60%,35%)`; g.fillRect(0, 0, 320, 180); }, 40);
+  Object.defineProperty(v, 'currentTime', { get: () => t, set: x => { t = x; } });
+  Object.defineProperty(v, 'duration', { get: () => 600 });
+  setInterval(() => { if (!v.paused) t += 0.25; }, 250);
+</script>

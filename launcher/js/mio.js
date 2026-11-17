@@ -3,7 +3,7 @@
 // I dati del catalogo vengono preparati da tvbox/mio.py.
 // La riproduzione e la pagina dei dettagli restano invariate.
 
-import { $, api, el, overlay, hideOverlay, q, state } from './core.js';
+import { $, api, el, overlay, hideOverlay, q, showProgress, state } from './core.js';
 
 let series = null;
 
@@ -426,6 +426,8 @@ export async function mioSeriesPage() {
     list.appendChild(el('div', 'gwait', 'Nessun episodio disponibile'));
   }
 
+  const prog = (await api('progress')) || {};      // dove si è arrivati (salvato da tvd)
+
   const last = state.mioEpisode || r.last;
   const li = r.episodes.findIndex(e => e.id === last);
 
@@ -457,6 +459,9 @@ export async function mioSeriesPage() {
         mins(e.dur)
       ].filter(Boolean).join(' · '))
     );
+
+    showProgress(pic, t, prog[e.url]);
+    row.dataset.url = e.url;
 
     if (e.desc) body.appendChild(el('div', 'gdesc', e.desc));
 

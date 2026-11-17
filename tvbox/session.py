@@ -38,6 +38,8 @@ class Session:
         self.opened_at = time.monotonic() if now is None else now
         self.watch = Watch(self.sid or what, self.opened_at) if self.guarded else None
         self.login = False                           # pagina di accesso di Il mio catalogo
+        self.resume_at = None                        # episodio: secondi da cui ripartire
+        self.progress_saved = 0.0                    # episodio: ultimo salvataggio del punto
 
     # ---------- come nasce ----------
     @classmethod

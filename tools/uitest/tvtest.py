@@ -179,6 +179,29 @@ check("episodio: video a tutto schermo", lambda: mode() == keys.PLAYER, 15)
 key("menu")
 check("MENU: torna alla serie", lambda: tv.url().endswith("#ms:SERIE") and tv.session is None, 6)
 
+# episodio lasciato a metà: tvd ricorda il punto e alla riapertura riparte da lì
+health.PROGRESS_EVERY = 1
+EP = f"http://localhost:{srv_port}/__test/episodio.html?n=1"
+
+
+def tick():
+    tv._health_tick(tv.url())
+    return True
+
+
+tv.open_episode(EP, "SERIE", "Prova · Ep. 1")
+check("episodio: punto salvato mentre si guarda", lambda: tick() and (prefs.get("progress") or {}).get(EP, [0])[0] > 0, 15)
+tv.cdp.eval("document.getElementById('v').currentTime = 300", timeout=3)
+check("episodio: salvato il punto nuovo (5:00 di 10:00)",
+      lambda: tick() and (prefs.get("progress") or {}).get(EP, [0, 0])[:2] >= [300, 600], 8)
+tv.home()
+tv.open_episode(EP, "SERIE", "Prova · Ep. 1")
+check("riapertura: riparte da 5:00", lambda: tick() and 295 <= (js("document.getElementById('v').currentTime") or 0) < 330, 15)
+check("riapertura: avviso \"Riprendo da 5:00\"", lambda: "Riprendo da 5:0" in (js(
+    "document.getElementById('__tvlayer').shadowRoot.textContent") or ""), 4)
+tv.home()
+check("episodio: di nuovo il launcher", lambda: mode() == keys.LAUNCHER, 6)
+
 tv.start(Session.site(PAGE + "?n=7"))
 check("sito: niente sipario", lambda: "n=7" in tv.url() and not has("curtain")(), 6)
 tv.toast("Avviso di prova")

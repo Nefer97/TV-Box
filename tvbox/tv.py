@@ -19,7 +19,7 @@ from .cdp import CDP
 from .config import normalize_service
 from .display import Display
 from .epg import EPG
-from .health import HealthMixin
+from .health import HealthMixin, resume_point
 from .layer import LayerMixin
 from .mediaset import Mediaset
 from .mio import Mio
@@ -285,8 +285,11 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
             self.start(Session.site(u, mobile=(self.sites.find(u) or {}).get("mobile")))
 
     def open_episode(self, url, series, label="", **kw):
-        """Episodio scelto nella sezione Mediaset o in Il mio catalogo (MENU torna alla serie)."""
-        self.start(Session.episode(url, series, label, **kw))
+        """Episodio scelto nella sezione Mediaset o in Il mio catalogo (MENU torna alla serie);
+        se lo si era lasciato a metà, riparte da lì (health._progress_tick)."""
+        sess = Session.episode(url, series, label, **kw)
+        sess.resume_at = resume_point((self.prefs.get("progress") or {}).get(sess.url))
+        self.start(sess)
 
     def open_login(self):
         """Pagina di accesso del sito di Il mio catalogo (LOGIN_URL in tvbox/mio.py)."""
@@ -299,6 +302,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         """Mette a schermo una visione. Le regole (sipario, banner, avvio, ultimo canale) sono
         della visione; panel = dati del pannello da tenere a schermo (cambio dal pannello)."""
         log.info("apro %s", sess)
+        self.unbook_now()                                # il sipario della visione di prima no
         self.panel = self.pointer = False
         self.volume_until = 0.0
         self.session = sess
@@ -341,6 +345,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         self.session = None
         self.prefs.set("last_channel", None)            # spento dalla home: si riparte dalla home
         self.clear_dark()
+        self.unbook_now()
         self._prepare(NO_SERVICE)
         self.cdp.close_other_pages()
         self.cdp.call("Page.navigate", {"url": self.launcher_url + (f"#{page}" if page else "")})

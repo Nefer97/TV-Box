@@ -157,3 +157,16 @@ export function edgeFade(row) {          // sfumatura ai bordi, solo dal lato do
   row.style.webkitMaskImage = g;
   row.style.maskImage = g;
 }
+
+// ---------- episodi: dove si è arrivati (salvato da tvd, /api/progress) ----------
+// barretta in fondo alla miniatura; quasi finito (oltre il 95%) = "VISTO" accanto al titolo
+export function showProgress(pic, title, p) {
+  if (!p || !p.d) return;
+  const f = p.t / p.d;
+  if (f >= 0.95) { title.appendChild(el('span', 'gnow seen', 'VISTO')); return; }
+  if (f < 0.01) return;
+  const bar = el('div', 'gpbar');
+  bar.appendChild(el('i'));
+  bar.firstChild.style.width = Math.round(f * 100) + '%';
+  pic.appendChild(bar);
+}

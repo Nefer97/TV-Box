@@ -89,6 +89,16 @@ await check('di nuovo nel gruppo Home e meteo', `document.body.dataset.page === 
 await press('down', 'ok');
 await check('riquadri della home: servizi, nessun canale', `(() => { const t = [...document.querySelectorAll('#homeedit-list .btn')].map(b => b.textContent);
   return t.length >= 5 && t.some(x => x.includes('YouTube')) && !t.some(x => /Rai 1|Canale 5/.test(x)); })()`, 6000);
+// uno dei tuoi siti nella home: si toglie anche da Riquadri della home
+await js(`fetch('/api/sites?action=add&label=Sito%20di%20prova&url=' + encodeURIComponent('https://example.org/'))
+  .then(() => fetch('/api/sites?action=home&on=1&url=' + encodeURIComponent('https://example.org/')))`);
+await js(`Promise.all([import('/js/home.js'), import('/js/lists.js')]).then(([h, l]) => h.rebuild().then(() => l.homeEditPage()))`);
+await check('il tuo sito nella home: elencato', `!!document.querySelector('#homeedit-list [data-hid="sito:https://example.org/"]')`, 6000);
+await js(`document.querySelector('#homeedit-list [data-hid="sito:https://example.org/"]').focus()`);
+await press('ok', 'ok');
+await check('il tuo sito: tolto dalla home', `!document.querySelector('#page-home .bigrow [data-url="https://example.org/"]')
+  && !document.querySelector('#homeedit-list [data-hid^="sito:"]')`, 6000);
+await js(`fetch('/api/sites?action=remove&url=' + encodeURIComponent('https://example.org/'))`);
 // un servizio di Altri servizi messo anche in home (e poi tolto)
 await js(`document.querySelector('#homeedit-list [data-hid="la7"]').focus()`);
 await press('ok');

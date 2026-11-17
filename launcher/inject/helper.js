@@ -42,7 +42,7 @@
     const v = T.main();
     if (!v) return { video: false };
     return { video: true, t: v.currentTime, paused: v.paused, user: !!v.dataset.tvUserPaused,
-             ended: v.ended, ready: v.readyState };
+             ended: v.ended, ready: v.readyState, d: isFinite(v.duration) ? v.duration : null };
   };
   // il sito sta chiedendo di accedere? (finestra in primo piano con "accedi", "login"…)
   T.loginWall = () => {
@@ -74,6 +74,12 @@
     let t = v.currentTime + d; const s = v.seekable;
     if (s && s.length) t = Math.max(s.start(0), Math.min(s.end(s.length - 1) - 1, t));
     try { v.currentTime = t; } catch (e) {}
+    return true;
+  };
+  // a un punto preciso (ripresa di un episodio lasciato a metà)
+  T.seekTo = (sec) => {
+    const v = T.main(); if (!v) return false;
+    try { v.currentTime = sec; } catch (e) { return false; }
     return true;
   };
   T.cssMax = (v) => {

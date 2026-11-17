@@ -47,11 +47,13 @@ class LayerMixin:
         pagina nasce blu, con il sipario ("Apro <curtain>…") e/o il pannello, prima del sito.
         Anche il fondo di Chrome diventa blu: niente lampo bianco. Restituisce la prenotazione."""
         boot = layer_script() + f"\n;window.__tvl && __tvl.boot({json.dumps({'curtain': curtain, 'panel': panel})});"
+        self.unbook_now()                                # quella di prima non deve finire qui
         pending = None
         try:
             pending = self.cdp.call("Page.addScriptToEvaluateOnNewDocument", {"source": boot}).get("identifier")
         except Exception as ex:
             log.warning("prenotazione: %s", ex)
+        self._pending_book = pending
         try:
             self.cdp.call("Emulation.setDefaultBackgroundColorOverride", {"color": DARK})
             self.dark_default = True
@@ -60,6 +62,16 @@ class LayerMixin:
         if pending:
             threading.Thread(target=self._unbook, args=(self.session, pending), daemon=True).start()
         return pending
+
+    def unbook_now(self):
+        """Toglie subito la prenotazione ancora in giro (pagina partita così in fretta che il
+        sipario è già andato via prima che _unbook lo vedesse)."""
+        pending, self._pending_book = getattr(self, "_pending_book", None), None
+        if pending:
+            try:
+                self.cdp.call("Page.removeScriptToEvaluateOnNewDocument", {"identifier": pending})
+            except Exception:
+                pass
 
     def _unbook(self, sess, pending):
         """Appena lo strato c'è nella pagina nuova (o dopo 15 s) si toglie la prenotazione, così
@@ -74,6 +86,8 @@ class LayerMixin:
             self.cdp.call("Page.removeScriptToEvaluateOnNewDocument", {"identifier": pending})
         except Exception:
             pass
+        if getattr(self, "_pending_book", None) == pending:
+            self._pending_book = None
 
     def clear_dark(self):
         if self.dark_default:

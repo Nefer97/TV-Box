@@ -1,7 +1,7 @@
 // mediaset.js — sezione Mediaset (fiction, serie, programmi, cartoni…): righe di locandine e pagina della serie.
 // I dati arrivano da tvd (/api/mediaset, catalogo pubblico Mediaset); OK su un episodio lo apre
 // a tutto schermo sul sito Mediaset, MENU dal video riporta qui (#ms:<serie>).
-import { $, api, el, overlay, hideOverlay, q, state } from './core.js';
+import { $, api, el, overlay, hideOverlay, q, showProgress, state } from './core.js';
 
 let series = null;                 // la serie aperta (risposta di /api/mediaset?action=series)
 
@@ -118,6 +118,7 @@ export async function seriesPage() {
       ss.appendChild(b);
     });
   }
+  const prog = (await api('progress')) || {};
   list.innerHTML = '';
   if (!r.episodes.length) list.appendChild(el('div', 'gwait', 'Nessun episodio gratuito disponibile'));
   const last = state.msEpisode || r.last;
@@ -133,6 +134,8 @@ export async function seriesPage() {
     if (li > 0 && i === li - 1) t.appendChild(el('span', 'gnow', 'SUCCESSIVO'));
     body.append(t, el('div', 'ginfo', [e.date ? hhmm(e.date) : '', e.channel, mins(e.dur)].filter(Boolean).join(' · ')));
     if (e.desc) body.appendChild(el('div', 'gdesc', e.desc));
+    showProgress(pic, t, prog[e.url]);
+    row.dataset.url = e.url;
     row.append(pic, body);
     row._act = () => play(e);
     list.appendChild(row);

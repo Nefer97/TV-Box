@@ -11,6 +11,7 @@ Contenuto:
     saver_off  minuti                                           schermo spento dopo tanto salvaschermo (0 = mai)
     ms_history [{"series","title","poster","episode","n","t"}]  Mediaset: Continua a guardare
     mio_history  come ms_history                               Il mio catalogo: Continua a guardare
+    progress   {"<url episodio>": [secondi, durata, quando]}    dove si è arrivati negli episodi (ultimi 200)
     channels   ["rai1", ...]                                    canali in diretta scelti, in ordine
 
 Versioni del file: 2 = V2/V3; 3 = V4 (i canali non si nascondono più con "hidden": un canale
@@ -24,6 +25,8 @@ from .channels import DEFAULT as DEFAULT_CHANNELS, IDS as CHANNEL_IDS
 from .util import USER_DIR, log, read_json, write_json
 
 VERSION = 3
+PROGRESS_MAX = 200     # episodi di cui si ricorda dove si è arrivati
+
 DEFAULTS = {
     "version": VERSION,
     "sites": [],
@@ -35,6 +38,7 @@ DEFAULTS = {
     "last_channel": None,
     "saver_off": 60,
     "ms_history": [],
+    "progress": {},
     "mio_history": [],
     "channels": list(DEFAULT_CHANNELS),
 }
@@ -109,6 +113,12 @@ class Prefs:
         ch = d.get("channels")
         if isinstance(ch, list):
             out["channels"] = [x for x in ch if isinstance(x, str)][:60] or list(DEFAULT_CHANNELS)
+        pr = d.get("progress")
+        if isinstance(pr, dict):
+            ok = {u: [float(v[0]), float(v[1]), int(v[2])] for u, v in pr.items()
+                  if isinstance(u, str) and isinstance(v, list) and len(v) == 3
+                  and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in v) and v[1] > 0}
+            out["progress"] = dict(sorted(ok.items(), key=lambda kv: kv[1][2])[-PROGRESS_MAX:])
         for key in ("ms_history", "mio_history"):
             h = d.get(key)
             if isinstance(h, list):
