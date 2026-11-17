@@ -53,3 +53,13 @@ def read_text(path):
     except OSError as ex:
         log.warning("%s non disponibile: %s", path, ex)
         return None
+
+
+def is_stream_url(u):
+    """Indirizzo di un flusso video accettabile per il player di tvbox: http o https, con un host."""
+    from urllib.parse import urlparse
+    try:
+        p = urlparse(u or "")
+    except ValueError:
+        return False
+    return p.scheme in ("http", "https") and bool(p.hostname)

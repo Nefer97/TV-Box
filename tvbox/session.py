@@ -39,6 +39,7 @@ class Session:
         self.watch = Watch(self.sid or what, self.opened_at) if self.guarded else None
         self.login = False                           # pagina di accesso di Il mio catalogo
         self.resume_at = None                        # episodio: secondi da cui ripartire
+        self.progress_key = self.url                 # episodio: sotto quale nome si salva il punto
         self.progress_saved = 0.0                    # episodio: ultimo salvataggio del punto
 
     # ---------- come nasce ----------

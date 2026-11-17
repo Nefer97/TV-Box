@@ -10,7 +10,7 @@ import re
 import subprocess
 import threading
 import time
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 
 from . import keys
 from .actions import Actions
@@ -64,6 +64,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
     def __init__(self, cfg, prefs, vinput=None):
         self.cfg, self.prefs = cfg, prefs
         self.launcher_url = f"http://127.0.0.1:{cfg.opt('http_port', 8765)}/"
+        self.player_url = self.launcher_url + "player.html"   # player di tvbox: è una visione, non il launcher
         self.services = cfg.services
         self.display = Display(prefs, cfg.opt("screen.video_mode", ""))
         self.display.on_change = self._refit_window
@@ -142,7 +143,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
 
     def context(self):
         url = self.url()
-        if url.startswith(self.launcher_url):
+        if self.on_launcher(url):
             return keys.Context(on_launcher=True, pointer=self.pointer)
         s = self.service_for(url)
         live = bool(self.session and self.session.live and s is self.session.service)
@@ -161,7 +162,8 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
             return ""
 
     def on_launcher(self, url=None):
-        return (url if url is not None else self.url()).startswith(self.launcher_url)
+        u = url if url is not None else self.url()
+        return u.startswith(self.launcher_url) and not u.startswith(self.player_url)
 
     def service_for(self, url):
         """Il servizio a cui appartiene la pagina (quello della visione, o uno con lo stesso sito)."""
@@ -289,6 +291,17 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         se lo si era lasciato a metà, riparte da lì (health._progress_tick)."""
         sess = Session.episode(url, series, label, **kw)
         sess.resume_at = resume_point((self.prefs.get("progress") or {}).get(sess.url))
+        self.start(sess)
+
+    def open_stream(self, stream, key, series, label="", **kw):
+        """Flusso video dato da un connettore (HLS .m3u8 o file video) nel player di tvbox
+        (launcher/player.html): come un episodio, MENU torna alla serie. Il punto si salva sotto
+        `key` (di solito l'indirizzo della pagina dell'episodio): l'indirizzo del flusso spesso
+        cambia a ogni apertura."""
+        page = self.player_url + "?" + urlencode({"src": stream, "title": label or ""})
+        sess = Session.episode(page, series, label, **kw)
+        sess.progress_key = key or stream
+        sess.resume_at = resume_point((self.prefs.get("progress") or {}).get(sess.progress_key))
         self.start(sess)
 
     def open_login(self):

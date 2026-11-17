@@ -14,7 +14,7 @@ from urllib.parse import parse_qs, urlparse
 from . import wifi
 from .meteo import Meteo
 from .sites import normalize_url, site_icon
-from .util import LAUNCHER_DIR
+from .util import LAUNCHER_DIR, is_stream_url
 
 
 class Binary:
@@ -142,13 +142,21 @@ def make_routes(tv):
         if a == "series":
             return tv.mio.series(q.get("id", ""), q.get("season"))
         if a == "play":
-            if not is_episode_url(q.get("url")):
+            # stream: flusso (HLS .m3u8 o file video) per il player di tvbox; altrimenti la
+            # pagina dell'episodio sul sito (url). Il punto si salva sotto url, se c'è.
+            stream = q.get("stream") or ""
+            if stream and not is_stream_url(stream):
+                return {"ok": False, "error": "Flusso non valido"}
+            if not stream and not is_episode_url(q.get("url")):
                 return {"ok": False, "error": "Episodio non valido"}
             tv.mio.remember(q)
             label = " · ".join(x for x in (q.get("title"), q.get("ep")) if x)
             site = tv.services.get("mio", {}).get("label", "Il mio catalogo")
-            tv.post(lambda: tv.open_episode(q["url"], q.get("series", ""), label,
-                                            site=site, back="mio", color="#9d174d"))
+            kw = dict(site=site, back="mio", color="#9d174d")
+            if stream:
+                tv.post(lambda: tv.open_stream(stream, q.get("url") or stream, q.get("series", ""), label, **kw))
+            else:
+                tv.post(lambda: tv.open_episode(q["url"], q.get("series", ""), label, **kw))
             return {"ok": True}
         if a == "login":
             if not tv.mio.login_state()["available"]:
