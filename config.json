@@ -75,6 +75,6 @@
                       "player_control": "keys", "hover": false,
                       "url": "https://www.netflix.com/browse" },
     "mio":          { "kind": "page", "page": "mio", "label": "StreamingCommunity", "subtitle": "Serie TV, film e anime in streaming",
-                      "icon": "play", "color": "#1a1a1a;",  "auto_fullscreen": true, "url": "https://streaming-community.army/theme/images/logo.png" }
+                      "icon": "play", "color": "#1a1a1a",  "auto_fullscreen": true, "url": "https://streaming-community.army/theme/images/logo.png" }
   }
 }
