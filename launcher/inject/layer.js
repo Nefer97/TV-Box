@@ -313,7 +313,8 @@
   const WAVES = '<path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
   const MUTE = '<path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
   let volT = 0;
-  function volume(v) {
+  function volume(v, ms) {
+    if (v == null) { clearTimeout(volT); fade('vol', 150); return true; }   // chiudi subito
     v = Math.max(0, Math.min(100, Math.round(v)));
     let b = parts.vol;
     if (!b) {
@@ -326,7 +327,7 @@
     b.querySelector('.n').textContent = v;
     requestAnimationFrame(() => b.classList.add('in'));
     clearTimeout(volT);
-    volT = setTimeout(() => fade('vol', 250), 2000);
+    volT = setTimeout(() => fade('vol', 250), ms || 2000);
     return true;
   }
 

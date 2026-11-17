@@ -132,6 +132,12 @@ TV_HOST=192.168.1.x ./deploy.sh     # se tv.local non risponde
 | MENU tenuto premuto | home | home | home | home |
 | Centrale tenuto premuto | puntatore (per i siti difficili) | | | |
 
+Nei siti: **PLAY** mette in pausa il video della pagina; se non ce n'è uno apre la **barra del
+volume** (▲ ▼ per regolare, qualunque altro tasto chiude, si chiude da sola dopo 4 s).
+Se un sito va **a tutto schermo con un player suo** che tvd non riconosce (per esempio dentro
+un iframe), i tasti vanno al player come da tastiera: ◄ ► frecce (avanti / indietro), OK e PLAY
+barra spaziatrice (pausa); ▲ ▼ restano il volume della TV, MENU indietro.
+
 ## Configurazione
 
 | File | Cosa contiene |

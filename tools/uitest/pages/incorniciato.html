@@ -1,0 +1,15 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Player incorniciato</title>
+<!-- Per tvtest.py: pagina senza video, con il player in un iframe di un altro sito
+     (127.0.0.1 invece di localhost), come i video incorporati. tvd il video non lo vede. -->
+<style>
+  body { margin: 0; background: #111; color: #ddd; font: 20px sans-serif; }
+  iframe { display: block; width: 640px; height: 360px; margin: 40px auto; border: 0; }
+</style>
+<p>Articolo con un video incorporato</p>
+<iframe allow="fullscreen" allowfullscreen></iframe>
+<script>
+  document.querySelector('iframe').src =
+    location.href.replace('//localhost:', '//127.0.0.1:').replace('incorniciato.html', 'player.html');
+</script>

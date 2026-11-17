@@ -21,6 +21,7 @@ from tvbox.config import Config, normalize_service  # noqa: E402
 from tvbox.prefs import Prefs  # noqa: E402
 from tvbox.session import Session  # noqa: E402
 from tvbox.tv import TV  # noqa: E402
+from tvbox.actions import VOLUME_IDLE_S  # noqa: E402
 
 cdp_port, srv_port = int(sys.argv[1]), int(sys.argv[2])
 SHOTS = sys.argv[3] if len(sys.argv) > 3 else None
@@ -214,6 +215,40 @@ key("ok")
 check("OK senza pulsanti: pausa con i tasti del sito", lambda: tv.input.keys[n_keys:] == ["space"], 3)
 key("left")
 check("◄: salto con i tasti del sito", lambda: tv.input.keys[-1] == "left", 3)
+
+# sito senza video: PLAY apre la barra del volume; a tutto schermo con il player in un iframe
+# di un altro sito (tvd il video non lo vede) i tasti vanno al player come da tastiera
+tv.start(Session.site(TEST + "incorniciato.html"))
+check("incorniciato: sito normale", lambda: "incorniciato" in tv.url() and mode() == keys.SITE, 6)
+n_keys = len(tv.input.keys)
+key("play")
+check("PLAY senza video: barra del volume", lambda: has("vol")() and mode() == keys.VOLUME, 4)
+key("up")
+check("▲ nella barra: volume su, barra ancora aperta", lambda: has("vol")() and mode() == keys.VOLUME, 3)
+time.sleep(2.5)
+check("barra: resta a schermo più dei 2 s soliti", lambda: has("vol")() and mode() == keys.VOLUME, 1)
+key("ok")
+check("OK: barra chiusa, di nuovo il sito", lambda: mode() == keys.SITE and not has("vol")(), 3)
+check("barra del volume: nessun tasto mandato al sito", lambda: tv.input.keys[n_keys:] == [], 1)
+key("play")
+time.sleep(VOLUME_IDLE_S + 0.5)
+check("barra: si chiude da sola", lambda: mode() == keys.SITE, 3)
+
+tv.cdp.eval("document.querySelector('iframe').requestFullscreen(), true", timeout=4, gesture=True)
+check("iframe a tutto schermo: tasti al player", lambda: mode() == keys.FULLPAGE, 6)
+shot("tutto-schermo-iframe")
+n_keys = len(tv.input.keys)
+key("right")
+key("left")
+key("play")
+key("ok")
+check("◄ ► frecce vere, PLAY e OK barra spaziatrice",
+      lambda: tv.input.keys[n_keys:] == ["right", "left", "space", "space"], 3)
+key("up")
+check("▲: volume della TV, non un tasto al sito", lambda: has("vol")() and len(tv.input.keys) == n_keys + 4, 3)
+key("menu")
+check("MENU: esce dal tutto schermo", lambda: not js("!!document.fullscreenElement") and mode() == keys.SITE, 4)
+
 tv.home()
 check("home: di nuovo il launcher", lambda: mode() == keys.LAUNCHER, 6)
 

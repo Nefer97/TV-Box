@@ -17,6 +17,8 @@ LIVE_SITE = "live_site"      # diretta web mentre la pagina si carica (banner, p
 TVAPP_HBBTV = "hbbtv"        # app per TV HbbTV (RaiPlay)
 TVAPP = "tvapp"              # app per TV leanback (YouTube TV)
 PLAYER = "player"            # video a tutto schermo in un sito
+FULLPAGE = "fullpage"        # sito a tutto schermo con un player suo (es. in un iframe): tasti veri
+VOLUME = "volume"            # barra del volume aperta con PLAY in un sito
 SITE = "site"                # sito con navigazione assistita (riquadro giallo)
 WEB = "web"                  # sito senza navigazione assistita
 
@@ -30,6 +32,8 @@ class Context:
     live: bool = False           # è un canale in diretta con palinsesto
     player: bool = False         # c'è un video grande in riproduzione e il servizio usa i tasti player
     assist: bool = True          # navigazione assistita ammessa
+    fullscreen: bool = False     # la pagina ha qualcosa a tutto schermo (Fullscreen API)
+    volume: bool = False         # barra del volume aperta (VOLUME)
 
 
 def detect_mode(c):
@@ -37,6 +41,8 @@ def detect_mode(c):
         return PANEL
     if c.pointer:
         return POINTER
+    if c.volume:
+        return VOLUME
     if c.on_launcher:
         return LAUNCHER
     if c.live:
@@ -49,6 +55,8 @@ def detect_mode(c):
         return TVAPP
     if c.player:
         return PLAYER
+    if c.fullscreen:                 # a tutto schermo, ma il video tvd non lo vede: decide il player
+        return FULLPAGE
     return SITE if c.assist else WEB
 
 
@@ -78,7 +86,14 @@ KEYMAP = {
     # OK nel video: "Salta intro" / "Episodio successivo" se ci sono, altrimenti pausa
     PLAYER:      {"up": "player_volume", "down": "player_volume", "left": "player_seek", "right": "player_seek",
                   "ok": "player_ok", "menu": "page_back", "play": "player_toggle"},
-    SITE:        {**_arrows("nav_move"), "ok": "nav_ok", "menu": "page_back", "play": "player_toggle"},
+    # a tutto schermo con un player che tvd non vede (iframe di un altro sito): i tasti vanno al
+    # player come da tastiera (◄ ► frecce, OK e PLAY = spazio); + − resta il volume della TV
+    FULLPAGE:    {"up": "player_volume", "down": "player_volume", "left": "key_arrow", "right": "key_arrow",
+                  "ok": "key_space", "menu": "page_back", "play": "key_space"},
+    # PLAY in un sito: pausa se c'è un video, altrimenti apre la barra del volume
+    SITE:        {**_arrows("nav_move"), "ok": "nav_ok", "menu": "page_back", "play": "site_play"},
+    VOLUME:      {"up": "volume_step", "down": "volume_step", "left": "volume_close", "right": "volume_close",
+                  "ok": "volume_close", "menu": "volume_close", "play": "volume_close"},
     WEB:         {**_arrows("key_arrow"), "ok": "key_enter", "menu": "page_back", "play": "player_toggle"},
 }
 

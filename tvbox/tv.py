@@ -73,6 +73,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         self.session = None                # cosa si sta guardando (session.Session), None = home
         self.pointer = False
         self.panel = False
+        self.volume_until = 0.0            # barra del volume aperta con PLAY fino a…
         self.mode = keys.LAUNCHER          # ultimo stato calcolato (riusato nelle ripetizioni)
         self.default_ua = None
         self.view_override = False
@@ -80,7 +81,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         self.flags = {}
         self.blocked = []
         self.dark_default = False          # fondo di Chrome blu (solo durante i cambi canale)
-        self._player_cache = (0.0, False)
+        self._player_cache = (0.0, (False, False))   # (quando, (video grande, tutto schermo))
         self._player_since = 0.0
         self._noplayer_since = 0.0
         self._resumed = False              # ultimo canale già riaperto all'avvio
@@ -139,7 +140,9 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         live = bool(self.session and self.session.live and s is self.session.service)
         player = bool(s.get("player_keys")) and self.is_player()
         return keys.Context(panel=self.panel_active(), pointer=self.pointer, kind=s["kind"],
-                            live=live, player=player, assist=bool(s.get("assist")))
+                            live=live, player=player, assist=bool(s.get("assist")),
+                            fullscreen=not player and self.is_fullscreen(),
+                            volume=time.monotonic() < self.volume_until)
 
     # ---------- utilità ----------
     def url(self):
@@ -161,16 +164,24 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
                 return s
         return NO_SERVICE
 
-    def is_player(self):
+    def _page_state(self):
+        """(video grande, pagina a tutto schermo): una sola domanda a Chrome, ricordata 0,7 s."""
         t, v = self._player_cache
         if time.monotonic() - t < 0.7:
             return v
         try:
-            v = bool(self.cdp.eval("!!(window.__tv && __tv.isPlayer())", timeout=2))
+            r = self.cdp.eval("[!!(window.__tv && __tv.isPlayer()), !!document.fullscreenElement]", timeout=2)
+            v = (bool(r[0]), bool(r[1])) if isinstance(r, list) and len(r) == 2 else (False, False)
         except Exception:
-            v = False
+            v = (False, False)
         self._player_cache = (time.monotonic(), v)
         return v
+
+    def is_player(self):
+        return self._page_state()[0]
+
+    def is_fullscreen(self):
+        return self._page_state()[1]
 
     def volume(self, delta=0):
         ctl = self.cfg.opt("audio.mixer", "Master")
@@ -278,6 +289,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         della visione; panel = dati del pannello da tenere a schermo (cambio dal pannello)."""
         log.info("apro %s", sess)
         self.panel = self.pointer = False
+        self.volume_until = 0.0
         self.session = sess
         self._prepare(sess.service)
         if sess.curtain or panel:                # la pagina nuova nasce con sipario e/o pannello
@@ -313,6 +325,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
             except Exception as ex:
                 log.warning("dopo l'accesso: %s", ex)
         self.panel = self.pointer = False
+        self.volume_until = 0.0
         self.display.set_lowres(False)
         self.session = None
         self.prefs.set("last_channel", None)            # spento dalla home: si riparte dalla home

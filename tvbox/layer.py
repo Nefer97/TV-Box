@@ -33,9 +33,13 @@ class LayerMixin:
     def toast(self, msg):
         self.layer("toast", msg, timeout=2)
 
-    def osd_volume(self, v):
-        """Barra del volume in alto a destra, aggiornata a ogni pressione."""
-        self.layer("volume", int(v))
+    def osd_volume(self, v, hold=None):
+        """Barra del volume in alto a destra, aggiornata a ogni pressione (hold: secondi a
+        schermo, se diversi dai 2 soliti)."""
+        if hold:
+            self.layer("volume", int(v), int(hold * 1000))
+        else:
+            self.layer("volume", int(v))
 
     # ---------- la pagina che sta per nascere ----------
     def book(self, curtain=None, panel=None):

@@ -2,7 +2,11 @@
 
 Sono i metodi che la tabella keys.KEYMAP nomina; la classe TV li eredita da Actions.
 """
+import time
+
 from .util import log
+
+VOLUME_IDLE_S = 4          # la barra del volume aperta con PLAY si chiude da sola dopo 4 s
 
 
 class Actions:
@@ -15,6 +19,9 @@ class Actions:
 
     def key_esc(self, key=None):
         self.input.key("esc")
+
+    def key_space(self, key=None):
+        self.input.key("space")
 
     def _tv_key(self, code):
         """Tasto con codice da televisore, inviato tramite Chrome (461 indietro, 463 play)."""
@@ -84,6 +91,37 @@ class Actions:
             self.toast("❚❚  Pausa")
         else:
             self.input.key("space")
+
+    # ---------- azioni: barra del volume (PLAY in un sito senza video) ----------
+    def site_play(self, key=None):
+        """PLAY in un sito: pausa / riproduci se nella pagina c'è un video, altrimenti la barra
+        del volume (▲ ▼ per regolare, qualunque altro tasto chiude)."""
+        if self._by_keys():
+            return self.input.key("space")
+        r = self.cdp.eval("window.__tv ? __tv.toggle() : false", timeout=3, gesture=True)
+        if r == "play":
+            self.toast("▶  Riproduci")
+        elif r == "pause":
+            self.toast("❚❚  Pausa")
+        else:
+            self.volume_open()
+
+    def volume_open(self, key=None):
+        v = self.volume()
+        if v is None:
+            return self.toast("Volume non disponibile")
+        self.volume_until = time.monotonic() + VOLUME_IDLE_S
+        self.osd_volume(v, hold=VOLUME_IDLE_S)
+
+    def volume_step(self, key):
+        v = self.volume(self._step(key))
+        self.volume_until = time.monotonic() + VOLUME_IDLE_S
+        if v is not None:
+            self.osd_volume(v, hold=VOLUME_IDLE_S)
+
+    def volume_close(self, key=None):
+        self.volume_until = 0.0
+        self.layer("volume", None, timeout=2)        # la barra se ne va subito
 
     def player_volume(self, key):
         v = self.volume(self._step(key))

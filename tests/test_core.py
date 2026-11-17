@@ -105,6 +105,27 @@ class KeysTest(unittest.TestCase):
         self.assertEqual(self.mode(kind="web", player=True), keys.PLAYER)
         self.assertEqual(self.mode(kind="web"), keys.SITE)
         self.assertEqual(self.mode(kind="web", assist=False), keys.WEB)
+        self.assertEqual(self.mode(kind="web", fullscreen=True), keys.FULLPAGE)
+        self.assertEqual(self.mode(kind="web", player=True, fullscreen=True), keys.PLAYER)
+        self.assertEqual(self.mode(kind="hbbtv", fullscreen=True), keys.TVAPP_HBBTV)
+        self.assertEqual(self.mode(kind="web", live=True, fullscreen=True), keys.LIVE_SITE)
+        self.assertEqual(self.mode(kind="web", volume=True), keys.VOLUME)
+        self.assertEqual(self.mode(panel=True, volume=True), keys.PANEL)
+
+    def test_schermo_intero_con_player_del_sito(self):
+        m = keys.FULLPAGE
+        self.assertEqual(keys.action_for(m, "left"), "key_arrow")
+        self.assertEqual(keys.action_for(m, "up"), "player_volume")
+        self.assertEqual(keys.action_for(m, "ok"), "key_space")
+        self.assertEqual(keys.action_for(m, "play"), "key_space")
+        self.assertEqual(keys.action_for(m, "menu_long"), "home")
+
+    def test_play_nei_siti_apre_il_volume(self):
+        self.assertEqual(keys.action_for(keys.SITE, "play"), "site_play")
+        self.assertEqual(keys.action_for(keys.VOLUME, "up"), "volume_step")
+        for k in ("ok", "menu", "play", "left"):
+            self.assertEqual(keys.action_for(keys.VOLUME, k), "volume_close")
+        self.assertEqual(keys.action_for(keys.VOLUME, "menu_long"), "home")
 
     def test_menu_sulle_dirette_apre_il_pannello(self):
         for m in (keys.LIVE_TV, keys.LIVE_PLAYER, keys.LIVE_SITE):
