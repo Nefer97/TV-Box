@@ -110,11 +110,14 @@ export function move(dir) {
   for (const e of items) {
     if (e === cur) continue;
     const b = e.getBoundingClientRect(), dx = b.left + b.width / 2 - ax, dy = b.top + b.height / 2 - ay;
+    // di lato si conta la distanza dal bordo del bersaglio, non dal suo centro: un elemento
+    // largo (es. una barra di ricerca) che sta proprio sopra non perde contro uno piccolo a fianco
+    const offX = Math.max(0, b.left - ax, ax - b.right), offY = Math.max(0, b.top - ay, ay - b.bottom);
     let main, cross;
-    if (dir === 'left') { if (dx > -5) continue; main = -dx; cross = Math.abs(dy); }
-    if (dir === 'right') { if (dx < 5) continue; main = dx; cross = Math.abs(dy); }
-    if (dir === 'up') { if (dy > -5) continue; main = -dy; cross = Math.abs(dx); }
-    if (dir === 'down') { if (dy < 5) continue; main = dy; cross = Math.abs(dx); }
+    if (dir === 'left') { if (dx > -5) continue; main = -dx; cross = offY; }
+    if (dir === 'right') { if (dx < 5) continue; main = dx; cross = offY; }
+    if (dir === 'up') { if (dy > -5) continue; main = -dy; cross = offX; }
+    if (dir === 'down') { if (dy < 5) continue; main = dy; cross = offX; }
     const d = main + cross * 2.2;
     if (d < bd) { bd = d; best = e; }
   }

@@ -205,20 +205,18 @@ body[data-page="mio"] main, body[data-page="mioserie"] main { padding-top: 0; }
   padding: 12px 0 20px;
 }
 
-.mio-search-input {
+.mio-search-field {
   flex: 1;
   min-width: 0;
-  padding: 14px 18px;
-  border-radius: 8px;
-  border: 1px solid #555;
-  background: #222;
-  color: white;
-  font-size: 18px;
+  text-align: left;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.mio-search-input:focus {
-  outline: 2px solid white;
-  border-color: white;
+.mio-search-field.empty:not(:focus) {
+  color: rgba(255, 255, 255, .55);
 }
 
 .mio-search .btn {

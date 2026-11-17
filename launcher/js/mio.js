@@ -82,31 +82,52 @@ function poster(x) {
 // ---------- barra di ricerca ----------
 
 function renderSearchBar() {
-  const bar = el('div', 'mio-search row');
+  const bar = el('div', 'mio-search');
 
-  const input = el('input', 'mio-search-input');
-  input.type = 'text';
-  input.placeholder = 'Cerca film o serie TV...';
-  input.value = searchQuery;
-  input.setAttribute('aria-label', 'Cerca per nome');
+  // un pulsante come gli altri (le frecce ci arrivano per posizione): OK apre la tastiera a
+  // schermo, "Fatto" cerca. Nel launcher niente <input>: il telecomando non ha lettere.
+  const field = el('div', 'btn mio-search-field' + (searchQuery ? '' : ' empty'),
+    searchQuery ? `🔍  ${searchQuery}` : '🔍  Cerca film o serie TV…');
+  field.tabIndex = 0;
+  field.setAttribute('aria-label', 'Cerca per nome');
+  field._act = openSearchKeyboard;
+  bar.appendChild(field);
 
-  input.addEventListener('input', () => {
-    searchQuery = input.value;
-  });
-
-  input.addEventListener('keydown', ev => {
-    if (ev.key === 'Enter') {
-      ev.preventDefault();
-      runSearch();
-    }
-  });
-
-  const button = el('div', 'btn chip', 'CERCA');
-  button.tabIndex = 0;
-  button._act = runSearch;
-
-  bar.append(input, button);
+  if (searchQuery || searchResults !== null) {
+    const clear = el('div', 'btn chip', 'Cancella');
+    clear.tabIndex = 0;
+    clear._act = clearSearch;
+    bar.appendChild(clear);
+  }
   return bar;
+}
+
+const focusSearch = () => {
+  const f = $('#mio-rails .mio-search-field');
+  if (f && state.page === 'mio') f.focus();
+};
+
+function openSearchKeyboard() {
+  if (!window.__osk) return;
+  window.__osk.open({
+    title: 'Cerca per nome',
+    value: searchQuery,
+    onDone: v => {
+      searchQuery = (v || '').trim();
+      if (!searchQuery) return clearSearch();
+      runSearch();
+    },
+    onCancel: focusSearch,
+  });
+}
+
+function clearSearch() {
+  searchQuery = '';
+  searchResults = null;
+  searchRequest++;                       // una ricerca ancora in corso non riscrive la pagina
+  searchBusy = false;
+  renderCatalogPage();
+  focusSearch();
 }
 
 async function runSearch() {
