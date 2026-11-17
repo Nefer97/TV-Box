@@ -29,14 +29,20 @@ def make_routes(tv):
 
     def config(q):
         return dict(tv.cfg.ui(tv.prefs.get("channels")), hidden=tv.prefs.get("hidden"),
+                    pinned=[x for x in tv.prefs.get("pinned") if x in tv.cfg.other],
                     my_sites=[x for x in tv.sites.list() if x.get("home")])
 
     def home(q):
-        """Riquadri nascosti dalla home o da Altri servizi (i canali si scelgono con channels)."""
+        """Riquadri nascosti dalla home o da Altri servizi (i canali si scelgono con channels);
+        pin / unpin: un servizio di Altri servizi anche (o non più) tra i riquadri grandi della home."""
         sid, a = q.get("id", ""), q.get("action")
         if sid and sid != "impostazioni" and sid not in tv.cfg.channels and a in ("hide", "show"):
             tv.prefs.update("hidden", lambda h: [x for x in h if x != sid] + ([sid] if a == "hide" else []))
-        return {"hidden": tv.prefs.get("hidden")}
+        if sid in tv.cfg.other and a in ("pin", "unpin"):
+            tv.prefs.update("pinned", lambda p: [x for x in p if x != sid] + ([sid] if a == "pin" else []))
+            if a == "pin":                               # in home vuol dire anche visibile
+                tv.prefs.update("hidden", lambda h: [x for x in h if x != sid])
+        return {"hidden": tv.prefs.get("hidden"), "pinned": tv.prefs.get("pinned")}
 
     def icon(q):
         r = site_icon(q.get("url", ""))

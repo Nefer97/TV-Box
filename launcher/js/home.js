@@ -81,6 +81,11 @@ export function build() {
       g._act = () => state.show('guide');
       row.appendChild(g);
     }
+    if (sec.big) {                                     // servizi di Altri servizi messi in home
+      const altriTile = [...row.children].find(t => t.dataset.id === 'altri');
+      (CFG.pinned || []).filter(ok).filter(id => !items.includes(id))
+        .forEach(id => row.insertBefore(tile(id, CFG.services[id], true), altriTile || null));
+    }
     if (sec.big) row.classList.add('bigrow');
     if (sec.big && !bigDone) {                         // i siti dell'utente dopo i servizi principali
       bigDone = true;
@@ -93,6 +98,7 @@ export function build() {
         row.insertBefore(t, ref);
       });
     }
+    if (sec.big && row.children.length > 5) row.classList.add('scroller');   // tanti riquadri: la fila scorre
     home.appendChild(row);
   });
   home.appendChild(detail);                            // il dettaglio sta sotto i canali

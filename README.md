@@ -129,7 +129,7 @@ TV_HOST=192.168.1.x ./deploy.sh     # se tv.local non risponde
 | ◄ ► | muoversi | indietro / avanti | pannello sul canale vicino | scegliere (in cerchio) |
 | Centrale / OK | apri | pausa | pausa | cambia canale |
 | MENU | indietro | indietro | **pannello cambio canale** | chiudi |
-| MENU tenuto premuto | home | home | home | home |
+| MENU tenuto premuto | home (dalla home: **Impostazioni**) | home | home | home |
 | Centrale tenuto premuto | puntatore (per i siti difficili) | | | |
 
 Nei siti: **PLAY** mette in pausa il video della pagina (anche un video incorporato, per esempio

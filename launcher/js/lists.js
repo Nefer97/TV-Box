@@ -189,18 +189,35 @@ function channelMenu(c, n) {
 // ======================================================================== Schermata iniziale
 export function homeEditPage(focusId) {
   const CFG = state.CFG, list = $('#homeedit-list'), hidden = new Set(CFG.hidden || []), where = {};
+  const pinned = new Set(CFG.pinned || []), other = new Set(CFG.other || []);
   list.innerHTML = '';
   // i canali non sono qui: si scelgono in "Canali in diretta"
   CFG.sections.filter(sec => !sec.channels).forEach(sec => sec.items.forEach(id => { where[id] = sec.title || 'Home'; }));
   (CFG.other || []).forEach(id => { where[id] = where[id] || 'Altri servizi'; });
+  const done = async (action, id) => {
+    const r = await api(`home?action=${action}&id=${q(id)}`);
+    if (r) { CFG.hidden = r.hidden; CFG.pinned = r.pinned; }
+    hideOverlay();
+    build();
+    homeEditPage(id);
+  };
   Object.keys(where).forEach(id => {
     const s = CFG.services[id];
-    if (!s || id === 'impostazioni') return;
-    const b = item(s.label, `${where[id]} · ${hidden.has(id) ? 'NASCOSTA' : 'visibile'}`, async () => {
-      const r = await api(`home?action=${hidden.has(id) ? 'show' : 'hide'}&id=${q(id)}`);
-      if (r) CFG.hidden = r.hidden;
-      build();
-      homeEditPage(id);
+    if (!s) return;
+    const extra = other.has(id);                       // di Altri servizi: si può mettere anche in home
+    if (id === 'impostazioni' && !extra) return;
+    const stato = hidden.has(id) ? 'NASCOSTA' : pinned.has(id) ? 'in home e in Altri servizi' : 'visibile';
+    const b = item(s.label, `${where[id]} · ${stato}`, () => {
+      if (!extra) return done(hidden.has(id) ? 'show' : 'hide', id);
+      const opts = [];
+      if (!pinned.has(id) || hidden.has(id)) opts.push(['Anche in home', () => done('pin', id)]);
+      if (pinned.has(id)) opts.push(['Solo in Altri servizi', () => done('unpin', id)]);
+      if (!pinned.has(id) && hidden.has(id)) opts.push(['Mostra in Altri servizi', () => done('show', id)]);
+      if (!hidden.has(id) && id !== 'impostazioni') opts.push(['Nascondi', async () => {
+        if (pinned.has(id)) await api(`home?action=unpin&id=${q(id)}`);
+        done('hide', id);
+      }]);
+      overlay(s.label, opts.concat([['Annulla', hideOverlay]]), 0);
     });
     b.dataset.hid = id;
     if (hidden.has(id)) b.classList.add('off');

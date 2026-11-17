@@ -34,10 +34,10 @@
   "home": {
     "sections": [
       { "title": "", "big": true,
-        "items": ["raiplay", "mediaset", "youtube", "altri", "impostazioni"] },
+        "items": ["raiplay", "mediaset", "youtube", "altri"] },
       { "title": "Canali in diretta", "channels": true }
     ],
-    "other": ["siti", "mediaset_web", "discovery", "raiplay_web", "la7", "raiplaysound", "plutotv", "netflix", "mio"]
+    "other": ["siti", "mediaset_web", "discovery", "raiplay_web", "la7", "raiplaysound", "plutotv", "netflix", "mio", "impostazioni"]
   },
 
   "services": {

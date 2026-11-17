@@ -89,6 +89,18 @@ await check('di nuovo nel gruppo Home e meteo', `document.body.dataset.page === 
 await press('down', 'ok');
 await check('riquadri della home: servizi, nessun canale', `(() => { const t = [...document.querySelectorAll('#homeedit-list .btn')].map(b => b.textContent);
   return t.length >= 5 && t.some(x => x.includes('YouTube')) && !t.some(x => /Rai 1|Canale 5/.test(x)); })()`, 6000);
+// un servizio di Altri servizi messo anche in home (e poi tolto)
+await js(`document.querySelector('#homeedit-list [data-hid="la7"]').focus()`);
+await press('ok');
+await check('La7: scelta "Anche in home"', `document.activeElement.textContent === 'Anche in home'`, 3000);
+await press('ok');
+await check('La7 tra i riquadri grandi, prima di Altri servizi', `(() => { const ids = [...document.querySelectorAll('#page-home .bigrow .tile')].map(t => t.dataset.id);
+  return ids.includes('la7') && ids.indexOf('la7') === ids.indexOf('altri') - 1; })()`, 4000);
+await check('La7: segnata "in home e in Altri servizi"', `document.querySelector('#homeedit-list [data-hid="la7"]').textContent.includes('in home')`, 3000);
+await press('ok');
+await check('La7: scelta "Solo in Altri servizi"', `document.activeElement.textContent === 'Solo in Altri servizi'`, 3000);
+await press('ok');
+await check('La7 di nuovo solo in Altri servizi', `!document.querySelector('#page-home .bigrow [data-id="la7"]') && !!document.querySelector('#altri-row [data-id="la7"]')`, 4000);
 
 console.log('mediaset');
 await open('mediaset');

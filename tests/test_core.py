@@ -133,6 +133,10 @@ class KeysTest(unittest.TestCase):
         for m in (keys.LIVE_TV, keys.LIVE_PLAYER, keys.LIVE_SITE):
             self.assertEqual(keys.action_for(m, "menu"), "panel_open")
 
+    def test_menu_lungo_nel_launcher(self):
+        self.assertEqual(keys.action_for(keys.LAUNCHER, "menu_long"), "launcher_long")
+        self.assertEqual(keys.action_for(keys.SITE, "menu_long"), "home")
+
     def test_pannello(self):
         self.assertEqual(keys.action_for(keys.PANEL, "up"), "panel_volume")
         self.assertEqual(keys.action_for(keys.PANEL, "left"), "panel_move")
@@ -213,6 +217,12 @@ class ConfigTest(unittest.TestCase):
 
 
 class PrefsTest(unittest.TestCase):
+    def test_servizi_in_home_solo_validi(self):
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "prefs.json"), "w") as f:
+                json.dump({"version": 3, "pinned": ["la7", 5, None, "rai1", "plutotv"]}, f)
+            self.assertEqual(Prefs(d).get("pinned"), ["la7", "plutotv"])
+
     def test_file_nuovo(self):
         with tempfile.TemporaryDirectory() as d:
             p = Prefs(d)

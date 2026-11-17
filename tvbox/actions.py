@@ -20,6 +20,12 @@ class Actions:
     def key_esc(self, key=None):
         self.input.key("esc")
 
+    def launcher_long(self, key=None):
+        """MENU tenuto premuto nel launcher: lo decide il launcher (dalla home apre le
+        Impostazioni, altrove torna alla home); se non risponde, la home di sempre."""
+        if not self.cdp.eval("!!(window.__tvMenuLong && __tvMenuLong())", timeout=3):
+            self.home()
+
     def key_space(self, key=None):
         self.input.key("space")
 

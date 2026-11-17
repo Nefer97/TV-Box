@@ -115,6 +115,11 @@ def mode():
 print("tvd ↔ Chrome")
 tv.home()
 check("home: stato launcher", lambda: mode() == keys.LAUNCHER)
+check("home: launcher pronto", lambda: js("typeof window.__tvMenuLong") == "function", 10)
+key("menu_long")
+check("MENU tenuto premuto nella home: Impostazioni", lambda: js("document.body.dataset.page") == "settings", 4)
+key("menu_long")
+check("MENU tenuto premuto nelle Impostazioni: di nuovo la home", lambda: js("document.body.dataset.page") == "home", 4)
 
 tv.open("prova1")
 check("canale: sipario subito", has("curtain"), 4)

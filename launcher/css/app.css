@@ -60,6 +60,7 @@ h2.sec-title { margin: 3vh 0 1.4vh; }
 /* riga principale: con più riquadri si stringono invece di andare a capo */
 .row.bigrow { flex-wrap: nowrap; }
 .row.bigrow .tile.big { flex: 0 1 16.6vw; min-width: 0; }
+.row.bigrow.scroller .tile.big { flex: 0 0 16.6vw; }
 .row.bigrow .tile .label { overflow-wrap: normal; word-break: normal; hyphens: manual; }
 
 /* ---------- canale selezionato: dettaglio sotto e immagine sullo sfondo ---------- */

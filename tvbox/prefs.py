@@ -3,6 +3,7 @@
 Contenuto:
     sites   [{"label", "url", "home": bool, "mobile": bool}]   I miei siti
     hidden  ["id", ...]                                         riquadri nascosti (non i canali)
+    pinned  ["id", ...]                                         servizi di Altri servizi messi anche in home
     meteo   {"name", "lat", "lon"} | None                       città del meteo
     screen  {"mode": "auto" | "LxA", "video_low": bool}         risoluzione
     startup "last" | "home"                                     all'accensione: ultimo canale o home
@@ -27,6 +28,7 @@ DEFAULTS = {
     "version": VERSION,
     "sites": [],
     "hidden": [],
+    "pinned": [],
     "meteo": None,
     "screen": {"mode": "auto", "video_low": True},
     "startup": "last",
@@ -83,6 +85,9 @@ class Prefs:
         hidden = d.get("hidden")
         if isinstance(hidden, list):
             out["hidden"] = [x for x in hidden if isinstance(x, str) and x not in CHANNEL_IDS]
+        pinned = d.get("pinned")
+        if isinstance(pinned, list):
+            out["pinned"] = [x for x in pinned if isinstance(x, str) and x not in CHANNEL_IDS][:20]
         m = d.get("meteo")
         if isinstance(m, dict) and {"name", "lat", "lon"} <= m.keys():
             try:

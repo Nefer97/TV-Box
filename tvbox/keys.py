@@ -72,7 +72,9 @@ def _arrows(action):
 COMMON = {"home": "home", "menu_long": "home", "ok_long": "pointer_toggle"}
 
 KEYMAP = {
-    LAUNCHER:    {**_arrows("key_arrow"), "ok": "key_enter", "play": "key_enter", "menu": "key_esc"},
+    # MENU tenuto premuto nel launcher: dalla home le Impostazioni, dalle altre pagine la home
+    LAUNCHER:    {**_arrows("key_arrow"), "ok": "key_enter", "play": "key_enter", "menu": "key_esc",
+                  "menu_long": "launcher_long"},
     PANEL:       {"left": "panel_move", "right": "panel_move", "up": "panel_volume", "down": "panel_volume",
                   "ok": "panel_ok", "menu": "panel_close", "play": "panel_close", "ok_long": None},
     POINTER:     {**_arrows("pointer_nudge"), "ok": "click", "menu": "pointer_off", "play": "player_toggle"},

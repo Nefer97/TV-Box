@@ -106,7 +106,14 @@ window.addEventListener('pageshow', () => { state.busy = false; $('#overlay').cl
   build();
   const start = location.hash.slice(1);                           // tvd può aprire Impostazioni o Guida
   state.asleep = start === 'sleep';                                // ...o la home a schermo spento
-  window.__tvWake = saverAwake;                                    // tvd: schermo riacceso
+  window.__tvWake = saverAwake;
+  // tvd: MENU tenuto premuto nel launcher. Dalla home le Impostazioni, altrove la home
+  window.__tvMenuLong = () => {
+    if (window.__osk && __osk.isOpen()) __osk.cancel();
+    if (overlayOpen()) hideOverlay();
+    show(state.page === 'home' ? 'settings' : 'home');
+    return true;
+  };                                    // tvd: schermo riacceso
   if (start.startsWith('ms:')) { state.msSeries = start.slice(3); show('msserie'); }     // MENU da un episodio
   else if (start.startsWith('mio:')) { state.mioSeries = start.slice(4); show('mioserie'); }
   else show(['settings', 'guide', 'mediaset', 'mio'].includes(start) ? start : 'home');
