@@ -9,6 +9,9 @@
     '[role=button], [role=link], [role=tab], [role=menuitem], [role=option], [role=checkbox], ' +
     '[role=switch], [contenteditable=""], [contenteditable=true], [tabindex]:not([tabindex="-1"]), ' +
     '[onclick], label[for]';
+  // player incorporati (YouTube, Vimeo, emittenti…): anche grandi quanto lo schermo, OK ci clicca al centro
+  const FRAME = 'iframe[allowfullscreen], iframe[allow*="fullscreen"]';
+  const isFrame = el => el.tagName === 'IFRAME' && el.matches(FRAME);
   const TEXT_TYPES = /^(text|search|email|url|tel|password|number|)$/i;
   let cur = null, ring = null, raf = 0;
 
@@ -95,6 +98,7 @@
       if (r.bottom < -lim || r.top > lim + innerHeight || r.width < 6 || r.height < 6) return;
       add(el);
     });
+    document.querySelectorAll(FRAME).forEach(el => { const r = el.getBoundingClientRect(); if (r.width >= 120 && r.height >= 90) add(el); });
     pointerRoots().forEach(add);
     // tengo il più esterno quando un cliccabile ne contiene un altro
     cache = els.filter(el => { for (let p = el.parentElement; p; p = p.parentElement) if (seen.has(p)) return false; return true; });
@@ -118,7 +122,7 @@
     for (const el of cache) {
       if (!el.isConnected) continue;
       const r = el.getBoundingClientRect();
-      if (r.width * r.height > big || !visible(el, r)) continue;
+      if ((r.width * r.height > big && !isFrame(el)) || !visible(el, r)) continue;
       out.push({ el, r });
     }
     return out;
@@ -172,7 +176,9 @@
     const r = el.getBoundingClientRect();
     if (r.top < 60 || r.bottom > innerHeight - 60 || r.left < 0 || r.right > innerWidth)
       el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
-    try { el.focus({ preventScroll: true }); } catch (e) {}
+    // un player incorporato riceve il focus solo dal clic di OK: con il focus dentro, tvd
+    // manda i tasti al player (FULLPAGE) e OK non cliccherebbe più su "play"
+    if (!isFrame(el)) { try { el.focus({ preventScroll: true }); } catch (e) {} }
     // passaggio del mouse simulato (menu che si aprono al passaggio), salvo i siti dove fa
     // partire anteprime che si allargano sopra le locandine vicine (servizio con "hover": false)
     if (!(window.__tvFlags && window.__tvFlags.hover === false)) {
@@ -293,7 +299,8 @@
     }
     // clic "vero" fatto da tvd tramite Chrome nel centro dell'elemento
     const r = cur.getBoundingClientRect();
-    return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + Math.min(r.height / 2, 40)) };
+    const y = isFrame(cur) ? r.top + r.height / 2 : r.top + Math.min(r.height / 2, 40);   // player: pulsante play al centro
+    return { x: Math.round(r.left + r.width / 2), y: Math.round(y) };
   }
   function back() {
     if (window.__osk && __osk.isOpen()) { __osk.cancel(); return true; }

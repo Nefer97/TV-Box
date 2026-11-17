@@ -106,6 +106,8 @@ class KeysTest(unittest.TestCase):
         self.assertEqual(self.mode(kind="web"), keys.SITE)
         self.assertEqual(self.mode(kind="web", assist=False), keys.WEB)
         self.assertEqual(self.mode(kind="web", fullscreen=True), keys.FULLPAGE)
+        self.assertEqual(self.mode(kind="web", frame_player=True), keys.FULLPAGE)
+        self.assertEqual(self.mode(kind="web", live=True, frame_player=True), keys.LIVE_SITE)
         self.assertEqual(self.mode(kind="web", player=True, fullscreen=True), keys.PLAYER)
         self.assertEqual(self.mode(kind="hbbtv", fullscreen=True), keys.TVAPP_HBBTV)
         self.assertEqual(self.mode(kind="web", live=True, fullscreen=True), keys.LIVE_SITE)

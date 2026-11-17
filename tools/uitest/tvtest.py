@@ -257,6 +257,28 @@ check("▲: volume della TV, non un tasto al sito", lambda: has("vol")() and len
 key("menu")
 check("MENU: esce dal tutto schermo", lambda: not js("!!document.fullscreenElement") and mode() == keys.SITE, 4)
 
+# pagina di visione con il player in un iframe grande quanto la finestra, senza tutto schermo
+# vero: col riquadro giallo si sceglie il player, OK ci clicca dentro e i tasti vanno a lui
+tv.start(Session.site(TEST + "guarda.html"))
+check("pagina guarda: sito normale finché non si sceglie il player",
+      lambda: "guarda" in tv.url() and mode() == keys.SITE, 6)
+time.sleep(1.5)                                   # il player nell'iframe si carica
+for _ in range(3):
+    if js("window.__nav && __nav.current() && __nav.current().tagName") == "IFRAME":
+        break
+    key("down")
+check("riquadro giallo: sul player incorporato", lambda: js("__nav.current().tagName") == "IFRAME", 3)
+check("riquadro sul player: OK sarà ancora un clic (niente tasti al player)", lambda: mode() == keys.SITE, 2)
+key("ok")
+check("OK: clic nel player, tasti al player", lambda: js("document.activeElement.tagName") == "IFRAME"
+      and mode() == keys.FULLPAGE, 4)
+n_keys = len(tv.input.keys)
+key("right")
+key("play")
+check("► freccia vera, PLAY barra spaziatrice", lambda: tv.input.keys[n_keys:] == ["right", "space"], 3)
+key("down")
+check("▼: volume della TV", lambda: has("vol")() and len(tv.input.keys) == n_keys + 2, 3)
+
 tv.home()
 check("home: di nuovo il launcher", lambda: mode() == keys.LAUNCHER, 6)
 

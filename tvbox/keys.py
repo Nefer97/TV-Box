@@ -17,7 +17,7 @@ LIVE_SITE = "live_site"      # diretta web mentre la pagina si carica (banner, p
 TVAPP_HBBTV = "hbbtv"        # app per TV HbbTV (RaiPlay)
 TVAPP = "tvapp"              # app per TV leanback (YouTube TV)
 PLAYER = "player"            # video a tutto schermo in un sito
-FULLPAGE = "fullpage"        # sito a tutto schermo con un player suo (es. in un iframe): tasti veri
+FULLPAGE = "fullpage"        # player che tvd non vede (iframe) a tutto schermo o grande e col focus: tasti veri
 VOLUME = "volume"            # barra del volume aperta con PLAY in un sito
 SITE = "site"                # sito con navigazione assistita (riquadro giallo)
 WEB = "web"                  # sito senza navigazione assistita
@@ -33,6 +33,7 @@ class Context:
     player: bool = False         # c'è un video grande in riproduzione e il servizio usa i tasti player
     assist: bool = True          # navigazione assistita ammessa
     fullscreen: bool = False     # la pagina ha qualcosa a tutto schermo (Fullscreen API)
+    frame_player: bool = False   # focus in un player incorporato grande (iframe che copre lo schermo)
     volume: bool = False         # barra del volume aperta (VOLUME)
 
 
@@ -55,7 +56,7 @@ def detect_mode(c):
         return TVAPP
     if c.player:
         return PLAYER
-    if c.fullscreen:                 # a tutto schermo, ma il video tvd non lo vede: decide il player
+    if c.fullscreen or c.frame_player:   # il video tvd non lo vede (iframe): decide il player
         return FULLPAGE
     return SITE if c.assist else WEB
 

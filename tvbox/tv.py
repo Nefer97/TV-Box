@@ -52,6 +52,14 @@ BLOCKLISTS = {
 NO_SERVICE = normalize_service("", {}, {})      # pagina che non appartiene a nessun servizio
 
 
+# stato della pagina per i tasti: [video grande, tutto schermo, focus in un player incorporato grande]
+FRAME_JS = """[!!(window.__tv && __tv.isPlayer()), !!document.fullscreenElement, (() => {
+  const f = document.activeElement;
+  if (!f || f.tagName !== 'IFRAME' || !f.matches('iframe[allowfullscreen], iframe[allow*="fullscreen"]')) return false;
+  const r = f.getBoundingClientRect();
+  return r.width * r.height > 0.6 * innerWidth * innerHeight;
+})()]"""
+
 class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
     def __init__(self, cfg, prefs, vinput=None):
         self.cfg, self.prefs = cfg, prefs
@@ -81,7 +89,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         self.flags = {}
         self.blocked = []
         self.dark_default = False          # fondo di Chrome blu (solo durante i cambi canale)
-        self._player_cache = (0.0, (False, False))   # (quando, (video grande, tutto schermo))
+        self._player_cache = (0.0, (False, False, False))   # (quando, (video grande, tutto schermo, player incorporato))
         self._player_since = 0.0
         self._noplayer_since = 0.0
         self._resumed = False              # ultimo canale già riaperto all'avvio
@@ -142,6 +150,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         return keys.Context(panel=self.panel_active(), pointer=self.pointer, kind=s["kind"],
                             live=live, player=player, assist=bool(s.get("assist")),
                             fullscreen=not player and self.is_fullscreen(),
+                            frame_player=not player and self._page_state()[2],
                             volume=time.monotonic() < self.volume_until)
 
     # ---------- utilità ----------
@@ -165,15 +174,17 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         return NO_SERVICE
 
     def _page_state(self):
-        """(video grande, pagina a tutto schermo): una sola domanda a Chrome, ricordata 0,7 s."""
+        """(video grande, pagina a tutto schermo, focus in un player incorporato grande): una sola
+        domanda a Chrome, ricordata 0,7 s. Il player incorporato è un iframe che ammette il tutto
+        schermo, copre più del 60% della finestra e ha il focus (ci si è cliccato dentro)."""
         t, v = self._player_cache
         if time.monotonic() - t < 0.7:
             return v
         try:
-            r = self.cdp.eval("[!!(window.__tv && __tv.isPlayer()), !!document.fullscreenElement]", timeout=2)
-            v = (bool(r[0]), bool(r[1])) if isinstance(r, list) and len(r) == 2 else (False, False)
+            r = self.cdp.eval(FRAME_JS, timeout=2)
+            v = tuple(bool(x) for x in r) if isinstance(r, list) and len(r) == 3 else (False, False, False)
         except Exception:
-            v = (False, False)
+            v = (False, False, False)
         self._player_cache = (time.monotonic(), v)
         return v
 
