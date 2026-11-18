@@ -216,15 +216,6 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(self.cfg.opt("non.esiste", 5), 5)
 
 
-class StreamTest(unittest.TestCase):
-    def test_indirizzi_dei_flussi(self):
-        from tvbox.util import is_stream_url
-        self.assertTrue(is_stream_url("https://cdn.example.org/serie/ep1/master.m3u8?token=abc"))
-        self.assertTrue(is_stream_url("http://192.168.1.10:8096/video.mp4"))
-        for bad in ("", None, "javascript:alert(1)", "file:///etc/passwd", "ftp://x/y.m3u8", "https://"):
-            self.assertFalse(is_stream_url(bad), bad)
-
-
 class ProgressTest(unittest.TestCase):
     def test_da_dove_riprendere(self):
         from tvbox.health import resume_point

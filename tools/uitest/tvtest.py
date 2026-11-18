@@ -202,15 +202,6 @@ check("riapertura: avviso \"Riprendo da 5:00\"", lambda: "Riprendo da 5:0" in (j
 tv.home()
 check("episodio: di nuovo il launcher", lambda: mode() == keys.LAUNCHER, 6)
 
-# flusso dato da un connettore nel player di tvbox: è una visione (non il launcher); un flusso
-# che non esiste mostra l'errore, MENU torna alla serie
-tv.open_stream(f"http://localhost:{srv_port}/__test/manca.m3u8", "pagina-ep-1", "SERIE", "Prova · Ep. 1", back="mio")
-check("flusso: player di tvbox aperto", lambda: "player.html?src=" in tv.url() and not tv.on_launcher(), 6)
-check("flusso: non è il launcher per i tasti", lambda: mode() != keys.LAUNCHER, 3)
-check("flusso che non c'è: errore a schermo", lambda: "non risponde" in (js("window.__playerError || ''") or ""), 15)
-key("menu")
-check("flusso: MENU torna alla serie", lambda: tv.url().endswith("#mio:SERIE") and tv.session is None, 6)
-
 tv.start(Session.site(PAGE + "?n=7"))
 check("sito: niente sipario", lambda: "n=7" in tv.url() and not has("curtain")(), 6)
 tv.toast("Avviso di prova")

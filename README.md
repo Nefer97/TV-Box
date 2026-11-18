@@ -141,16 +141,6 @@ ci clicca al centro (se c'è una copertura, il primo OK la toglie e il secondo a
 quanto lo schermo**, i tasti vanno al player come da tastiera: ◄ ► frecce (avanti / indietro), OK e PLAY
 barra spaziatrice (pausa); ▲ ▼ restano il volume della TV, MENU indietro.
 
-## Flussi video nel player di tvbox
-
-Un connettore (per esempio `tvbox/mio.py`) può dare, per ogni episodio, oltre a `url` (la
-pagina dell'episodio sul sito) anche `stream`: l'indirizzo di un flusso HLS (`.m3u8`) o di un
-file video. Allora tvbox lo apre nel suo player ([launcher/player.html](launcher/player.html),
-con hls.js): il video sta nella pagina, quindi i tasti (◄ ► salti, ▲ ▼ volume, OK pausa), il
-punto salvato e la ripresa funzionano sempre. Il punto si salva sotto `url`, che non cambia;
-l'indirizzo del flusso spesso sì. Il server del flusso deve lasciarlo leggere da un'altra pagina
-(intestazioni CORS): Jellyfin, Plex e molti flussi pubblici lo fanno.
-
 ## Configurazione
 
 | File | Cosa contiene |
