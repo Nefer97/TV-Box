@@ -471,27 +471,36 @@ class Mio:
     def __init__(self, prefs, cdp=None):
         self.prefs = prefs
         self.cdp = cdp
-        self.lock = threading.Lock()
+
+        # Il lock globale protegge solo strutture condivise.
+        # Le richieste HTTP non vengono eseguite mentre è acquisito.
+        self.lock = threading.RLock()
         self.cache = {}
+
+        # Un lock per chiave evita download simultanei dello stesso contenuto.
+        self._key_locks = {}
+
         self._api = None
         self._api_error = None
+        self._client_lock = threading.Lock()
         self._warm_lock = threading.Lock()
 
     def _client(self):
-        if self._api is None and self._api_error is None:
-            if SCAPI is None:
-                self._api_error = (
-                    "Dipendenza mancante: installa scapi"
-                )
-            else:
-                try:
-                    self._api = SCAPI(
-                        SITE_HOST,
-                        user_agent=DESKTOP_UA,
-                    )
-                except Exception as ex:
-                    self._api_error = str(ex)
-        return self._api
+        # Evita che richieste concorrenti inizializzino client distinti.
+        with self._client_lock:
+            if self._api is None and self._api_error is None:
+                if SCAPI is None:
+                    self._api_error = "Dipendenza mancante: installa scapi"
+                else:
+                    try:
+                        self._api = SCAPI(
+                            SITE_HOST,
+                            user_agent=DESKTOP_UA,
+                        )
+                    except Exception as ex:
+                        self._api_error = str(ex)
+
+            return self._api
 
     def login_state(self, fresh=False):
         return {"available": False, "logged": False, "required": False}
@@ -510,38 +519,57 @@ class Mio:
         return self.login_state(fresh=True)
 
     def _get(self, key, url, ttl):
+        """Cache TTL single-flight con fallback all'ultimo dato disponibile.
+
+        Se più thread chiedono la stessa chiave, uno solo effettua il download.
+        Gli altri attendono e poi rileggono la cache aggiornata.
+        """
         if not url:
             return {}
 
+        # Crea/recupera il lock della chiave sotto il lock globale.
         with self.lock:
-            cached = self.cache.get(key)
-            if cached and time.monotonic() - cached[0] < ttl:
-                return cached[1]
+            key_lock = self._key_locks.get(key)
+            if key_lock is None:
+                key_lock = threading.Lock()
+                self._key_locks[key] = key_lock
 
-        try:
-            if key == "sliders":
-                data = get_sliders_auth()
-            elif key.startswith("serie:"):
-                client = self._client()
-                if client is None:
-                    raise RuntimeError(
-                        self._api_error or "scapi non disponibile"
-                    )
-                data = client.load(url)
-            else:
-                data = get_json_auth(url)
+        with key_lock:
+            # Ricontrollo obbligatorio: un altro thread potrebbe aver scaricato
+            # il dato mentre questo thread aspettava il lock.
+            with self.lock:
+                cached = self.cache.get(key)
+                if cached and time.monotonic() - cached[0] < ttl:
+                    return cached[1]
 
-            if not isinstance(data, (dict, list)) or not data:
-                raise ValueError("risposta vuota o non riconosciuta")
+            try:
+                if key == "sliders":
+                    data = get_sliders_auth()
+                elif key.startswith("serie:"):
+                    client = self._client()
+                    if client is None:
+                        raise RuntimeError(
+                            self._api_error or "scapi non disponibile"
+                        )
+                    data = client.load(url)
+                else:
+                    data = get_json_auth(url)
 
-        except Exception as ex:
-            log.warning("%s %s non disponibile: %s", NAME, key, ex)
-            return cached[1] if cached else {}
+                if not isinstance(data, (dict, list)) or not data:
+                    raise ValueError("risposta vuota o non riconosciuta")
 
-        with self.lock:
-            self.cache[key] = (time.monotonic(), data)
+            except Exception as ex:
+                log.warning("%s %s non disponibile: %s", NAME, key, ex)
+                # Mantiene lo stale-if-error: se il server fallisce,
+                # restituisce l'ultima copia disponibile, anche se scaduta.
+                with self.lock:
+                    cached = self.cache.get(key)
+                return cached[1] if cached else {}
 
-        return data
+            with self.lock:
+                self.cache[key] = (time.monotonic(), data)
+
+            return data
 
     def _load_genre_rail(self, genre):
         genre_id, genre_name, genre_type = genre
