@@ -227,7 +227,7 @@ body[data-page="mio"] main, body[data-page="mioserie"] main { padding-top: 0; }
 }
 
 /* ---------- tasti in fondo (solo nella home, quando non c'è il dettaglio) ---------- */
-footer.keys { position: fixed; bottom: 3vh; left: 5vw; right: 5vw; }
+footer.keys, .setkeys { position: fixed; bottom: 3vh; left: 5vw; right: 5vw; }
 body:not([data-page="home"]) footer, body.withdetail footer { display: none; }
 
 /* ---------- finestre (domande, scelte, attesa) ---------- */

@@ -164,8 +164,8 @@ export async function settingsPage() {
   const [v, sc, st, sl, w, m] = await Promise.all(['volume', 'screen', 'prefs', 'sleep', 'wifi', 'meteo'].map(api));
   $('#sum-av').textContent = [v && v.volume != null ? `Volume ${v.volume}%` : '',
     sc && sc.current ? resName(sc.current) : ''].filter(Boolean).join(' · ');
-  $('#sum-power').textContent = (sl && sl.minutes ? `Timer: ${sl.minutes} min` : 'Timer spento') + ' · ' +
-    (st && st.startup === 'home' ? 'parte dalla home' : 'riparte dall\'ultimo canale');
+  $('#sum-power').textContent = (sl && sl.minutes ? `Timer ${sl.minutes} min` : 'Timer spento') + ' · ' +
+    (st && st.startup === 'home' ? 'parte dalla home' : 'ultimo canale');
   $('#sum-home').textContent = m && m.city ? `Meteo: ${m.city}` : 'Scegli la città del meteo';
   $('#sum-net').textContent = !w || !w.present ? 'Wi-Fi assente' : w.connected ? `Wi-Fi: ${w.ssid}` : 'Wi-Fi non collegato';
 }
