@@ -39,6 +39,8 @@ class Session:
         self.watch = Watch(self.sid or what, self.opened_at) if self.guarded else None
         self.login = False                           # pagina di accesso di StreamingCommunity
         self.resume_at = None                        # episodio: secondi da cui ripartire
+        self.key = self.url                          # episodio: indirizzo sotto cui si salva il punto
+        self.referrer = None                         # provenienza da dichiarare aprendo la pagina
         self.progress_saved = 0.0                    # episodio: ultimo salvataggio del punto
 
     # ---------- come nasce ----------
@@ -47,11 +49,17 @@ class Session:
         return cls(CHANNEL if s.get("live") else SERVICE, s, now=now)
 
     @classmethod
-    def episode(cls, url, series, label="", now=None, site="Mediaset Infinity", back="ms", color="#0f766e"):
-        """Episodio di una sezione catalogo (Mediaset, StreamingCommunity): MENU torna a "<back>:<serie>"."""
+    def episode(cls, url, series, label="", now=None, site="Mediaset Infinity", back="ms", color="#0f766e",
+                referrer=None, key=None):
+        """Episodio di una sezione catalogo (Mediaset, StreamingCommunity, AnimeUnity): MENU torna a
+        "<back>:<serie>". Per un player aperto da solo (AnimeUnity: il player di vixcloud invece della
+        pagina dell'episodio): referrer = sito da cui si dichiara di arrivare, key = indirizzo
+        dell'episodio sul sito, sotto cui si salva e si cerca il punto di ripresa."""
         s = normalize_service("", {"kind": "web", "label": site, "url": url,
                                    "block": ["trackers"], "color": color}, {})
-        return cls(EPISODE, s, title=label or "l'episodio", return_to=f"{back}:{series}" if series else None, now=now)
+        v = cls(EPISODE, s, title=label or "l'episodio", return_to=f"{back}:{series}" if series else None, now=now)
+        v.key, v.referrer = key or v.url, referrer
+        return v
 
     @classmethod
     def site(cls, url, mobile=False, now=None):

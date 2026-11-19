@@ -198,8 +198,9 @@ def make_routes(tv):
             tv.au.remember(q)
             label = " · ".join(x for x in (q.get("title"), q.get("ep")) if x)
             site = tv.services.get("au", {}).get("label", "AnimeUnity")
-            tv.post(lambda: tv.open_episode(q["url"], q.get("series", ""), label,
-                                            site=site, back="au", color="#1e3a8a"))
+            target, referrer = tv.au.play_target(q["url"])     # il player da solo, a tutto schermo
+            tv.post(lambda: tv.open_episode(target, q.get("series", ""), label, site=site, back="au",
+                                            color="#1e3a8a", referrer=referrer, key=q["url"]))
             return {"ok": True}
         if a == "login":                       # utente e password dalla schermata di tvbox
             return tv.au.login(q.get("user", ""), q.get("password", ""))

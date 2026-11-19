@@ -25,11 +25,15 @@ FORMATO DEI DATI
             passare is_episode_url); n: numero (o None); dur: secondi; date: millisecondi.
   riga      {"id", "title", "items": [serie, ...]}
 """
+import html
 import http.cookiejar
+import json
+import re
 import threading
 import time
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 
 from .util import DESKTOP_UA, log
 
@@ -88,6 +92,20 @@ def _api(path, params=None):
         return __import__("json").loads(
             response.read().decode("utf-8", "replace")
         )
+
+
+def _page(path):
+    """Dati di una pagina del sito (Laravel + Inertia, come StreamingCommunity): le "props" che
+    la pagina porta con sé nell'attributo data-page (anime, embedUrl, ...)."""
+    req = urllib.request.Request(BASE_URL + path, headers={
+        "User-Agent": DESKTOP_UA, "Accept": "text/html", "Accept-Language": "it-IT,it;q=0.9",
+        "Referer": BASE_URL + "/"})
+    with urllib.request.urlopen(req, timeout=20) as response:
+        text = response.read().decode("utf-8", "replace")
+    m = re.search(r'data-page="([^"]*)"', text)
+    if not m:
+        raise ValueError(f"pagina senza dati: {path}")
+    return _d(json.loads(html.unescape(m.group(1))).get("props"))
 
 
 def _sid(anime):
@@ -238,19 +256,38 @@ def fetch_home():
     }] if items else []
 
 
-def fetch_anime():
-    data = _api("/api/archive")
-    items = [
-        _parse_series(x)
-        for x in _l(_d(data).get("data"))
-        if _d(x).get("id") and _d(x).get("slug")
-    ]
+# Righe della scheda ANIME: (id, titolo, indirizzo dell'API, parametri). I generi hanno gli id
+# dell'archivio del sito (pagina /archive, "animeGenres"); fuori quelli per adulti. L'archivio
+# di serie è in ordine alfabetico: sort_by=views mette in cima i più visti.
+ANIME_RAILS = [
+    ("in-corso", "In corso", "/api/archive", {"status": "ongoing", "sort_by": "views"}),
+    ("popolari", "I più popolari", "/api/top-anime", {}),
+] + [(f"genere-{gid}", name, "/api/archive", {"genres[]": gid, "sort_by": "views"}) for gid, name in [
+    (1, "Azione"), (2, "Avventura"), (5, "Commedia"), (9, "Fantasy"), (18, "Isekai"),
+    (32, "Romantici"), (38, "Shounen"), (35, "Fantascienza"), (43, "Sovrannaturale"),
+    (26, "Mistero"), (39, "Slice of life"), (41, "Sport"), (23, "Mecha"), (17, "Horror"),
+]]
 
-    return [{
-        "id": "catalogo-anime",
-        "title": "Catalogo anime",
-        "items": items,
-    }] if items else []
+
+def _anime_list(data):
+    """Anime di una risposta a pagine dell'API (archivio, classifica), senza quelli per adulti."""
+    return [_parse_series(x) for x in _l(_d(data).get("data"))
+            if _d(x).get("id") and _d(x).get("slug") and not _d(x).get("is_adult")]
+
+
+def fetch_anime():
+    def rail(r):
+        rid, title, path, params = r
+        try:
+            return {"id": rid, "title": title, "items": _anime_list(_api(path, params))}
+        except Exception as ex:                    # una riga che non risponde non ferma le altre
+            log.warning("AnimeUnity riga %s: %s", rid, ex)
+            return None
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        rows = [r for r in pool.map(rail, ANIME_RAILS) if r and r["items"]]
+    if not rows:
+        raise RuntimeError("nessuna riga della scheda ANIME disponibile")
+    return rows
 
 
 def fetch_search(query):
@@ -271,17 +308,17 @@ def fetch_series(sid, season=None):
     if not anime_id.isdigit():
         raise ValueError(f"ID anime non valido: {sid}")
 
-    # Recupera i metadati attraverso la ricerca.
+    # Metadati (descrizione, immagini, generi) dalla pagina dell'anime; se non risponde, dalla
+    # ricerca per nome come ripiego.
     slug = raw_sid.split("-", 1)[1] if "-" in raw_sid else ""
-    data = _api("/api/search", {"q": slug or anime_id})
-
-    anime = next(
-        (
-            x for x in _l(_d(data).get("data"))
-            if str(_d(x).get("id")) == anime_id
-        ),
-        None,
-    )
+    try:
+        anime = _d(_page(f"{EPISODE_PATH}{raw_sid}").get("anime")) or None
+    except Exception as ex:
+        log.warning("AnimeUnity pagina di %s: %s", raw_sid, ex)
+        anime = None
+    if anime is None:
+        data = _api("/api/search", {"q": slug or anime_id})
+        anime = next((x for x in _l(_d(data).get("data")) if str(_d(x).get("id")) == anime_id), None)
 
     if anime is None:
         anime = {
@@ -330,6 +367,19 @@ def fetch_series(sid, season=None):
     )
 
     return series, episodes
+
+
+def resolve_episode(url):
+    """Il player dell'episodio da aprire a schermo intero: (indirizzo, provenienza).
+    La pagina dell'episodio ha il video in un riquadro di vixcloud a metà pagina, dove tvbox non
+    lo raggiunge; il player aperto da solo invece riempie lo schermo, ma risponde 403 se non si
+    dichiara di arrivare da AnimeUnity (referrer)."""
+    path = urllib.parse.urlparse(url).path
+    embed = _s(_page(path).get("embedUrl"))
+    p = urllib.parse.urlparse(embed)
+    if p.scheme != "https" or not p.hostname or "/embed/" not in p.path:
+        raise ValueError(f"player non trovato nella pagina {path}")
+    return embed, BASE_URL + "/"
 
 
 def site_login(opener, jar, username, password):
@@ -433,6 +483,18 @@ class AU:
         return dict(s, season=str(season) if season else s.get("current"), episodes=eps,
                     last=last.get("episode") if last else None)
 
+    # ---------- apertura di un episodio: GET /api/au?action=play ----------
+    def play_target(self, url):
+        """Cosa aprire a schermo per l'episodio url: (indirizzo, provenienza). Con resolve_episode
+        nel connettore il player da solo; altrimenti (o se non risponde) la pagina dell'episodio."""
+        try:
+            return resolve_episode(url)
+        except NotImplementedError:
+            return url, None
+        except Exception as ex:
+            log.warning("AnimeUnity: player di %s non trovato, apro la pagina: %s", url, ex)
+            return url, None
+
     # ---------- Continua a guardare ----------
     def history(self):
         return [{"id": h["series"], "title": h["title"], "poster": h["poster"], "hero": h.get("hero", ""),
@@ -461,7 +523,9 @@ class AU:
             return []
 
     def _set_state(self, logged, user=""):
-        st = {"available": True, "required": LOGIN_REQUIRED, "logged": bool(logged), "user": user or ""}
+        # available: il connettore prevede un accesso (ha i cookie di sessione da cercare)
+        st = {"available": bool(SESSION_COOKIES), "required": LOGIN_REQUIRED, "logged": bool(logged),
+              "user": user or ""}
         with self.lock:
             self._login = (time.monotonic(), st)
         return st

@@ -292,7 +292,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         """Episodio scelto nella sezione Mediaset o in StreamingCommunity (MENU torna alla serie);
         se lo si era lasciato a metà, riparte da lì (health._progress_tick)."""
         sess = Session.episode(url, series, label, **kw)
-        sess.resume_at = resume_point((self.prefs.get("progress") or {}).get(sess.url))
+        sess.resume_at = resume_point((self.prefs.get("progress") or {}).get(sess.key))
         self.start(sess)
 
     def open_login(self, sid="sc"):
@@ -319,7 +319,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
             self.book(curtain=sess.title if sess.curtain else None, panel=panel)
         else:
             self.clear_dark()
-        self.cdp.call("Page.navigate", {"url": sess.url})
+        self.cdp.call("Page.navigate", {"url": sess.url, **({"referrer": sess.referrer} if sess.referrer else {})})
         if sess.kick:
             threading.Thread(target=self._kick_live, args=(sess,), daemon=True).start()
         if sess.remember:

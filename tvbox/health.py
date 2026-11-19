@@ -102,7 +102,7 @@ class HealthMixin:
         if t < 5 or now - sess.progress_saved < PROGRESS_EVERY:
             return
         sess.progress_saved = now
-        url, entry = sess.url, [round(float(t), 1), round(float(d), 1), int(time.time())]
+        url, entry = sess.key, [round(float(t), 1), round(float(d), 1), int(time.time())]
         self.prefs.update("progress", lambda p: dict(
             sorted({**(p or {}), url: entry}.items(), key=lambda kv: kv[1][2])[-PROGRESS_MAX:]))
 

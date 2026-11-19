@@ -516,7 +516,8 @@ class AnimeUnityTest(unittest.TestCase):
     """tvbox/au.py: la parte già pronta (classe AU), con un connettore finto al posto di quello
     vero: i test non vanno mai sul sito e valgono qualunque cosa ci sia nel connettore."""
     PARTS = ("SITE_HOST", "BASE_URL", "EPISODE_PATH", "SESSION_COOKIES", "LOGIN_REQUIRED",
-             "fetch_home", "fetch_anime", "fetch_search", "fetch_series", "site_login", "site_user")
+             "fetch_home", "fetch_anime", "fetch_search", "fetch_series", "site_login", "site_user",
+             "resolve_episode")
 
     def setUp(self):
         import tvbox.au as au
@@ -525,7 +526,8 @@ class AnimeUnityTest(unittest.TestCase):
 
         def todo(*a, **k):
             raise NotImplementedError("finto")
-        for k in ("fetch_home", "fetch_anime", "fetch_search", "fetch_series", "site_login", "site_user"):
+        for k in ("fetch_home", "fetch_anime", "fetch_search", "fetch_series", "site_login", "site_user",
+                  "resolve_episode"):
             setattr(au, k, todo)                                           # di partenza: connettore vuoto
         au.SITE_HOST, au.BASE_URL, au.EPISODE_PATH = "anime.example", "https://anime.example", "/anime/"
         au.SESSION_COOKIES, au.LOGIN_REQUIRED = (), True
@@ -559,6 +561,18 @@ class AnimeUnityTest(unittest.TestCase):
         self.assertEqual(s["last"], "e2")
         self.assertEqual(s["seasons"][0]["title"], "Episodi")
 
+    def test_player_da_solo_o_pagina_episodio(self):
+        au, ep = self.au, "https://anime.example/anime/1-op/2"
+        a = au.AU(Prefs(self.d.name))
+        self.assertEqual(a.play_target(ep), (ep, None))                    # connettore senza player: la pagina
+        au.resolve_episode = lambda u: ("https://player.example/embed/9", "https://anime.example/")
+        self.assertEqual(a.play_target(ep), ("https://player.example/embed/9", "https://anime.example/"))
+
+        def rotto(u):
+            raise ValueError("pagina cambiata")
+        au.resolve_episode = rotto
+        self.assertEqual(a.play_target(ep), (ep, None))                    # player non trovato: la pagina
+
     def test_accesso_copia_i_cookie_in_chrome(self):
         au = self.au
         au.SESSION_COOKIES = ("au_session",)
@@ -587,6 +601,19 @@ class AnimeUnityTest(unittest.TestCase):
         self.assertTrue(a.login_state(fresh=True)["logged"])
         self.assertFalse(a.logout()["logged"])
         self.assertEqual(cdp.cookies, [])
+
+
+class EpisodeKeyTest(unittest.TestCase):
+    def test_player_da_solo(self):
+        """AnimeUnity: si apre il player con la provenienza, il punto si salva sull'episodio."""
+        v = Session.episode("https://player.example/embed/9?token=x", "1-op", "Ep. 2", site="AnimeUnity",
+                            back="au", referrer="https://anime.example/", key="https://anime.example/anime/1-op/2")
+        self.assertEqual(v.url, "https://player.example/embed/9?token=x")
+        self.assertEqual(v.key, "https://anime.example/anime/1-op/2")
+        self.assertEqual(v.referrer, "https://anime.example/")
+        self.assertEqual(v.return_to, "au:1-op")
+        w = Session.episode("https://mediasetinfinity.mediaset.it/video/x/ep_F1", "s1")   # come prima
+        self.assertEqual((w.key, w.referrer), (w.url, None))
 
 
 class HealthTest(unittest.TestCase):
