@@ -5,6 +5,8 @@
 //   banner    programma in onda all'apertura di un canale (6 s)
 //   volume    barra in alto a destra a ogni + −
 //   avviso    messaggio breve in basso ("Pausa", "La diretta si è fermata…")
+//   seek      barra di avanzamento di un episodio (pausa, salti, inizio): si aggiorna da sola
+//   next      riquadro "Episodio successivo" verso la fine (OK lo apre; finito, parte da solo)
 //
 // Un solo elemento (popover: sta sopra anche al video a schermo intero) con un'ombra (shadow
 // DOM: lo stile del sito non lo tocca) e lo stile comune della home (window.__tvCardsCSS +
@@ -13,8 +15,9 @@
 //   __tvl.boot({curtain, panel})  prenotato da tvd nella pagina che sta per nascere
 //   __tvl.curtain(etichetta)      __tvl.panel(dati)  __tvl.move(dir)  __tvl.ok()  __tvl.set(k, v)
 //   __tvl.closePanel()  __tvl.has('panel'|'curtain')  __tvl.banner(dati)  __tvl.volume(v)  __tvl.toast(testo)
+//   __tvl.seek({title, hold})  __tvl.next({title, image, wait})
 (function () {
-  const V = 1;                        // versione: una più nuova sostituisce quella già caricata
+  const V = 2;                        // versione: una più nuova sostituisce quella già caricata
   if (window.top !== window) return;  // solo nella pagina principale, non nei riquadri interni
   if (window.__tvl && window.__tvl.v === V) return;
   try { window.__tvl && window.__tvl.destroy(); } catch (e) {}
@@ -85,7 +88,33 @@
     background: rgba(11,16,32,.9); font-size: 3.2vh; font-weight: 700; line-height: 1.2;
     padding: 1.8vh 2.6vw; border-radius: 2.4vh; box-shadow: 0 1.6vh 4vh rgba(0,0,0,.5);
     opacity: 0; transition: opacity .25s; }
-  .toast.in { opacity: 1; }`;
+  .toast.in { opacity: 1; }
+  /* barra di avanzamento di un episodio */
+  .seek { position: absolute; left: 4vw; right: 4vw; bottom: 5vh; padding: 2vh 2vw; border-radius: 2.6vh;
+    background: linear-gradient(90deg, rgba(11,16,32,.94), rgba(11,16,32,.84)); box-shadow: 0 2vh 5vh rgba(0,0,0,.55);
+    opacity: 0; transform: translateY(2vh); transition: opacity .3s ease, transform .3s ease; }
+  .seek.in { opacity: 1; transform: none; }
+  .seek .top { display: flex; align-items: center; gap: 1.4vw; }
+  .seek .st { flex: 0 0 auto; width: 3.4vh; height: 3.4vh; }
+  .seek .ttl { flex: 1; min-width: 0; font-size: 2.8vh; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seek .tm { font-size: 2.4vh; font-weight: 700; font-variant-numeric: tabular-nums; color: #d5d9e4; }
+  .seek .bar { margin-top: 1.6vh; height: .9vh; border-radius: .5vh; background: rgba(255,255,255,.2); overflow: hidden; }
+  .seek .bar i { display: block; height: 100%; background: #38bdf8; border-radius: .5vh; transition: width .3s linear; }
+  .seek .left { margin-top: .9vh; font-size: 1.9vh; color: var(--muted); }
+  /* episodio successivo */
+  .next { position: absolute; right: 4vw; bottom: 22vh; width: 34vw; display: flex; gap: 1.4vw; align-items: center;
+    padding: 1.8vh 1.4vw; border-radius: 2.4vh; background: rgba(11,16,32,.94); box-shadow: 0 2vh 5vh rgba(0,0,0,.6);
+    border: .3vh solid rgba(255,255,255,.9); opacity: 0; transform: translateX(3vw);
+    transition: opacity .35s ease, transform .35s ease; }
+  .next.in { opacity: 1; transform: none; }
+  .next .pic { flex: 0 0 11vw; height: 6.2vw; border-radius: 1.4vh; background: #1e293b center/cover no-repeat; }
+  .next .txt { flex: 1; min-width: 0; }
+  .next .lbl { font-size: 1.8vh; font-weight: 800; letter-spacing: .08em; color: #38bdf8; text-transform: uppercase; }
+  .next .ttl { font-size: 2.6vh; font-weight: 800; line-height: 1.15; margin-top: .4vh;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .next .hint { margin-top: .8vh; font-size: 1.9vh; color: #d5d9e4; }
+  .next .hint b { display: inline-block; color: #fff; background: rgba(255,255,255,.16); padding: .1vh .6vw;
+    border-radius: .7vh; margin-right: .4vw; }`;
 
   const el = (tag, cls, text) => {
     const e = document.createElement(tag);
@@ -123,7 +152,7 @@
     if (host) { try { host.hidePopover(); } catch (e) {} host.remove(); }
   }
   // i pezzi stanno in un ordine fisso: il sipario sotto, il pannello sopra, gli avvisi in cima
-  const ORDER = ['curtain', 'osd', 'panel', 'vol', 'toast'];
+  const ORDER = ['curtain', 'osd', 'seek', 'next', 'panel', 'vol', 'toast'];
   function put(name, node) {
     drop(name);
     parts[name] = node;
@@ -342,6 +371,76 @@
     return true;
   }
 
+  // ---------- barra di avanzamento di un episodio ----------
+  //   dati: {title, hold}: legge da sola il video principale (helper.js) finché è a schermo;
+  //   in pausa resta, altrimenti se ne va dopo hold millisecondi
+  const PAUSE = '<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/>';
+  const PLAY = '<path d="M8 5v14l11-7z" fill="currentColor"/>';
+  const hms = x => { x = Math.max(0, Math.floor(x || 0)); const h = Math.floor(x / 3600), m = Math.floor(x / 60) % 60, s = x % 60;
+    return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0'); };
+  let seekT = 0, seekUntil = 0;
+  function seek(d) {
+    d = d || {};
+    let b = parts.seek;
+    if (!b) {
+      b = el('div', 'seek');
+      b.innerHTML = '<div class="top"><svg class="st" viewBox="0 0 24 24"></svg><div class="ttl"></div><div class="tm"></div></div>' +
+        '<div class="bar"><i></i></div><div class="left"></div>';
+      put('seek', b);
+      requestAnimationFrame(() => requestAnimationFrame(() => b.classList.add('in')));
+    }
+    b.querySelector('.ttl').textContent = d.title || '';
+    seekUntil = Date.now() + (d.hold || 4000);
+    const draw = () => {
+      const v = window.__tv && window.__tv.main();
+      if (!v || !parts.seek) { clearInterval(seekT); seekT = 0; return; }
+      const t = v.currentTime || 0, dur = isFinite(v.duration) ? v.duration : 0;
+      b.querySelector('.st').innerHTML = v.paused ? PAUSE : PLAY;
+      b.querySelector('.tm').textContent = hms(t) + (dur ? ' / ' + hms(dur) : '');
+      b.querySelector('.bar i').style.width = (dur ? Math.min(100, t / dur * 100) : 0) + '%';
+      b.querySelector('.left').textContent = dur ? 'Mancano ' + hms(dur - t) : '';
+      if (!v.paused && Date.now() > seekUntil) { clearInterval(seekT); seekT = 0; fade('seek', 350); }
+    };
+    draw();
+    if (!seekT) seekT = setInterval(draw, 500);
+    return true;
+  }
+
+  // ---------- episodio successivo ----------
+  //   dati: {title, image, wait}: wait = secondi alla partenza automatica (episodio finito)
+  let nextT = 0;
+  function next(d) {
+    if (!d || !d.title) { clearInterval(nextT); fade('next', 300); return true; }
+    let n = parts.next;
+    if (!n) {
+      n = el('div', 'next');
+      n.innerHTML = '<div class="pic"></div><div class="txt"><div class="lbl">Episodio successivo</div>' +
+        '<div class="ttl"></div><div class="hint"></div></div>';
+      put('next', n);
+      requestAnimationFrame(() => requestAnimationFrame(() => n.classList.add('in')));
+    }
+    const pic = n.querySelector('.pic');
+    pic.style.backgroundImage = d.image ? `url("${d.image.replace(/"/g, '%22')}")` : '';
+    pic.style.display = d.image ? '' : 'none';
+    n.querySelector('.ttl').textContent = d.title;
+    const hint = n.querySelector('.hint');
+    clearInterval(nextT);
+    if (d.wait) {
+      const end = Date.now() + d.wait * 1000;
+      const tick = () => {
+        const s = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+        hint.innerHTML = '';
+        hint.append(document.createTextNode(`Parte tra ${s} s · `), el('b', '', 'OK'), document.createTextNode('subito · '),
+          el('b', '', 'MENU'), document.createTextNode('no'));
+      };
+      tick(); nextT = setInterval(tick, 500);
+    } else {
+      hint.innerHTML = '';
+      hint.append(el('b', '', 'OK'), document.createTextNode('per guardarlo'));
+    }
+    return true;
+  }
+
   // ---------- prenotazione: la pagina nuova nasce già con sipario e/o pannello ----------
   // Nel primo istante della pagina l'elemento radice non c'è ancora: lo si aspetta e lo si
   // colora di blu, senza aspettare il corpo della pagina (che su Mediaset arriva tardi).
@@ -364,7 +463,7 @@
   }
 
   window.__tvl = {
-    v: V, boot, curtain, banner, volume, toast,
+    v: V, boot, curtain, banner, volume, toast, seek, next,
     panel, closePanel,
     has: name => !!parts[name],
     move(d) {                        // la fila gira in cerchio
@@ -392,7 +491,7 @@
       return true;
     },
     destroy() {
-      [curtainT, panelT, osdT, volT, toastT].forEach(t => { clearTimeout(t); clearInterval(t); });
+      [curtainT, panelT, osdT, volT, toastT, seekT, nextT].forEach(t => { clearTimeout(t); clearInterval(t); });
       document.removeEventListener('fullscreenchange', onFull, true);
       Object.keys(parts).forEach(drop);
       unmount();

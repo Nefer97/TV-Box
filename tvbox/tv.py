@@ -19,6 +19,7 @@ from .cdp import CDP
 from .config import normalize_service
 from .display import Display
 from .epg import EPG
+from .episodes import EpisodesMixin
 from .health import HealthMixin, resume_point
 from .layer import LayerMixin
 from .discovery import Discovery
@@ -62,7 +63,7 @@ FRAME_JS = """[!!(window.__tv && __tv.isPlayer()), !!document.fullscreenElement,
   return r.width * r.height > 0.6 * innerWidth * innerHeight;
 })()]"""
 
-class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
+class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin, EpisodesMixin):
     def __init__(self, cfg, prefs, vinput=None):
         self.cfg, self.prefs = cfg, prefs
         self.launcher_url = f"http://127.0.0.1:{cfg.opt('http_port', 8765)}/"
@@ -291,7 +292,9 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
     def open_episode(self, url, series, label="", **kw):
         """Episodio scelto nella sezione Mediaset o in StreamingCommunity (MENU torna alla serie);
         se lo si era lasciato a metà, riparte da lì (health._progress_tick)."""
+        info = kw.pop("info", None)                     # episodio di un catalogo (episodes.py)
         sess = Session.episode(url, series, label, **kw)
+        sess.info = info
         sess.resume_at = resume_point((self.prefs.get("progress") or {}).get(sess.key))
         self.start(sess)
 

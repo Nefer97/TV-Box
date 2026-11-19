@@ -62,6 +62,11 @@ requisito si aggiorna prima questo file, poi il codice. Come è costruita: [ARCH
   pagina dell'anime con gli episodi; la descrizione si vede anche evidenziando un titolo in HOME.
   I titoli per adulti sono **nascosti di serie** e si possono rendere visibili da Impostazioni →
   Home e meteo. Nessun account.
+- R21. Mentre si guarda un episodio (Mediaset, StreamingCommunity, AnimeUnity): **barra di
+  avanzamento** (titolo, tempo, quanto manca) all'inizio, in pausa (resta finché si è in pausa)
+  e a ogni salto; negli ultimi 40 s il riquadro **"Episodio successivo"** (OK lo apre); finito
+  l'episodio il successivo **parte da solo** dopo 10 s (MENU per non farlo). Dopo l'ultimo
+  della stagione, il primo della stagione dopo.
 - R20. MENU da una sezione (Mediaset, StreamingCommunity, AnimeUnity) torna **dove era il
   riquadro** da cui la si è aperta (home o Altri servizi), anche dopo un episodio.
 

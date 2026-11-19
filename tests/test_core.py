@@ -678,6 +678,67 @@ class EpisodeKeyTest(unittest.TestCase):
         self.assertEqual((w.key, w.referrer), (w.url, None))
 
 
+class EpisodesTest(unittest.TestCase):
+    """episodes.py: episodio successivo (scelta, stagione dopo, riquadro e partenza automatica)."""
+    def ep(self, n, date=0):
+        return {"id": f"e{n}", "url": f"https://x/{n}", "title": f"Ep {n}", "n": n, "date": date}
+
+    def test_successivo_nella_lista(self):
+        from tvbox.episodes import next_episode
+        eps = [self.ep(3), self.ep(2), self.ep(1)]                          # dal più recente, come i cataloghi
+        self.assertEqual(next_episode(eps, "e1")["id"], "e2")
+        self.assertIsNone(next_episode(eps, "e3"))                          # l'ultimo
+        self.assertIsNone(next_episode(eps, "e9"))                          # non c'è
+        by_date = [dict(self.ep(None, 300), id="c"), dict(self.ep(None, 100), id="a"), dict(self.ep(None, 200), id="b")]
+        self.assertEqual(next_episode(by_date, "a")["id"], "b")             # puntate senza numero: per data
+
+    def fake_tv(self, seasons):
+        from tvbox.episodes import EpisodesMixin
+
+        class Cat:
+            def series(self, sid, season=None):
+                k = season or list(seasons)[-1]
+                return {"season": k, "seasons": [{"id": x} for x in seasons], "episodes": list(reversed(seasons[k]))}
+
+        class T(EpisodesMixin):
+            sc = Cat()
+        return T()
+
+    def test_successivo_nella_stagione_dopo(self):
+        t = self.fake_tv({"1": [self.ep(1), self.ep(2)], "2": [self.ep(1), self.ep(2)]})
+        info = {"cat": "sc", "series": "s", "season": "1", "episode": "e2", "title": "Serie", "poster": "p"}
+        n = t.find_next(info)
+        self.assertEqual((n["season"], n["episode"], n["ep"]), ("2", "e1", "Ep 1"))
+        self.assertEqual(n["title"], "Serie")                               # i dati della serie restano
+        self.assertIsNone(t.find_next(dict(info, season="2")))              # ultimo dell'ultima stagione
+
+    def test_riquadro_e_partenza(self):
+        from tvbox.episodes import NEXT_LEAD, NEXT_WAIT
+        t = self.fake_tv({"1": [self.ep(1), self.ep(2)]})
+        shown, posted = [], []
+        t.layer = lambda m, *a, **k: shown.append((m, a))
+        t.post = lambda fn, *a: posted.append(fn)
+        sess = Session.episode("https://x/1", "s", "Ep 1", back="sc")
+        sess.info = {"cat": "sc", "series": "s", "season": "1", "episode": "e1"}
+        t.session = sess
+        t._episode_tick(sess, {"t": 100, "d": 1000}, 0)
+        self.assertIsNone(sess.next_info)                                   # lontani dalla fine: niente
+        t._lookup_next = lambda s: setattr(s, "next_info", t.find_next(s.info))
+        import tvbox.episodes as E
+        saved = E.threading.Thread
+        E.threading.Thread = lambda target, args, daemon: type("X", (), {"start": lambda self: target(*args)})()
+        try:
+            t._episode_tick(sess, {"t": 1000 - NEXT_LEAD + 1, "d": 1000}, 1)
+        finally:
+            E.threading.Thread = saved
+        self.assertEqual(sess.next_info["episode"], "e2")
+        t._episode_tick(sess, {"t": 1000, "d": 1000, "ended": True}, 2)    # finito: conto alla rovescia
+        self.assertEqual(shown[-1][1][0]["wait"], NEXT_WAIT)
+        t._episode_tick(sess, {"t": 1000, "d": 1000, "ended": True}, 2 + NEXT_WAIT)
+        t._episode_tick(sess, {"t": 1000, "d": 1000, "ended": True}, 4 + NEXT_WAIT)
+        self.assertEqual(len(posted), 1)                                    # parte una volta sola
+
+
 class HealthTest(unittest.TestCase):
     def test_partenza_e_avanzamento(self):
         w = Watch("canale5", 0)

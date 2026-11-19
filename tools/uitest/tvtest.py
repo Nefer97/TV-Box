@@ -202,6 +202,38 @@ check("riapertura: avviso \"Riprendo da 5:00\"", lambda: "Riprendo da 5:0" in (j
 tv.home()
 check("episodio: di nuovo il launcher", lambda: mode() == keys.LAUNCHER, 6)
 
+# episodio di un catalogo: barra di avanzamento ed episodio successivo (catalogo finto)
+import tvbox.episodes as episodes  # noqa: E402
+episodes.NEXT_WAIT = 2
+EP2 = f"http://localhost:{srv_port}/__test/episodio.html?n=2"
+INFO = {"cat": "mediaset", "series": "SERIE", "season": "s1", "episode": "e1", "title": "Prova",
+        "ep": "Ep. 1", "url": EP + "&c=1", "poster": "", "hero": ""}
+tv.find_next = lambda info: dict(info, url=EP2, episode="e2", ep="Ep. 2") if info["episode"] == "e1" else None
+seek_txt = "document.getElementById('__tvlayer').shadowRoot.querySelector('.seek').textContent"
+tv.open_episode(EP + "&c=1", "SERIE", "Prova · Ep. 1", info=INFO)
+check("episodio: barra di avanzamento all'inizio", lambda: tick() and has("seek")() and "Prova · Ep. 1" in (js(seek_txt) or ""), 15)
+key("ok")
+check("pausa: la barra resta, con ❚❚ e il tempo", lambda: has("seek")() and "/ 10:00" in (js(seek_txt) or "")
+      and js("document.getElementById('v').paused"), 4)
+time.sleep(5)
+check("pausa: dopo 5 s la barra c'è ancora", has("seek"), 2)
+key("ok")
+check("riproduci: la barra se ne va da sola", lambda: not has("seek")(), 8)
+tv.cdp.eval("document.getElementById('v').currentTime = 575", timeout=3)
+check("verso la fine: riquadro \"Episodio successivo\"", lambda: tick() and has("next")() and "Ep. 2" in (js(
+    "document.getElementById('__tvlayer').shadowRoot.querySelector('.next').textContent") or ""), 10)
+shot("episodio-successivo")
+key("ok")
+check("OK sul riquadro: parte il successivo", lambda: "n=2" in tv.url() and tv.session.info["episode"] == "e2", 10)
+check("successivo: Continua a guardare aggiornato", lambda: (prefs.get("ms_history") or [{}])[0].get("episode") == "e2", 3)
+tv.find_next = lambda info: dict(info, url=EP + "&c=3", episode="e3", ep="Ep. 3")
+check("successivo: video a tutto schermo", lambda: mode() == keys.PLAYER, 15)
+tv.cdp.eval("document.getElementById('v').currentTime = 599.5", timeout=3)
+check("finito: conto alla rovescia sul riquadro", lambda: tick() and "Parte tra" in (js(
+    "document.getElementById('__tvlayer').shadowRoot.querySelector('.next').textContent") or ""), 10)
+check("finito: dopo l'attesa parte da solo", lambda: tick() and "c=3" in tv.url(), 15)
+tv.home()
+
 tv.start(Session.site(PAGE + "?n=7"))
 check("sito: niente sipario", lambda: "n=7" in tv.url() and not has("curtain")(), 6)
 tv.toast("Avviso di prova")

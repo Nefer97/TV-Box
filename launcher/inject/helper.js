@@ -161,6 +161,7 @@
   T.kick = () => {
     const v = T.main();
     if (!v || !(v.currentSrc || v.src || v.srcObject)) return false;
+    if (v.dataset.tvUserPaused) return true;   // l'utente l'ha messo in pausa: niente più spinte
     v.muted = false; if (v.volume === 0) v.volume = 1;
     if (v.paused) v.play().catch(() => {});
     if (v.readyState < 2) return false;      // riprova al giro successivo

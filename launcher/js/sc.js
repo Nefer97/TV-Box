@@ -457,7 +457,7 @@ async function play(e) {
   const r = await api(
     `sc?action=play&url=${q(e.url)}&series=${q(series.id)}&title=${q(series.title)}` +
     `&poster=${q(series.poster)}&hero=${q(series.hero || '')}&logo=${q(series.logo || '')}` +
-    `&episode=${q(e.id)}&n=${e.n == null ? '' : e.n}&ep=${q(e.title)}`
+    `&episode=${q(e.id)}&n=${e.n == null ? '' : e.n}&ep=${q(e.title)}&season=${q(series.season || '')}`
   );
 
   if (!r || !r.ok) {

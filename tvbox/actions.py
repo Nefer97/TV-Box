@@ -81,6 +81,8 @@ class Actions:
     def player_ok(self, key=None):
         """OK sul video: preme "Salta intro", "Salta riassunto", "Episodio successivo"… se il
         player li sta mostrando; altrimenti pausa / riproduci."""
+        if self.has_next_card():                    # riquadro "Episodio successivo": lo apre
+            return self.play_next()
         r = self.cdp.eval("window.__tv && __tv.skipButton ? __tv.skipButton() : null", timeout=3)
         if isinstance(r, dict) and "x" in r:
             log.info("player: %s", r.get("label"))
@@ -91,6 +93,8 @@ class Actions:
         if self._by_keys():
             return self.input.key("space")
         r = self.cdp.eval("window.__tv ? __tv.toggle() : false", timeout=3, gesture=True)
+        if r in ("play", "pause") and self.seekbar():    # episodio: la barra al posto dell'avviso
+            return
         if r == "play":
             self.toast("▶  Riproduci")
         elif r == "pause":
@@ -143,7 +147,8 @@ class Actions:
         sec = -int(self.cfg.opt("player.seek_back_s", 10)) if key == "left" \
             else int(self.cfg.opt("player.seek_forward_s", 30))
         if self.cdp.js("__tv.seek", sec, timeout=3):
-            self.toast(("▶▶  +" if sec > 0 else "◀◀  −") + f"{abs(sec)} s")
+            if not self.seekbar():                   # episodio: la barra al posto dell'avviso
+                self.toast(("▶▶  +" if sec > 0 else "◀◀  −") + f"{abs(sec)} s")
 
     # ---------- azioni: navigazione assistita ----------
     def nav_move(self, key):

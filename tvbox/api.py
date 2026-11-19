@@ -157,10 +157,7 @@ def make_routes(tv):
         if a == "play":
             if not is_episode_url(q.get("url")):
                 return {"ok": False, "error": "Episodio non valido"}
-            tv.mediaset.remember(q)
-            label = " · ".join(x for x in (q.get("title"), q.get("ep")) if x)
-            tv.post(tv.open_episode, q["url"], q.get("series", ""), label)
-            return {"ok": True}
+            return tv.play_episode("mediaset", q)
         return tv.mediaset.rails()
 
     def sc(q):
@@ -175,13 +172,7 @@ def make_routes(tv):
         if a == "play":
             if not is_episode_url(q.get("url")):
                 return {"ok": False, "error": "Episodio non valido"}
-            tv.sc.remember(q)
-            label = " · ".join(x for x in (q.get("title"), q.get("ep")) if x)
-            site = tv.services.get("sc", {}).get("label", "StreamingCommunity")
-            target, referrer = tv.sc.play_target(q["url"])     # il player da solo, a tutto schermo
-            tv.post(lambda: tv.open_episode(target, q.get("series", ""), label, site=site, back="sc",
-                                            color="#9d174d", referrer=referrer, key=q["url"]))
-            return {"ok": True}
+            return tv.play_episode("sc", q)             # il player da solo, a tutto schermo
         if a == "login":                       # utente e password dalla schermata di tvbox
             return tv.sc.login(q.get("user", ""), q.get("password", ""))
         if a == "logout":
@@ -204,13 +195,7 @@ def make_routes(tv):
         if a == "play":
             if not is_episode_url(q.get("url")):
                 return {"ok": False, "error": "Episodio non valido"}
-            tv.au.remember(q)
-            label = " · ".join(x for x in (q.get("title"), q.get("ep")) if x)
-            site = tv.services.get("au", {}).get("label", "AnimeUnity")
-            target, referrer = tv.au.play_target(q["url"])     # il player da solo, a tutto schermo
-            tv.post(lambda: tv.open_episode(target, q.get("series", ""), label, site=site, back="au",
-                                            color="#1e3a8a", referrer=referrer, key=q["url"]))
-            return {"ok": True}
+            return tv.play_episode("au", q)             # il player da solo, a tutto schermo
         if a == "login":                       # utente e password dalla schermata di tvbox
             return tv.au.login(q.get("user", ""), q.get("password", ""))
         if a == "logout":

@@ -66,6 +66,10 @@ class HealthMixin:
         st = self.cdp.eval("window.__tv && __tv.health ? __tv.health() : null", timeout=3) or {}
         if episode:
             self._progress_tick(sess, st, now)
+            if st.get("video") and not st.get("paused") and (st.get("t") or 0) > 2 and not sess.seek_shown:
+                sess.seek_shown = True                       # all'inizio: barra per qualche secondo
+                self.seekbar(hold=self.SEEKBAR_START)
+            self._episode_tick(sess, st, now)
         if not sess.watch or sess.watch.done or not sess.watch.step(st, now):
             return
         log.warning("video fermo: %s (%s)", sess, st)

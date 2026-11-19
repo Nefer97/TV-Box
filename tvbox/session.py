@@ -41,6 +41,10 @@ class Session:
         self.resume_at = None                        # episodio: secondi da cui ripartire
         self.key = self.url                          # episodio: indirizzo sotto cui si salva il punto
         self.referrer = None                         # provenienza da dichiarare aprendo la pagina
+        self.info = None                             # episodio di un catalogo: i suoi dati (episodes.py)
+        self.next_info = None                        # l'episodio successivo: None = da cercare, False = nessuno
+        self.next_at = None                          # quando parte da solo il successivo (episodio finito)
+        self.seek_shown = False                      # barra di avanzamento già mostrata all'inizio
         self.progress_saved = 0.0                    # episodio: ultimo salvataggio del punto
 
     # ---------- come nasce ----------
