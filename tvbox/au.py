@@ -525,6 +525,9 @@ class AU:
 
     # ---------- un anime: GET /api/au?action=series&id=...&season=... ----------
     def series(self, sid, season=None):
+        h = next((h for h in self.prefs.get("au_history") if h.get("series") == str(sid)), None)
+        if not season and h and h.get("season"):             # la stagione (o il gruppo) dell'ultimo visto
+            season = h["season"]
         group = season if season and re.fullmatch(r"\d+-\d+", str(season)) else None   # "101-200"
         real = None if group else season
         try:
@@ -534,17 +537,19 @@ class AU:
         except Exception:
             return {"error": "Non disponibile", "login": self.login_state()}
         eps = [e for e in eps or [] if is_episode_url(e.get("url"))]
-        h = next((h for h in self.prefs.get("au_history") if h.get("series") == str(sid)), None)
         last = h.get("episode") if h else None
         if len(s.get("seasons") or []) <= 1 and len(eps) > EP_GROUP * 3 // 2:
             s, eps, season = self._grouped(s, eps, group, last)
-        return dict(s, season=str(season) if season else s.get("current"), episodes=eps, last=last)
+        # dal primo episodio all'ultimo (quelli senza numero in fondo)
+        eps = sorted(eps, key=lambda e: (not isinstance(e.get("n"), int), e.get("n") or 0))
+        return dict(s, season=str(season) if season else s.get("current"), episodes=eps, last=last,
+                    ascending=True)
 
     @staticmethod
     def _grouped(s, eps, group, last):
         """Serie lunghissima senza stagioni: gli episodi a gruppi di EP_GROUP come "stagioni"
         ("1–100", "101–200", …), così la pagina resta leggera e si arriva presto all'episodio.
-        Si apre sul gruppo chiesto, se no su quello dell'ultimo visto, se no sui più recenti."""
+        Si apre sul gruppo chiesto, se no su quello dell'ultimo visto, se no sul primo."""
         nums = [e["n"] for e in eps if isinstance(e.get("n"), int)]
         if not nums:
             return s, eps, None
@@ -553,7 +558,7 @@ class AU:
         seasons = [{"id": f"{a}-{b}", "n": k + 1, "title": f"{a}–{b}"} for k, (a, b) in enumerate(bounds)]
         seen = next((e["n"] for e in eps if e["id"] == last and isinstance(e.get("n"), int)), None)
         pick = group or next((f"{a}-{b}" for a, b in bounds if seen is not None and a <= seen <= b),
-                             seasons[-1]["id"])
+                             seasons[0]["id"])
         a, b = (int(x) for x in pick.split("-"))
         inside = [e for e in eps if isinstance(e.get("n"), int) and a <= e["n"] <= b]
         if pick == seasons[-1]["id"]:
@@ -584,7 +589,7 @@ class AU:
         """Ricorda l'episodio aperto (in cima a "Continua a guardare", una voce per anime)."""
         h = {"series": q.get("series", ""), "title": (q.get("title") or "")[:60],
              "poster": q.get("poster", ""), "hero": q.get("hero", ""), "logo": q.get("logo", ""),
-             "ep": (q.get("ep") or "")[:60], "episode": q.get("episode", ""),
+             "ep": (q.get("ep") or "")[:60], "episode": q.get("episode", ""), "season": q.get("season", ""),
              "n": int(q["n"]) if (q.get("n") or "").isdigit() else None, "t": int(time.time())}
         if h["series"]:
             self.prefs.update("au_history", lambda l: ([h] + [x for x in l if x["series"] != h["series"]])[:HISTORY_MAX])

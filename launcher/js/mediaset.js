@@ -143,6 +143,9 @@ export async function seriesPage() {
   if (!r.episodes.length) list.appendChild(el('div', 'gwait', 'Nessun episodio gratuito disponibile'));
   const last = state.msEpisode || r.last;
   const li = r.episodes.findIndex(e => e.id === last);
+  // il successivo dell'ultimo visto: dopo nella lista se gli episodi vanno dal primo (ascending),
+  // prima se vanno dal più recente
+  const ni = li < 0 ? -1 : li + (r.ascending ? 1 : -1);
   r.episodes.forEach((e, i) => {
     const row = el('div', 'gprog msep');
     row.tabIndex = 0;
@@ -151,7 +154,7 @@ export async function seriesPage() {
     const body = el('div', 'gbody');
     const t = el('div', 'gtitle', e.title);
     if (i === li) t.appendChild(el('span', 'gnow seen', 'ULTIMO VISTO'));
-    if (li > 0 && i === li - 1) t.appendChild(el('span', 'gnow', 'SUCCESSIVO'));
+    if (ni >= 0 && i === ni) t.appendChild(el('span', 'gnow', 'SUCCESSIVO'));
     body.append(t, el('div', 'ginfo', [e.date ? hhmm(e.date) : '', e.channel, mins(e.dur)].filter(Boolean).join(' · ')));
     if (e.desc) body.appendChild(el('div', 'gdesc', e.desc));
     showProgress(pic, t, prog[e.url]);
@@ -162,7 +165,7 @@ export async function seriesPage() {
   });
   // si parte dall'episodio dopo l'ultimo visto (la lista va dal più recente), altrimenti dal più recente
   const rows = list.querySelectorAll('.msep');
-  const start = li > 0 ? rows[li - 1] : li === 0 ? rows[0] : rows[0];
+  const start = rows[ni] || rows[li] || rows[0];   // il successivo, o l'ultimo visto, o il primo della lista
   if (start && state.page === 'msserie') { start.focus(); start.scrollIntoView({ block: 'center' }); }
 }
 

@@ -847,6 +847,13 @@ class SC:
                 return {"error": "Titolo non trovato"}
 
             parsed = parse_series(entry)
+            last = next((h for h in (self.prefs.get("sc_history") or []) if h.get("series") == sid), None)
+            # senza una stagione chiesta: quella dell'ultimo episodio visto; mai vista: la prima
+            if not season and parsed["seasons"]:
+                seen = next((e for e in episode_entries(entry) if last and _s(_d(e).get("id")) == last.get("episode")), None)
+                season = ((last or {}).get("season")                       # salvata con l'episodio
+                          or (_s(_d(seen).get("season")) if seen else "")   # salvato prima: la si ricava
+                          or parsed["seasons"][0]["id"])
             selected = pick_season(parsed, season)
 
             if parsed["category"] == "Film":
@@ -866,19 +873,14 @@ class SC:
                 selected_id = "movie"
             else:
                 all_eps = episode_entries(entry)
-                eps = episodes_of(all_eps, selected, sid)
+                eps = episodes_of(all_eps, selected, sid)[::-1]     # dal primo episodio all'ultimo
                 selected_id = selected["id"] if selected else None
-
-            prefs_history = self.prefs.get("sc_history") or []
-            last = next(
-                (h for h in prefs_history if h.get("series") == sid),
-                None,
-            )
 
             return dict(
                 parsed,
                 season=selected_id,
                 episodes=eps,
+                ascending=True,
                 last=last.get("episode") if last else None,
             )
 
@@ -922,6 +924,7 @@ class SC:
             "logo": q.get("logo", ""),
             "ep": _s(q.get("ep"))[:60],
             "episode": _s(q.get("episode")),
+            "season": _s(q.get("season")),          # la serie si riapre su questa stagione
             "n": int(q["n"]) if _s(q.get("n")).isdigit() else None,
             "t": int(time.time()),
         }

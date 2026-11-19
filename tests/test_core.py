@@ -579,10 +579,14 @@ class AnimeUnityTest(unittest.TestCase):
         a = au.AU(p)
         r = a.series("1-op")
         self.assertEqual([x["id"] for x in r["seasons"]], ["1-100", "101-200", "201-250"])
-        self.assertEqual((r["season"], len(r["episodes"])), ("201-250", 50))   # di partenza i più recenti
+        self.assertEqual((r["season"], len(r["episodes"])), ("1-100", 100))    # mai vista: dal primo gruppo
+        self.assertEqual([e["n"] for e in r["episodes"][:3]], [1, 2, 3])    # dal primo episodio
+        self.assertTrue(r["ascending"])
         self.assertEqual(len(a.series("1-op", "101-200")["episodes"]), 100)
-        a.remember({"series": "1-op", "title": "One Piece", "episode": "e42", "n": "42"})
-        self.assertEqual(a.series("1-op")["season"], "1-100")               # dove si era arrivati
+        a.remember({"series": "1-op", "title": "One Piece", "episode": "e142", "n": "142"})
+        self.assertEqual(a.series("1-op")["season"], "101-200")             # dove si era arrivati
+        a.remember({"series": "1-op", "title": "One Piece", "episode": "e242", "n": "242", "season": "201-250"})
+        self.assertEqual(a.series("1-op")["season"], "201-250")             # la stagione salvata
         short = [au.episodio(f"e{n}", f"https://anime.example/anime/2-x/{n}", n=n) for n in range(12, 0, -1)]
         au.fetch_series = lambda sid, season=None: (au.serie(sid, "Corta"), list(short))
         self.assertEqual(len(a.series("2-x")["seasons"]), 1)                # serie normali: come prima

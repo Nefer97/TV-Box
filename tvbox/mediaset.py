@@ -226,11 +226,11 @@ class Mediaset:
         s = parse_series(ents[0])
         if not s["seasons"]:
             return dict(s, episodes=[], season=None)
-        pick = pick_season(s, season)
+        last = next((h for h in self.prefs.get("ms_history") if h["series"] == guid), None)
+        pick = pick_season(s, season or (last or {}).get("season") or None)   # di serie quella dell'ultimo visto
         url = (FEED + "mediaset-prod-all-programs-v2?byTvSeasonId=" + urllib.parse.quote(pick["id"], safe="") +
                "&sort=tvSeasonEpisodeNumber%7Cdesc&range=1-120")
         eps = episodes_of(self._get("eps:" + pick["id"], url, 900).get("entries") or [])
-        last = next((h for h in self.prefs.get("ms_history") if h["series"] == guid), None)
         return dict(s, season=pick["guid"], episodes=eps, last=last["episode"] if last else None)
 
     # ---------- Continua a guardare ----------
@@ -244,7 +244,7 @@ class Mediaset:
         """Ricorda l'episodio aperto (in cima a "Continua a guardare", una voce per serie)."""
         h = {"series": q.get("series", ""), "title": (q.get("title") or "")[:60],
              "poster": q.get("poster", ""), "hero": q.get("hero", ""), "logo": q.get("logo", ""),
-             "ep": (q.get("ep") or "")[:60], "episode": q.get("episode", ""),
+             "ep": (q.get("ep") or "")[:60], "episode": q.get("episode", ""), "season": q.get("season", ""),
              "n": int(q["n"]) if (q.get("n") or "").isdigit() else None, "t": int(time.time())}
         if not h["series"]:
             return

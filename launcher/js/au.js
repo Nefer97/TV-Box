@@ -416,6 +416,9 @@ export async function auSeriesPage() {
 
   const last = state.auEpisode || r.last;
   const li = r.episodes.findIndex(e => e.id === last);
+  // il successivo dell'ultimo visto: dopo nella lista se gli episodi vanno dal primo (ascending),
+  // prima se vanno dal più recente
+  const ni = li < 0 ? -1 : li + (r.ascending ? 1 : -1);
 
   r.episodes.forEach((e, i) => {
     const row = el('div', 'gprog msep');
@@ -436,7 +439,7 @@ export async function auSeriesPage() {
     const t = el('div', 'gtitle', prefix + e.title);
 
     if (i === li) t.appendChild(el('span', 'gnow seen', 'ULTIMO VISTO'));
-    if (li > 0 && i === li - 1) t.appendChild(el('span', 'gnow', 'SUCCESSIVO'));
+    if (ni >= 0 && i === ni) t.appendChild(el('span', 'gnow', 'SUCCESSIVO'));
 
     body.append(
       t,
@@ -460,7 +463,7 @@ export async function auSeriesPage() {
 
   // Si parte dall'episodio dopo l'ultimo visto, oppure dal primo.
   const rows = list.querySelectorAll('.msep');
-  const start = li > 0 ? rows[li - 1] : rows[0];
+  const start = rows[ni] || rows[li] || rows[0];   // il successivo, o l'ultimo visto, o il primo della lista
 
   if (start && state.page === 'auserie') {
     start.focus();
