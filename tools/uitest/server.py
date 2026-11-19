@@ -58,6 +58,8 @@ class H(http.server.SimpleHTTPRequestHandler):
             s.send_response(200); s.send_header("Content-Type", "text/html; charset=utf-8"); s.send_header("Content-Length", str(len(body))); s.end_headers(); return s.wfile.write(body)
         if not u.path.startswith("/api/"): return super().do_GET()
         ep, q = u.path[5:], {k: v[0] for k, v in parse_qs(u.query).items()}
+        if ep not in STUB and ep not in ROUTES:     # come tvd: indirizzo sconosciuto = 404, non un errore
+            return s.send_error(404)               # (es. una pagina vecchia che chiede ancora /api/mio)
         res = STUB[ep] if ep in STUB else ROUTES[ep](q)
         if isinstance(res, tuple): res = res[0]
         if isinstance(res, Binary): body, ct = res.data, res.ctype
