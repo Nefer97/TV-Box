@@ -17,7 +17,9 @@ guida TV, fiction, serie, programmi e cartoni di Mediaset Infinity, YouTube, Rai
   stagioni ed episodi, "Continua a guardare"; l'episodio parte a tutto schermo e, se lo avevi
   lasciato a metà, riparte da lì.
 - **StreamingCommunity**: un secondo catalogo con schede HOME / SERIE TV / FILM, ricerca,
-  "Continua a guardare" e righe per genere, con la stessa pagina della serie.
+  "Continua a guardare" e righe per genere con i titoli più visti, con la stessa pagina della serie.
+- **AnimeUnity**: un catalogo di anime con schede HOME / ANIME, ricerca e "Continua a guardare".
+  In entrambi l'episodio parte da solo a tutto schermo e riprende da dove l'avevi lasciato.
 - **Accesso agli account dentro la TV**: Mediaset e StreamingCommunity chiedono l'accesso con
   una schermata di tvbox (email/utente e password con la tastiera a schermo); l'accesso lo fa la
   TV senza mostrare il sito e la password non viene salvata. Si esce dalle Impostazioni.

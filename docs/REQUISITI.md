@@ -47,13 +47,19 @@ requisito si aggiorna prima questo file, poi il codice. Come è costruita: [ARCH
   documentari e approfondimento** (locandine, "Continua a guardare"),
   pagina della serie con stagioni ed episodi; l'episodio parte a tutto schermo con il sipario;
   MENU torna alla serie. Serve l'account (R17).
-- R18. Un episodio lasciato a metà **riparte da dove si era arrivati** (Mediaset e
-  StreamingCommunity).
+- R18. Un episodio lasciato a metà **riparte da dove si era arrivati** (Mediaset,
+  StreamingCommunity, AnimeUnity). L'episodio parte **da solo a tutto schermo** anche quando il
+  sito lo mette in un riquadro dentro la pagina.
 
 ### StreamingCommunity
 - R16. Sezione nostra con il catalogo del sito: schede **HOME / SERIE TV / FILM**, ricerca con
   la tastiera a schermo, "Continua a guardare", righe per genere; pagina della serie come per
   Mediaset. Serve l'account (R17).
+
+### AnimeUnity
+- R19. Sezione nostra con il catalogo di anime del sito: schede **HOME / ANIME** (in corso, più
+  popolari, righe per genere ordinate per visualizzazioni, niente titoli per adulti), ricerca,
+  "Continua a guardare", pagina dell'anime con gli episodi. Nessun account.
 
 ### Accesso agli account
 - R17. Mediaset e StreamingCommunity **chiedono l'accesso** entrando nella sezione: una

@@ -1,6 +1,6 @@
 # tvbox — architettura
 
-Come è costruita tvbox (V5) e dove si mette mano per ogni tipo di modifica. Cosa deve fare:
+Come è costruita tvbox (V6) e dove si mette mano per ogni tipo di modifica. Cosa deve fare:
 [REQUISITI.md](REQUISITI.md).
 
 ## 1. I pezzi
@@ -121,15 +121,27 @@ indietro, indirizzi `#guide`, `#ms:<serie>`, `#sc:<serie>`…).
 
 ## 9. Cataloghi e accesso agli account
 
-Due sezioni del launcher sono **cataloghi** costruiti da tvbox sopra un sito: righe di
+Tre sezioni del launcher sono **cataloghi** costruiti da tvbox sopra un sito: righe di
 locandine, pagina della serie con stagioni ed episodi, "Continua a guardare"; l'episodio si
-apre a schermo sul sito (visione `episode`, MENU torna alla serie e riparte dal punto salvato).
+apre a schermo (visione `episode`, MENU torna alla serie e riparte dal punto salvato).
 
-| | Mediaset Infinity | StreamingCommunity |
-|---|---|---|
-| id del servizio, API, pagine | `mediaset`, `/api/mediaset`, `mediaset` / `msserie` | `sc`, `/api/sc`, `sc` / `scserie` |
-| dati del catalogo | `tvbox/mediaset.py`: feed pubblici di Mediaset | `tvbox/sc.py`: API del sito (`vendor/scuapi`) |
-| launcher | `launcher/js/mediaset.js` | `launcher/js/sc.js` |
+| | Mediaset Infinity | StreamingCommunity | AnimeUnity |
+|---|---|---|---|
+| id del servizio, API, pagine | `mediaset`, `/api/mediaset`, `mediaset` / `msserie` | `sc`, `/api/sc`, `sc` / `scserie` | `au`, `/api/au`, `au` / `auserie` |
+| dati del catalogo | `tvbox/mediaset.py`: feed pubblici di Mediaset | `tvbox/sc.py`: API e archivio del sito (`vendor/scuapi`) | `tvbox/au.py`: in alto il connettore (API e pagine del sito), in basso la classe `AU` |
+| launcher | `launcher/js/mediaset.js` | `launcher/js/sc.js` | `launcher/js/au.js` (copia di `sc.js`, schede HOME / ANIME) |
+| cosa si apre per un episodio | la pagina dell'episodio sul sito | il **player da solo** (sotto) | il **player da solo** (sotto) |
+| accesso | obbligatorio | obbligatorio | nessuno (`LOGIN_REQUIRED = False`) |
+
+**Il player da solo.** StreamingCommunity e AnimeUnity mettono il video in un riquadro di
+vixcloud dentro la pagina dell'episodio: lì tvbox non lo vede (niente schermo intero, niente
+punto di ripresa). `resolve_episode(url)` nel modulo del catalogo legge l'indirizzo del player
+(StreamingCommunity: dal riquadro `/it/iframe/`, chiesto dichiarando di arrivare dalla pagina
+dell'episodio; AnimeUnity: `embedUrl` nei dati della pagina) e `play_target` lo restituisce con
+la provenienza da dichiarare. La visione `episode` ha allora `referrer` (passato a
+`Page.navigate`: senza, vixcloud risponde 403) e `key` = indirizzo dell'episodio sul sito, sotto
+cui si salva il punto di ripresa (l'indirizzo del player contiene un codice che scade). Se il
+player non si trova si apre la pagina dell'episodio come prima.
 
 **Accesso obbligatorio.** Senza account le due sezioni mostrano solo la **schermata di accesso**
 di tvbox (`login.js`: riquadro del servizio, campi con la tastiera a schermo, pulsante Accedi;
@@ -180,7 +192,7 @@ sulla TV; sul PC si prova solo il percorso con credenziali finte.
 | una regola nuova per dirette/episodi | `tvbox/session.py` + `tests/` |
 | una preferenza nuova | `tvbox/prefs.py` (`DEFAULTS` e `_clean`) |
 | una pagina nuova del launcher | `index.html` + un modulo in `launcher/js/` + `app.js` |
-| un catalogo nuovo (come StreamingCommunity) | `tvbox/<id>.py` (righe, serie, cronologia in `prefs.py`) + `def <id>(q)` in `api.py` + `launcher/js/<id>.js` + le due pagine in `index.html` (`page-<id>`, `page-<id>serie`) + `app.js` (titoli, MENU, `#<id>:<serie>`) + il servizio con `"page": "<id>"` in `config.json` |
+| un catalogo nuovo (come StreamingCommunity o AnimeUnity: il modello più semplice è `tvbox/au.py`) | `tvbox/<id>.py` (righe, serie, cronologia in `prefs.py`) + `def <id>(q)` in `api.py` + `launcher/js/<id>.js` + le due pagine in `index.html` (`page-<id>`, `page-<id>serie`) + `app.js` (titoli, MENU, `#<id>:<serie>`) + il servizio con `"page": "<id>"` in `config.json` |
 | l'accesso a un servizio | `login_state` / `login` / `logout` nel modulo del catalogo + le azioni in `api.py` + `loginGate(...)` nella pagina + una riga `data-act="account" data-svc="<id>"` in `index.html` |
 
 ## 12. Rimasti come sono (scelte consapevoli)
