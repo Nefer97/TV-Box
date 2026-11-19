@@ -517,7 +517,7 @@ class AnimeUnityTest(unittest.TestCase):
     vero: i test non vanno mai sul sito e valgono qualunque cosa ci sia nel connettore."""
     PARTS = ("SITE_HOST", "BASE_URL", "EPISODE_PATH", "SESSION_COOKIES", "LOGIN_REQUIRED",
              "fetch_home", "fetch_anime", "fetch_search", "fetch_series", "site_login", "site_user",
-             "resolve_episode")
+             "resolve_episode", "_adult_ids")
 
     def setUp(self):
         import tvbox.au as au
@@ -531,6 +531,7 @@ class AnimeUnityTest(unittest.TestCase):
             setattr(au, k, todo)                                           # di partenza: connettore vuoto
         au.SITE_HOST, au.BASE_URL, au.EPISODE_PATH = "anime.example", "https://anime.example", "/anime/"
         au.SESSION_COOKIES, au.LOGIN_REQUIRED = (), True
+        au._adult_ids = lambda: frozenset()                                # niente rete nei test
 
     def tearDown(self):
         for k, v in self.saved.items():
@@ -563,18 +564,14 @@ class AnimeUnityTest(unittest.TestCase):
 
     def test_titoli_per_adulti_a_scelta(self):
         au = self.au
-        saved = au._adult_ids
-        try:
-            au._adult_ids = lambda: frozenset({2})                       # elenco del sito (finto)
-            items = [au.serie("1-a", "A"), au.serie("2-b", "B"), dict(au.serie("3-c", "C"), adult=True)]
-            au.fetch_home = lambda: [{"id": "r", "title": "Riga", "items": items}]
-            p = Prefs(self.d.name)
-            a = au.AU(p)
-            self.assertEqual([x["id"] for x in a.rails("home")["rails"][0]["items"]], ["1-a"])   # di serie nascosti
-            p.set("au_adult", True)
-            self.assertEqual([x["id"] for x in a.rails("home")["rails"][0]["items"]], ["1-a", "2-b", "3-c"])
-        finally:
-            au._adult_ids = saved
+        au._adult_ids = lambda: frozenset({2})                           # elenco del sito (finto)
+        items = [au.serie("1-a", "A"), au.serie("2-b", "B"), dict(au.serie("3-c", "C"), adult=True)]
+        au.fetch_home = lambda: [{"id": "r", "title": "Riga", "items": items}]
+        p = Prefs(self.d.name)
+        a = au.AU(p)
+        self.assertEqual([x["id"] for x in a.rails("home")["rails"][0]["items"]], ["1-a"])   # di serie nascosti
+        p.set("au_adult", True)
+        self.assertEqual([x["id"] for x in a.rails("home")["rails"][0]["items"]], ["1-a", "2-b", "3-c"])
 
     def test_player_da_solo_o_pagina_episodio(self):
         au, ep = self.au, "https://anime.example/anime/1-op/2"
