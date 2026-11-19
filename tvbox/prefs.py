@@ -10,13 +10,14 @@ Contenuto:
     last_channel  "rai1" | None                                 canale in diretta lasciato acceso
     saver_off  minuti                                           schermo spento dopo tanto salvaschermo (0 = mai)
     ms_history [{"series","title","poster","episode","n","t"}]  Mediaset: Continua a guardare
-    mio_history  come ms_history                               Il mio catalogo: Continua a guardare
+    sc_history  come ms_history                               StreamingCommunity: Continua a guardare
     ms_user    "email"                                          account Mediaset collegato (solo da mostrare)
     progress   {"<url episodio>": [secondi, durata, quando]}    dove si è arrivati negli episodi (ultimi 200)
     channels   ["rai1", ...]                                    canali in diretta scelti, in ordine
 
 Versioni del file: 2 = V2/V3; 3 = V4 (i canali non si nascondono più con "hidden": un canale
-nascosto con la V3 esce dalla scelta dei canali).
+nascosto con la V3 esce dalla scelta dei canali); 4 = "Il mio catalogo" diventa il servizio
+"sc" (StreamingCommunity): mio_history -> sc_history, "mio" -> "sc" in hidden e pinned.
 """
 import copy
 import os
@@ -25,7 +26,7 @@ import threading
 from .channels import DEFAULT as DEFAULT_CHANNELS, IDS as CHANNEL_IDS
 from .util import USER_DIR, log, read_json, write_json
 
-VERSION = 3
+VERSION = 4
 PROGRESS_MAX = 200     # episodi di cui si ricorda dove si è arrivati
 
 DEFAULTS = {
@@ -40,7 +41,7 @@ DEFAULTS = {
     "saver_off": 60,
     "ms_history": [],
     "progress": {},
-    "mio_history": [],
+    "sc_history": [],
     "ms_user": "",
     "channels": list(DEFAULT_CHANNELS),
 }
@@ -70,12 +71,18 @@ class Prefs:
 
     @staticmethod
     def _upgrade(d):
-        """Dalla versione 2: i canali nascosti escono dalla scelta e da "hidden"."""
+        """Dalla versione 2: i canali nascosti escono dalla scelta e da "hidden".
+        Fino alla 3: il servizio "mio" (Il mio catalogo) si chiama "sc" (StreamingCommunity)."""
         if d.get("version") == 2 and isinstance(d.get("hidden"), list):
             gone = {x for x in d["hidden"] if x in CHANNEL_IDS}
             if isinstance(d.get("channels"), list):
                 d["channels"] = [x for x in d["channels"] if x not in gone]
             d["hidden"] = [x for x in d["hidden"] if x not in gone]
+        if "mio_history" in d and not d.get("sc_history"):
+            d["sc_history"] = d.pop("mio_history")
+        for key in ("hidden", "pinned"):
+            if isinstance(d.get(key), list):
+                d[key] = ["sc" if x == "mio" else x for x in d[key]]
         return d
 
     @staticmethod
@@ -123,7 +130,7 @@ class Prefs:
             out["progress"] = dict(sorted(ok.items(), key=lambda kv: kv[1][2])[-PROGRESS_MAX:])
         if isinstance(d.get("ms_user"), str):
             out["ms_user"] = d["ms_user"][:80]
-        for key in ("ms_history", "mio_history"):
+        for key in ("ms_history", "sc_history"):
             h = d.get(key)
             if isinstance(h, list):
                 out[key] = [x for x in h if isinstance(x, dict) and isinstance(x.get("series"), str)

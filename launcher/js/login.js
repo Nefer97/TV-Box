@@ -1,7 +1,7 @@
-// login.js — schermata di accesso di un servizio (Il mio catalogo, Mediaset).
+// login.js — schermata di accesso di un servizio (StreamingCommunity, Mediaset).
 // Utente e password si scrivono con la tastiera a schermo; l'accesso lo fa tvd (nessuna pagina
 // del sito a schermo) e la password non si salva. Uso:
-//   loginGate(box, { id: 'mio', endpoint: 'mio', userLabel: 'Utente', onDone: () => ... })
+//   loginGate(box, { id: 'sc', endpoint: 'sc', userLabel: 'Utente', onDone: () => ... })
 // Se il sito chiede altro (captcha), tvd risponde {site: true}: si offre l'accesso sul sito vero.
 import { $, api, el, hideOverlay, overlay, q, shade, state } from './core.js';
 

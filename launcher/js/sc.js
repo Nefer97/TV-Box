@@ -1,6 +1,6 @@
 
-// mio.js — catalogo con HOME, SERIE TV e FILM.
-// I dati del catalogo vengono preparati da tvbox/mio.py.
+// sc.js — catalogo con HOME, SERIE TV e FILM.
+// I dati del catalogo vengono preparati da tvbox/sc.py.
 // La riproduzione e la pagina dei dettagli restano invariate.
 
 import { $, api, el, overlay, hideOverlay, q, showProgress, state } from './core.js';
@@ -34,10 +34,10 @@ const meta = x => [x.category, ...(x.genres || [])].filter((v, i, a) => v && a.i
 // "Esci" sta in Impostazioni → Rete e assistenza → Account.
 
 function showLogin(l) {
-  lockPage('mio', true);
-  loginGate($('#mio-login'), {
-    id: 'mio', endpoint: 'mio', userLabel: 'Utente', user: l && l.user,
-    onDone: () => { lockPage('mio', false); $('#mio-rails').innerHTML = ''; mioPage(); },
+  lockPage('sc', true);
+  loginGate($('#sc-login'), {
+    id: 'sc', endpoint: 'sc', userLabel: 'Utente', user: l && l.user,
+    onDone: () => { lockPage('sc', false); $('#sc-rails').innerHTML = ''; scPage(); },
   });
 }
 
@@ -49,7 +49,7 @@ function poster(x) {
   c.style.backgroundImage = `url("${x.poster}")`;
   c.appendChild(el('div', 'ptitle', x.title));
   if (x.sub) c.appendChild(el('div', 'psub', x.sub));
-  c._mio = x;
+  c._sc = x;
   c._act = () => openSeries(x.id, x.episode);
   return c;
 }
@@ -57,11 +57,11 @@ function poster(x) {
 // ---------- barra di ricerca ----------
 
 function renderSearchBar() {
-  const bar = el('div', 'mio-search');
+  const bar = el('div', 'sc-search');
 
   // un pulsante come gli altri (le frecce ci arrivano per posizione): OK apre la tastiera a
   // schermo, "Fatto" cerca. Nel launcher niente <input>: il telecomando non ha lettere.
-  const field = el('div', 'btn mio-search-field' + (searchQuery ? '' : ' empty'),
+  const field = el('div', 'btn sc-search-field' + (searchQuery ? '' : ' empty'),
     searchQuery ? `🔍  ${searchQuery}` : '🔍  Cerca film o serie TV…');
   field.tabIndex = 0;
   field.setAttribute('aria-label', 'Cerca per nome');
@@ -78,8 +78,8 @@ function renderSearchBar() {
 }
 
 const focusSearch = () => {
-  const f = $('#mio-rails .mio-search-field');
-  if (f && state.page === 'mio') f.focus();
+  const f = $('#sc-rails .sc-search-field');
+  if (f && state.page === 'sc') f.focus();
 };
 
 function openSearchKeyboard() {
@@ -115,7 +115,7 @@ async function runSearch() {
   const request = ++searchRequest;
   renderCatalogPage();
 
-  const r = await api(`mio?action=search&q=${q(query)}`);
+  const r = await api(`sc?action=search&q=${q(query)}`);
 
   if (request !== searchRequest) return;
 
@@ -124,8 +124,8 @@ async function runSearch() {
 
   renderCatalogPage();
 
-  const first = $('#mio-rails').querySelector('.poster');
-  if (first && state.page === 'mio') first.focus();
+  const first = $('#sc-rails').querySelector('.poster');
+  if (first && state.page === 'sc') first.focus();
 }
 
 
@@ -140,11 +140,11 @@ const emptyMessages = {
 // focusTab: dopo il cambio di scheda il focus resta sulla scheda scelta,
 // così con destra/sinistra si scorrono le schede senza risalire ogni volta.
 function renderCatalogPage(focusTab = false) {
-  const box = $('#mio-rails');
+  const box = $('#sc-rails');
   box.innerHTML = '';
 
   // Navigazione HOME / SERIE TV / FILM
-  const nav = el('div', 'row mio-tabs');
+  const nav = el('div', 'row sc-tabs');
 
   catalogPages.forEach(page => {
     const tab = el('div', 'btn chip' + (activeCatalogPage === page.id ? ' on' : ''), page.title);
@@ -175,7 +175,7 @@ function renderCatalogPage(focusTab = false) {
       box.appendChild(sec);
     }
 
-    if (state.page === 'mio') {
+    if (state.page === 'sc') {
       const first = box.querySelector('.poster');
       if (first && !focusTab) first.focus();
     }
@@ -200,7 +200,7 @@ function renderCatalogPage(focusTab = false) {
     });
   }
 
-  if (state.page !== 'mio') return;
+  if (state.page !== 'sc') return;
   const first = box.querySelector('.poster');
   if (focusTab || !first) activeTab.focus();
   else first.focus();
@@ -212,31 +212,31 @@ async function showCatalogPage(focusTab = false) {
   renderCatalogPage(focusTab);
   if (catalogRails[page]) return;
 
-  const r = await api(`mio?page=${q(page)}`);
+  const r = await api(`sc?page=${q(page)}`);
   if (!r || !r.rails) {
     if (activeCatalogPage === page) {
-      const wait = $('#mio-rails .gwait');
+      const wait = $('#sc-rails .gwait');
       if (wait) wait.textContent = 'Catalogo non disponibile';
     }
     return;
   }
 
   catalogRails[page] = r.rails.filter(rail => rail.items && rail.items.length);
-  if (activeCatalogPage !== page || state.page !== 'mio') return;
+  if (activeCatalogPage !== page || state.page !== 'sc') return;
 
   // se nel frattempo l'utente si è spostato su una scheda, il focus resta lì
-  const onTab = document.activeElement && document.activeElement.closest('.mio-tabs');
+  const onTab = document.activeElement && document.activeElement.closest('.sc-tabs');
   renderCatalogPage(focusTab || !!onTab);
 }
 
 // ---------- caricamento catalogo ----------
 
-export async function mioPage() {
-  const box = $('#mio-rails');
+export async function scPage() {
+  const box = $('#sc-rails');
 
-  const l = await api('mio?action=status');          // collegati? (ricontrollato ogni 5 minuti)
+  const l = await api('sc?action=status');          // collegati? (ricontrollato ogni 5 minuti)
   if (l && l.required && !l.logged) return showLogin(l);
-  lockPage('mio', false);
+  lockPage('sc', false);
 
   if (!box.children.length) {
     box.appendChild(el('div', 'gwait', 'Carico il catalogo…'));
@@ -244,7 +244,7 @@ export async function mioPage() {
 
   // la HOME si ricarica sempre (Continua a guardare cambia dopo ogni visione);
   // la scheda attiva resta quella di prima, così tornando da un titolo si è dove si era
-  const r = await api('mio?page=home');
+  const r = await api('sc?page=home');
 
   box.innerHTML = '';
 
@@ -310,62 +310,62 @@ function setBg(box, url) {
 // ---------- dettagli titolo ----------
 
 function detail(x) {
-  setLogo($('#mio-logo'), $('#mio-name'), x);
-  $('#mio-meta').textContent = x.sub ? `Continua a guardare · ${x.sub}` : meta(x);
-  $('#mio-desc').textContent = x.desc || '';
-  setBg($('#mio-bg'), x.hero);
+  setLogo($('#sc-logo'), $('#sc-name'), x);
+  $('#sc-meta').textContent = x.sub ? `Continua a guardare · ${x.sub}` : meta(x);
+  $('#sc-desc').textContent = x.desc || '';
+  setBg($('#sc-bg'), x.hero);
 }
 
 // ---------- pagina della serie ----------
 
 function openSeries(id, episode) {
-  state.mioSeries = id;
-  state.mioEpisode = episode || null;
-  state.show('mioserie');
+  state.scSeries = id;
+  state.scEpisode = episode || null;
+  state.show('scserie');
 }
 
-export async function mioSeriesPage() {
-  const id = state.mioSeries;
-  const list = $('#mios-eps');
+export async function scSeriesPage() {
+  const id = state.scSeries;
+  const list = $('#scs-eps');
 
   list.innerHTML = '';
   list.appendChild(el('div', 'gwait', 'Carico gli episodi…'));
 
-  setLogo($('#mios-logo'), $('#mios-title'), {});
-  $('#mios-info').textContent = '';
-  $('#mios-desc').textContent = '';
-  $('#mios-seasons').innerHTML = '';
+  setLogo($('#scs-logo'), $('#scs-title'), {});
+  $('#scs-info').textContent = '';
+  $('#scs-desc').textContent = '';
+  $('#scs-seasons').innerHTML = '';
 
   const r = await api(
-    `mio?action=series&id=${q(id)}` +
-    (state.mioSeason ? `&season=${q(state.mioSeason)}` : '')
+    `sc?action=series&id=${q(id)}` +
+    (state.scSeason ? `&season=${q(state.scSeason)}` : '')
   );
 
-  state.mioSeason = null;
+  state.scSeason = null;
 
   if (!r || r.error) {
     list.innerHTML = '';
     list.appendChild(el('div', 'gwait', (r && r.error) || 'Non disponibile'));
 
-    if (r && r.login && r.login.required && !r.login.logged && state.page === 'mioserie') state.show('mio');
+    if (r && r.login && r.login.required && !r.login.logged && state.page === 'scserie') state.show('sc');
 
     return;
   }
 
   series = r;
 
-  $('#mios-hero').style.backgroundImage = r.hero ? `url("${r.hero}")` : '';
-  setLogo($('#mios-logo'), $('#mios-title'), r);
+  $('#scs-hero').style.backgroundImage = r.hero ? `url("${r.hero}")` : '';
+  setLogo($('#scs-logo'), $('#scs-title'), r);
 
-  $('#mios-info').textContent = [
+  $('#scs-info').textContent = [
     meta(r),
     r.seasons.length > 1 ? `${r.seasons.length} stagioni` : '',
     r.episodes.length ? `${r.episodes.length} episodi` : ''
   ].filter(Boolean).join(' · ');
 
-  $('#mios-desc').textContent = r.desc || '';
+  $('#scs-desc').textContent = r.desc || '';
 
-  const ss = $('#mios-seasons');
+  const ss = $('#scs-seasons');
 
   if (r.seasons.length > 1) {
     r.seasons.forEach(s => {
@@ -377,8 +377,8 @@ export async function mioSeriesPage() {
 
       b.tabIndex = 0;
       b._act = () => {
-        state.mioSeason = s.id;
-        mioSeriesPage();
+        state.scSeason = s.id;
+        scSeriesPage();
       };
 
       ss.appendChild(b);
@@ -393,7 +393,7 @@ export async function mioSeriesPage() {
 
   const prog = (await api('progress')) || {};      // dove si è arrivati (salvato da tvd)
 
-  const last = state.mioEpisode || r.last;
+  const last = state.scEpisode || r.last;
   const li = r.episodes.findIndex(e => e.id === last);
 
   r.episodes.forEach((e, i) => {
@@ -440,7 +440,7 @@ export async function mioSeriesPage() {
   const rows = list.querySelectorAll('.msep');
   const start = li > 0 ? rows[li - 1] : rows[0];
 
-  if (start && state.page === 'mioserie') {
+  if (start && state.page === 'scserie') {
     start.focus();
     start.scrollIntoView({ block: 'center' });
   }
@@ -455,7 +455,7 @@ async function play(e) {
   overlay(`${series.title}\n${e.title}`);
 
   const r = await api(
-    `mio?action=play&url=${q(e.url)}&series=${q(series.id)}&title=${q(series.title)}` +
+    `sc?action=play&url=${q(e.url)}&series=${q(series.id)}&title=${q(series.title)}` +
     `&poster=${q(series.poster)}&hero=${q(series.hero || '')}&logo=${q(series.logo || '')}` +
     `&episode=${q(e.id)}&n=${e.n == null ? '' : e.n}&ep=${q(e.title)}`
   );
@@ -473,5 +473,5 @@ async function play(e) {
 
 document.addEventListener('focusin', ev => {
   const t = ev.target;
-  if (t && t._mio) detail(t._mio);
+  if (t && t._sc) detail(t._sc);
 });

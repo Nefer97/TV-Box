@@ -19,7 +19,7 @@ function refreshInfo() {
   });
 }
 
-// ---------- account (Mediaset, Il mio catalogo): chi è collegato; OK per uscire ----------
+// ---------- account (Mediaset, StreamingCommunity): chi è collegato; OK per uscire ----------
 // una riga per servizio (data-svc = id del servizio = indirizzo /api/<id>); l'accesso si fa
 // aprendo la sezione, che senza account mostra la schermata di accesso (login.js)
 async function accountVal(row) {

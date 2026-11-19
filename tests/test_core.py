@@ -18,6 +18,7 @@ from tvbox.display import parse_xrandr, scale_for  # noqa: E402
 from tvbox.epg import (parse_mediaset, parse_mediaset_listings, parse_rai, parse_rai_day, rai_slug,  # noqa: E402
                        upcoming, wbd_list, wbd_now, wbd_programs)
 from tvbox.prefs import Prefs  # noqa: E402
+from tvbox.util import read_json  # noqa: E402
 from tvbox.remote import RemoteLogic  # noqa: E402
 from tvbox.sites import normalize_url  # noqa: E402
 from tvbox.health import Watch, may_reopen  # noqa: E402
@@ -261,6 +262,19 @@ class PrefsTest(unittest.TestCase):
             self.assertEqual(p.get("hidden"), ["la7"])
             self.assertEqual(Prefs(d).get("channels"), ["rai1", "canale5"])   # salvato
 
+    def test_dalla_versione_3(self):
+        """"Il mio catalogo" diventa "sc": Continua a guardare, riquadri in home e nascosti restano."""
+        h = [{"series": "123-serie", "episode": "https://x/it/watch/1", "title": "Serie"}]
+        with tempfile.TemporaryDirectory() as d:
+            wjson(os.path.join(d, "prefs.json"), {"version": 3, "mio_history": h,
+                                                 "pinned": ["mio", "la7"], "hidden": ["mio"]})
+            p = Prefs(d)
+            self.assertEqual(p.get("sc_history"), h)
+            self.assertEqual(p.get("pinned"), ["sc", "la7"])
+            self.assertEqual(p.get("hidden"), ["sc"])
+            self.assertEqual(Prefs(d).get("sc_history"), h)                  # salvato
+            self.assertNotIn("mio_history", read_json(os.path.join(d, "prefs.json")))
+
     def test_scelta_vuota(self):
         with tempfile.TemporaryDirectory() as d:
             wjson(os.path.join(d, "prefs.json"), {"version": 3, "channels": []})
@@ -432,7 +446,7 @@ class MediasetTest(unittest.TestCase):
 
 
 class LoginTest(unittest.TestCase):
-    """Accesso fatto da tvd: Mediaset (Gigya) e Il mio catalogo (modulo del sito)."""
+    """Accesso fatto da tvd: Mediaset (Gigya) e StreamingCommunity (modulo del sito)."""
     class FakeCDP:
         def __init__(self, names):
             self.cookies = [{"name": n, "value": "x", "domain": ".mediaset.it", "path": "/"} for n in names]
@@ -462,8 +476,8 @@ class LoginTest(unittest.TestCase):
         from tvbox.mediaset import Mediaset
         self.assertFalse(Mediaset(None, self.FakeCDP([])).login(" ", "")["ok"])
 
-    def test_mio_pagina_del_sito(self):
-        from tvbox.mio import is_session_cookie, login_error, page_props, page_user
+    def test_sc_pagina_del_sito(self):
+        from tvbox.sc import is_session_cookie, login_error, page_props, page_user
         props = page_props('<div data-page="{&quot;props&quot;:{&quot;errors&quot;:{&quot;username&quot;:'
                            '&quot;Credenziali non valide.&quot;},&quot;auth&quot;:{&quot;user&quot;:null}}}">')
         self.assertIsNone(page_user(props))

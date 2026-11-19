@@ -19,7 +19,7 @@ try:
 except ImportError:
     SCAPI = None
 
-NAME = "mio-sito"
+NAME = "sc-sito"
 SITE_HOST = "streamingunity.day"
 BASE_URL = f"https://{SITE_HOST}"
 CDN_URL = f"https://cdn.{SITE_HOST}/images/"
@@ -506,7 +506,7 @@ def get_sliders_auth(timeout=15):
     return data
 
 
-class Mio:
+class SC:
     def __init__(self, prefs, cdp=None):
         self.prefs = prefs
         self.cdp = cdp
@@ -541,7 +541,7 @@ class Mio:
 
             return self._api
 
-    # ---------- accesso: GET /api/mio?action=status|login|logout ----------
+    # ---------- accesso: GET /api/sc?action=status|login|logout ----------
     def _chrome_cookies(self):
         """Cookie del sito nel Chrome della TV (sono loro a dire se si è collegati)."""
         if not self.cdp:
@@ -549,7 +549,7 @@ class Mio:
         try:
             return self.cdp.call("Network.getCookies", {"urls": [BASE_URL + "/"]}).get("cookies", [])
         except Exception as ex:
-            log.warning("mio: cookie di Chrome non leggibili: %s", ex)
+            log.warning("sc: cookie di Chrome non leggibili: %s", ex)
             return []
 
     def _site_user(self, cookies):
@@ -582,7 +582,7 @@ class Mio:
         except Exception as ex:
             # sito irraggiungibile: non si chiude fuori l'utente, si resta come prima
             # (o collegati, se Chrome ha il cookie "ricordami")
-            log.warning("mio: stato dell'accesso non verificabile: %s", ex)
+            log.warning("sc: stato dell'accesso non verificabile: %s", ex)
             if cached:
                 return cached[1]
             return self._set_state(any(c["name"].startswith("remember_web_") for c in cookies))
@@ -610,7 +610,7 @@ class Mio:
             with opener.open(req, timeout=15) as r:
                 props = page_props(r.read().decode("utf-8", "replace"))
         except Exception as ex:
-            log.warning("mio: accesso non riuscito: %s", ex)
+            log.warning("sc: accesso non riuscito: %s", ex)
             return {"ok": False, "error": "Il sito non risponde, riprova tra poco"}
         user = page_user(props)
         if not user:
@@ -627,9 +627,9 @@ class Mio:
                     params["expires"] = c.expires
                 self.cdp.call("Network.setCookie", params)
         except Exception as ex:
-            log.warning("mio: cookie non copiati in Chrome: %s", ex)
+            log.warning("sc: cookie non copiati in Chrome: %s", ex)
             return {"ok": False, "error": "Accesso riuscito, ma Chrome non ha salvato la sessione"}
-        log.info("mio: accesso riuscito")
+        log.info("sc: accesso riuscito")
         return dict(self._set_state(True, user), ok=True)
 
     def _clear_chrome_cookies(self):
@@ -648,7 +648,7 @@ class Mio:
         try:
             self._clear_chrome_cookies()
         except Exception as ex:
-            log.warning("mio: uscita: %s", ex)
+            log.warning("sc: uscita: %s", ex)
         return self._set_state(False)
 
     def _get(self, key, url, ttl):
@@ -746,7 +746,7 @@ class Mio:
             })
 
         return rails
-    # ---------- righe: GET /api/mio?page=home|series|films ----------
+    # ---------- righe: GET /api/sc?page=home|series|films ----------
     def rails(self, page=None):
         """HOME: Continua a guardare + i tre slider. SERIE TV / FILM: una riga per genere.
         Le pagine si caricano a parte: la HOME non aspetta le 25 richieste dei generi."""
@@ -809,7 +809,7 @@ class Mio:
             finally:
                 self._warm_lock.release()
 
-        threading.Thread(target=run, name="mio-generi", daemon=True).start()
+        threading.Thread(target=run, name="sc-generi", daemon=True).start()
 
     def search(self, query):
         """Ricerca globale per nome su StreamingUnity."""
@@ -889,7 +889,7 @@ class Mio:
                 eps = episodes_of(all_eps, selected, sid)
                 selected_id = selected["id"] if selected else None
 
-            prefs_history = self.prefs.get("mio_history") or []
+            prefs_history = self.prefs.get("sc_history") or []
             last = next(
                 (h for h in prefs_history if h.get("series") == sid),
                 None,
@@ -920,7 +920,7 @@ class Mio:
                 ),
                 "episode": h.get("episode", ""),
             }
-            for h in (self.prefs.get("mio_history") or [])
+            for h in (self.prefs.get("sc_history") or [])
         ]
 
     def remember(self, q):
@@ -940,7 +940,7 @@ class Mio:
             return
 
         self.prefs.update(
-            "mio_history",
+            "sc_history",
             lambda items: (
                 [h] + [
                     x for x in items

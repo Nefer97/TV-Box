@@ -3,9 +3,9 @@
 Si apre una visione per ogni cosa che va a schermo fuori dalla home:
 
     channel   un canale in diretta del catalogo (Rai 1, Canale 5, Real Time…)
-    episode   un episodio scelto nella sezione Mediaset o in Il mio catalogo
+    episode   un episodio scelto nella sezione Mediaset o in StreamingCommunity
     service   un servizio della home o di Altri servizi (RaiPlay, YouTube, La7…)
-    site      un indirizzo di "I miei siti" (o la pagina di accesso di Il mio catalogo)
+    site      un indirizzo di "I miei siti" (o la pagina di accesso di StreamingCommunity)
 
 Il tipo decide tutto il resto, qui e solo qui (le regole sono provate dai test):
 
@@ -37,7 +37,7 @@ class Session:
         self.return_to = return_to                   # pagina del launcher per MENU (es. "ms:<serie>")
         self.opened_at = time.monotonic() if now is None else now
         self.watch = Watch(self.sid or what, self.opened_at) if self.guarded else None
-        self.login = False                           # pagina di accesso di Il mio catalogo
+        self.login = False                           # pagina di accesso di StreamingCommunity
         self.resume_at = None                        # episodio: secondi da cui ripartire
         self.progress_saved = 0.0                    # episodio: ultimo salvataggio del punto
 
@@ -48,7 +48,7 @@ class Session:
 
     @classmethod
     def episode(cls, url, series, label="", now=None, site="Mediaset Infinity", back="ms", color="#0f766e"):
-        """Episodio di una sezione catalogo (Mediaset, Il mio catalogo): MENU torna a "<back>:<serie>"."""
+        """Episodio di una sezione catalogo (Mediaset, StreamingCommunity): MENU torna a "<back>:<serie>"."""
         s = normalize_service("", {"kind": "web", "label": site, "url": url,
                                    "block": ["trackers"], "color": color}, {})
         return cls(EPISODE, s, title=label or "l'episodio", return_to=f"{back}:{series}" if series else None, now=now)
@@ -62,7 +62,7 @@ class Session:
 
     @classmethod
     def login_page(cls, url, label, back, now=None):
-        """Pagina di accesso di un sito (Il mio catalogo): un sito normale, con la tastiera a
+        """Pagina di accesso di un sito (StreamingCommunity): un sito normale, con la tastiera a
         schermo; MENU torna alla sezione "<back>" e tvd rilegge l'accesso (TV.home)."""
         s = normalize_service("", {"kind": "web", "label": label, "url": url,
                                    "shield": True, "block": ["ads"]}, {})

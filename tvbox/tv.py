@@ -22,7 +22,7 @@ from .epg import EPG
 from .health import HealthMixin, resume_point
 from .layer import LayerMixin
 from .mediaset import Mediaset
-from .mio import Mio
+from .sc import SC
 from .panel import PanelMixin
 from .session import Session
 from .sleep import SleepMixin
@@ -73,7 +73,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         self.epg = EPG(self.services, enabled=self.channel_list)
         self.sites = Sites(prefs)
         self.mediaset = Mediaset(prefs, self.cdp)
-        self.mio = Mio(prefs, self.cdp)
+        self.sc = SC(prefs, self.cdp)
         self.input = vinput
         self.remote = None                 # RemoteLogic (per /api/info)
         self.actions = queue.Queue()
@@ -285,17 +285,17 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
             self.start(Session.site(u, mobile=(self.sites.find(u) or {}).get("mobile")))
 
     def open_episode(self, url, series, label="", **kw):
-        """Episodio scelto nella sezione Mediaset o in Il mio catalogo (MENU torna alla serie);
+        """Episodio scelto nella sezione Mediaset o in StreamingCommunity (MENU torna alla serie);
         se lo si era lasciato a metà, riparte da lì (health._progress_tick)."""
         sess = Session.episode(url, series, label, **kw)
         sess.resume_at = resume_point((self.prefs.get("progress") or {}).get(sess.url))
         self.start(sess)
 
-    def open_login(self, sid="mio"):
+    def open_login(self, sid="sc"):
         """Il sito vero a schermo per l'accesso, quando quello fatto da tvd non basta (es.
         Mediaset chiede il captcha): MENU torna alla sezione."""
         from .mediaset import SITE
-        from .mio import LOGIN_URL
+        from .sc import LOGIN_URL
         url = SITE if sid == "mediaset" else LOGIN_URL
         label = "Accesso a " + self.services.get(sid, {}).get("label", sid)
         self.start(Session.login_page(url, label, back=sid))
@@ -338,7 +338,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         log.info("HOME")
         if self.session and self.session.login:       # si lascia la pagina di accesso: com'è andata?
             try:
-                self.mio.after_login()
+                self.sc.after_login()
             except Exception as ex:
                 log.warning("dopo l'accesso: %s", ex)
         self.panel = self.pointer = False
