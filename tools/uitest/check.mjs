@@ -112,6 +112,19 @@ await check('La7: scelta "Solo in Altri servizi"', `document.activeElement.textC
 await press('ok');
 await check('La7 di nuovo solo in Altri servizi', `!document.querySelector('#page-home .bigrow [data-id="la7"]') && !!document.querySelector('#altri-row [data-id="la7"]')`, 4000);
 
+// account discovery+ (nessuna sezione in tvbox): l'accesso si apre da Rete e assistenza
+await js(`import('/js/core.js').then(c => c.state.show('set-net'))`);
+await check('discovery+: riga account, non collegato', `(() => { const r = document.querySelector('[data-act="account"][data-svc="discovery"]');
+  return r && r.querySelector('.aname').textContent === 'discovery+' && r.querySelector('.val').textContent === 'non collegato'; })()`, 6000);
+await js(`document.querySelector('[data-act="account"][data-svc="discovery"]').focus()`);
+await press('ok');
+await check('discovery+: schermata di accesso (Email, Password, Accedi)', `document.body.dataset.page === 'login'
+  && [...document.querySelectorAll('#login-box .lfield .lk')].map(e => e.textContent).join() === 'Email,Password'
+  && !!document.querySelector('#login-box .lgo') && document.activeElement.classList.contains('lfield')`, 4000);
+await shot('accesso-discovery');
+await press('back');
+await check('discovery+: MENU torna a Rete e assistenza', `document.body.dataset.page === 'set-net'`, 3000);
+
 console.log('mediaset');
 await open('mediaset');
 await check('righe di locandine', `document.querySelectorAll('.poster').length >= 10`);

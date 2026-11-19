@@ -13,6 +13,7 @@ Contenuto:
     sc_history  come ms_history                               StreamingCommunity: Continua a guardare
     au_history  come ms_history                               AnimeUnity: Continua a guardare
     ms_user    "email"                                          account Mediaset collegato (solo da mostrare)
+    dplus_user "email"                                          account discovery+ collegato (solo da mostrare)
     progress   {"<url episodio>": [secondi, durata, quando]}    dove si è arrivati negli episodi (ultimi 200)
     channels   ["rai1", ...]                                    canali in diretta scelti, in ordine
 
@@ -45,6 +46,7 @@ DEFAULTS = {
     "sc_history": [],
     "au_history": [],
     "ms_user": "",
+    "dplus_user": "",
     "channels": list(DEFAULT_CHANNELS),
 }
 
@@ -132,6 +134,8 @@ class Prefs:
             out["progress"] = dict(sorted(ok.items(), key=lambda kv: kv[1][2])[-PROGRESS_MAX:])
         if isinstance(d.get("ms_user"), str):
             out["ms_user"] = d["ms_user"][:80]
+        if isinstance(d.get("dplus_user"), str):
+            out["dplus_user"] = d["dplus_user"][:80]
         for key in ("ms_history", "sc_history", "au_history"):
             h = d.get(key)
             if isinstance(h, list):

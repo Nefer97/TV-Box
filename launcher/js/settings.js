@@ -2,6 +2,7 @@
 import { $, api, choose, focusAct, hideOverlay, overlay, q, state } from './core.js';
 import { updateMeteo } from './home.js';
 import { saverLabel, saverMenu } from './saver.js';
+import { loginGate } from './login.js';
 
 // ---------- volume (◀ ▶ sulla voce Volume) ----------
 export function setVol(r) {
@@ -38,6 +39,11 @@ async function account() {
   const id = row.dataset.svc, name = state.CFG.services[id].label;
   const l = await accountVal(row);
   if (!l || !l.logged) {
+    if (!state.CFG.services[id].page) {                // nessuna sezione in tvbox (es. discovery+): accesso qui
+      state.loginSvc = id;
+      state.show('login');
+      return;
+    }
     overlay(`Non sei collegato a ${name}.\nL'accesso si fa aprendo la sezione.`, [['OK', hideOverlay]]);
     return;
   }
@@ -49,6 +55,18 @@ async function account() {
       accountVal(row);
     }],
     ['Annulla', hideOverlay]], 1);
+}
+
+// pagina di accesso per i servizi senza una sezione in tvbox (Impostazioni → Account)
+export function loginPage() {
+  const id = state.loginSvc;
+  if (!id) return state.show('set-net');
+  const back = () => {
+    state.show('set-net');
+    const row = document.querySelector(`[data-act="account"][data-svc="${id}"]`);
+    if (row) { row.focus(); accountVal(row); }
+  };
+  loginGate($('#login-box'), { id, endpoint: id, userLabel: 'Email', onDone: back });
 }
 
 // ---------- meteo: città scelta con la tastiera a schermo ----------

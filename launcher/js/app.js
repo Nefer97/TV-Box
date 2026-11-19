@@ -7,19 +7,19 @@ import { scPage, scSeriesPage } from './sc.js';
 import { auPage, auSeriesPage } from './au.js';
 import { channelsPage, homeEditPage, sitiPage, sitoApri, wifiPage } from './lists.js';
 import { initSaver, saverAwake } from './saver.js';
-import { ACTIONS, changeVolume, settingsPage } from './settings.js';
+import { ACTIONS, changeVolume, loginPage, settingsPage } from './settings.js';
 
 const TITLES = { altri: 'Altri servizi', settings: 'Impostazioni', wifi: 'Wi-Fi', siti: 'I miei siti',
   homeedit: 'Riquadri della home', guide: 'Guida TV', channels: 'Canali in diretta', mediaset: 'Mediaset Infinity', msserie: 'Mediaset Infinity', sc: 'StreamingCommunity', scserie: 'StreamingCommunity', au: 'AnimeUnity', auserie: 'AnimeUnity', 'set-av': 'Immagine e audio',
-  'set-power': 'Accensione e spegnimento', 'set-home': 'Home e meteo', 'set-net': 'Rete e assistenza' };
+  'set-power': 'Accensione e spegnimento', 'set-home': 'Home e meteo', 'set-net': 'Rete e assistenza', login: 'Accesso' };
 // MENU: pagina a cui si torna (e voce da selezionare)
 const PARENT = { wifi: ['set-net', 'wifi'], homeedit: ['set-home', 'home-edit'], channels: ['set-home', 'channels'], siti: ['altri'],
   settings: ['home'], altri: ['home'], guide: ['home'], mediaset: ['home'], msserie: ['mediaset'], sc: ['altri'], scserie: ['sc'], au: ['altri'], auserie: ['au'],
   'set-av': ['settings', 'set-av'], 'set-power': ['settings', 'set-power'],
-  'set-home': ['settings', 'set-home'], 'set-net': ['settings', 'set-net'] };
+  'set-home': ['settings', 'set-home'], 'set-net': ['settings', 'set-net'], login: ['set-net'] };
 // cosa preparare entrando in una pagina
 const ON_ENTER = { settings: settingsPage, 'set-av': settingsPage, 'set-power': settingsPage,
-  'set-home': settingsPage, 'set-net': settingsPage,
+  'set-home': settingsPage, 'set-net': settingsPage, login: loginPage,
   wifi: wifiPage, siti: sitiPage, homeedit: () => homeEditPage(), guide: guidePage,
   mediaset: msPage, msserie: seriesPage, sc: scPage, scserie: scSeriesPage, au: auPage, auserie: auSeriesPage, channels: () => channelsPage() };
 

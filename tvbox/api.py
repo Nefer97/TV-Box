@@ -117,6 +117,20 @@ def make_routes(tv):
                 pass
         return {"minutes": tv.sleep_left()}
 
+    def discovery(q):
+        """discovery+: accesso all'account (login con email e password fatto da tvd; logout;
+        status; site = accesso sul sito, se discovery+ chiede la verifica anti-robot). Il
+        riquadro di discovery+ apre il sito: lì l'account è già collegato."""
+        a = q.get("action", "status")
+        if a == "login":
+            return tv.discovery.login(q.get("user", ""), q.get("password", ""))
+        if a == "logout":
+            return dict(tv.discovery.logout(), ok=True)
+        if a == "site":
+            tv.post(tv.open_login, "discovery")
+            return {"ok": True}
+        return tv.discovery.login_state()
+
     def mediaset(q):
         """Sezione Mediaset: righe di serie, una serie con i suoi episodi, apertura di un episodio,
         accesso (login con email e password; logout; status; site = accesso sul sito, se Mediaset
@@ -234,7 +248,7 @@ def make_routes(tv):
         # dove si è arrivati negli episodi: {"<url>": {"t": secondi, "d": durata}}
         "progress": lambda q: {u: {"t": v[0], "d": v[1]} for u, v in (tv.prefs.get("progress") or {}).items()},
         "info": info, "wifi": wifi_, "screen": screen, "system": system,
-        "guide": guide, "prefs": prefs, "sleep": sleep, "mediaset": mediaset, "sc": sc, "au": au, "channels": channels,
+        "guide": guide, "prefs": prefs, "sleep": sleep, "mediaset": mediaset, "discovery": discovery, "sc": sc, "au": au, "channels": channels,
     }
 
 

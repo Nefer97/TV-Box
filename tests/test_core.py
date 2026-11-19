@@ -217,6 +217,31 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(self.cfg.opt("non.esiste", 5), 5)
 
 
+class DiscoveryTest(unittest.TestCase):
+    @staticmethod
+    def jwt(claims):
+        import base64
+        b = lambda d: base64.urlsafe_b64encode(json.dumps(d).encode()).decode().rstrip("=")
+        return f"{b({'alg': 'RS256'})}.{b(claims)}.firma"
+
+    def test_collegati_dal_gettone_st(self):
+        from tvbox.discovery import is_logged, token_claims
+        now = 1_800_000_000
+        anon = [{"name": "st", "value": self.jwt({"anonymous": True, "exp": now + 99})}]
+        user = [{"name": "x", "value": "y"}, {"name": "st", "value": self.jwt({"anonymous": False, "exp": now + 99})}]
+        old = [{"name": "st", "value": self.jwt({"anonymous": False, "exp": now - 1})}]
+        self.assertFalse(is_logged(token_claims(anon), now))
+        self.assertTrue(is_logged(token_claims(user), now))
+        self.assertFalse(is_logged(token_claims(old), now))          # scaduto
+        self.assertIsNone(token_claims([{"name": "st", "value": "rotto"}]))
+        self.assertIsNone(token_claims([]))
+
+    def test_modulo_senza_iniezioni(self):
+        from tvbox.discovery import fill_js
+        js = fill_js('a@b.it', 'pa"ss\'); </script>')
+        self.assertIn(json.dumps('pa"ss\'); </script>'), js)          # stringa JSON, non codice
+
+
 class ProgressTest(unittest.TestCase):
     def test_da_dove_riprendere(self):
         from tvbox.health import resume_point

@@ -21,6 +21,7 @@ from .display import Display
 from .epg import EPG
 from .health import HealthMixin, resume_point
 from .layer import LayerMixin
+from .discovery import Discovery
 from .mediaset import Mediaset
 from .sc import SC
 from .au import AU
@@ -74,6 +75,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         self.epg = EPG(self.services, enabled=self.channel_list)
         self.sites = Sites(prefs)
         self.mediaset = Mediaset(prefs, self.cdp)
+        self.discovery = Discovery(prefs, self.cdp)
         self.sc = SC(prefs, self.cdp)
         self.au = AU(prefs, self.cdp)
         self.input = vinput
@@ -296,11 +298,13 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
     def open_login(self, sid="sc"):
         """Il sito vero a schermo per l'accesso, quando quello fatto da tvd non basta (es.
         Mediaset chiede il captcha): MENU torna alla sezione."""
+        from .discovery import LOGIN_URL as DPLUS_LOGIN
         from .mediaset import SITE
         from .sc import LOGIN_URL
-        url = SITE if sid == "mediaset" else LOGIN_URL
+        url = SITE if sid == "mediaset" else DPLUS_LOGIN if sid == "discovery" else LOGIN_URL
         label = "Accesso a " + self.services.get(sid, {}).get("label", sid)
-        self.start(Session.login_page(url, label, back=sid))
+        back = "settings" if sid == "discovery" else sid     # discovery+ non ha una sezione in tvbox
+        self.start(Session.login_page(url, label, back=back))
 
     def start(self, sess, panel=None):
         """Mette a schermo una visione. Le regole (sipario, banner, avvio, ultimo canale) sono
