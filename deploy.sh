@@ -5,7 +5,7 @@
 #                               indirizzi esterni, poi aggiornamento (chiede la password)
 #   ./deploy.sh --no-ui         salta prove della grafica e indirizzi (es. senza internet)
 #   ./deploy.sh --rollback      torna alla versione installata prima
-#   TV_HOST=192.168.1.x ./deploy.sh     se tv.local non risponde
+#   TV_HOST=192.168.1.x ./deploy.sh       se tv.local non risponde (indirizzo del Mac mini)
 #
 # Sul PC non installa niente: usa solo ssh, scp, tar e python3 già presenti.
 set -euo pipefail

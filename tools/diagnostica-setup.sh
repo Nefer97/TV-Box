@@ -4,9 +4,9 @@
 #  * tvbox-monitor: ogni 5 s scrive temperature, ventola, carico e memoria nel log del kernel
 #    (quindi anche via netconsole);
 #  * journald scrive su disco ogni 5 s invece che ogni 5 minuti.
+# Attivarla:     sudo PC_IP=<indirizzo del PC, es. 192.168.1.x> bash diagnostica-setup.sh
 # Per toglierla: sudo bash diagnostica-setup.sh rimuovi
 set -euo pipefail
-PC_IP="${PC_IP:-192.168.1.x}"
 IFACE="$(ip route | awk '/^default/{print $5; exit}')"
 
 if [ "${1:-}" = rimuovi ]; then
@@ -17,6 +17,7 @@ if [ "${1:-}" = rimuovi ]; then
   systemctl daemon-reload; systemctl restart systemd-journald
   echo "Diagnostica rimossa."; exit 0
 fi
+PC_IP="${PC_IP:?indica il PC che riceve i messaggi, es. sudo PC_IP=192.168.1.x bash $0}"
 
 cat > /etc/sysctl.d/90-tvbox-debug.conf <<'EOF'
 # diagnostica blocchi: tutti i messaggi del kernel sulla console (=> netconsole), SysRq attivo

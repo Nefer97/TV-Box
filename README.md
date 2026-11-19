@@ -124,7 +124,7 @@ Dal PC con la cartella del progetto, con il Mac mini acceso in rete:
 ```bash
 ./deploy.sh                 # prove, verifica degli indirizzi, copia, installazione (chiede la password di admin)
 ./deploy.sh --rollback      # torna alla versione installata prima
-TV_HOST=192.168.1.x ./deploy.sh     # se tv.local non risponde
+TV_HOST=192.168.1.x ./deploy.sh       # se tv.local non risponde
 ```
 
 ## Telecomando
