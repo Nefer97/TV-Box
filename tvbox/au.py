@@ -54,6 +54,7 @@ LOGIN_STATUS_TTL = 300
 RAIL_TTL = 1800
 SERIES_TTL = 900
 DETAILS_TTL = 24 * 3600            # descrizione di un titolo evidenziato: un giorno
+EP_GROUP = 100                     # serie lunghissime senza stagioni (One Piece): episodi a gruppi di 100
 HISTORY_MAX = 12
 
 
@@ -524,16 +525,40 @@ class AU:
 
     # ---------- un anime: GET /api/au?action=series&id=...&season=... ----------
     def series(self, sid, season=None):
+        group = season if season and re.fullmatch(r"\d+-\d+", str(season)) else None   # "101-200"
+        real = None if group else season
         try:
-            s, eps = self._cached(f"serie:{sid}:{season}", SERIES_TTL, lambda: fetch_series(sid, season))
+            s, eps = self._cached(f"serie:{sid}:{real}", SERIES_TTL, lambda: fetch_series(sid, real))
         except NotImplementedError:
             return {"error": TODO_MSG, "login": self.login_state()}
         except Exception:
             return {"error": "Non disponibile", "login": self.login_state()}
         eps = [e for e in eps or [] if is_episode_url(e.get("url"))]
-        last = next((h for h in self.prefs.get("au_history") if h.get("series") == str(sid)), None)
-        return dict(s, season=str(season) if season else s.get("current"), episodes=eps,
-                    last=last.get("episode") if last else None)
+        h = next((h for h in self.prefs.get("au_history") if h.get("series") == str(sid)), None)
+        last = h.get("episode") if h else None
+        if len(s.get("seasons") or []) <= 1 and len(eps) > EP_GROUP * 3 // 2:
+            s, eps, season = self._grouped(s, eps, group, last)
+        return dict(s, season=str(season) if season else s.get("current"), episodes=eps, last=last)
+
+    @staticmethod
+    def _grouped(s, eps, group, last):
+        """Serie lunghissima senza stagioni: gli episodi a gruppi di EP_GROUP come "stagioni"
+        ("1–100", "101–200", …), così la pagina resta leggera e si arriva presto all'episodio.
+        Si apre sul gruppo chiesto, se no su quello dell'ultimo visto, se no sui più recenti."""
+        nums = [e["n"] for e in eps if isinstance(e.get("n"), int)]
+        if not nums:
+            return s, eps, None
+        top = max(nums)
+        bounds = [(a, min(a + EP_GROUP - 1, top)) for a in range(1, top + 1, EP_GROUP)]
+        seasons = [{"id": f"{a}-{b}", "n": k + 1, "title": f"{a}–{b}"} for k, (a, b) in enumerate(bounds)]
+        seen = next((e["n"] for e in eps if e["id"] == last and isinstance(e.get("n"), int)), None)
+        pick = group or next((f"{a}-{b}" for a, b in bounds if seen is not None and a <= seen <= b),
+                             seasons[-1]["id"])
+        a, b = (int(x) for x in pick.split("-"))
+        inside = [e for e in eps if isinstance(e.get("n"), int) and a <= e["n"] <= b]
+        if pick == seasons[-1]["id"]:
+            inside += [e for e in eps if not isinstance(e.get("n"), int)]     # senza numero: in fondo
+        return dict(s, seasons=seasons, current=pick, grouped=True, total=len(eps)), inside, pick
 
     # ---------- apertura di un episodio: GET /api/au?action=play ----------
     def play_target(self, url):

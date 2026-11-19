@@ -379,8 +379,8 @@ export async function auSeriesPage() {
 
   $('#aus-info').textContent = [
     meta(r),
-    r.seasons.length > 1 ? `${r.seasons.length} stagioni` : '',
-    r.episodes.length ? `${r.episodes.length} episodi` : ''
+    r.seasons.length > 1 && !r.grouped ? `${r.seasons.length} stagioni` : '',   // i gruppi di episodi non sono stagioni
+    (r.total || r.episodes.length) ? `${r.total || r.episodes.length} episodi` : ''
   ].filter(Boolean).join(' · ');
 
   $('#aus-desc').textContent = r.desc || '';
@@ -427,7 +427,8 @@ export async function auSeriesPage() {
     const seasonNumber = r.season ?? r.season_number ?? '';
     const episodeNumber = e.n ?? '';
 
-    const prefix = seasonNumber !== '' && episodeNumber !== ''
+    // "S2:E5" solo con stagioni vere (numeri); nei gruppi di episodi ("101-200") basta il titolo
+    const prefix = /^\d+$/.test(String(seasonNumber)) && r.seasons.length > 1 && episodeNumber !== ''
       ? `S${seasonNumber}:E${episodeNumber} `
       : '';
 

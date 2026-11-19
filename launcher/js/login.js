@@ -36,7 +36,7 @@ export function loginGate(box, o) {
   // a destra il modulo
   const form = el('div', 'lform');
   form.appendChild(el('div', 'ltitle', 'Accedi'));
-  form.appendChild(el('div', 'lsub', `Entra con il tuo account ${name} per vedere il catalogo.`));
+  form.appendChild(el('div', 'lsub', o.sub || `Entra con il tuo account ${name} per vedere il catalogo.`));
   const field = (label, value) => {
     const f = el('div', 'btn lfield');
     f.tabIndex = 0;

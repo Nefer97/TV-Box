@@ -67,7 +67,9 @@ export function loginPage() {
     const row = document.querySelector(`[data-act="account"][data-svc="${id}"]`);
     if (row) { row.focus(); accountVal(row); }
   };
-  loginGate($('#login-box'), { id, endpoint: id, userLabel: 'Email', onDone: back });
+  const name = (state.CFG.services[id] || {}).label || id;
+  loginGate($('#login-box'), { id, endpoint: id, userLabel: 'Email', onDone: back,
+    sub: `Entra con il tuo account ${name}: aprendo ${name} sarai già collegato.` });
 }
 
 // ---------- meteo: città scelta con la tastiera a schermo ----------

@@ -571,6 +571,22 @@ class AnimeUnityTest(unittest.TestCase):
         a.details("1-op")
         self.assertEqual(calls, ["1-op"])                                  # la seconda volta dalla cache
 
+    def test_serie_lunghissima_a_gruppi(self):
+        au = self.au
+        eps = [au.episodio(f"e{n}", f"https://anime.example/anime/1-op/{n}", n=n) for n in range(250, 0, -1)]
+        au.fetch_series = lambda sid, season=None: (au.serie(sid, "One Piece"), list(eps))
+        p = Prefs(self.d.name)
+        a = au.AU(p)
+        r = a.series("1-op")
+        self.assertEqual([x["id"] for x in r["seasons"]], ["1-100", "101-200", "201-250"])
+        self.assertEqual((r["season"], len(r["episodes"])), ("201-250", 50))   # di partenza i più recenti
+        self.assertEqual(len(a.series("1-op", "101-200")["episodes"]), 100)
+        a.remember({"series": "1-op", "title": "One Piece", "episode": "e42", "n": "42"})
+        self.assertEqual(a.series("1-op")["season"], "1-100")               # dove si era arrivati
+        short = [au.episodio(f"e{n}", f"https://anime.example/anime/2-x/{n}", n=n) for n in range(12, 0, -1)]
+        au.fetch_series = lambda sid, season=None: (au.serie(sid, "Corta"), list(short))
+        self.assertEqual(len(a.series("2-x")["seasons"]), 1)                # serie normali: come prima
+
     def test_titoli_per_adulti_a_scelta(self):
         au = self.au
         au._adult_ids = lambda: frozenset({2})                           # elenco del sito (finto)
