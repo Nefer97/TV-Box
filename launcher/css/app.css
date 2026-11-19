@@ -190,6 +190,7 @@ body[data-page="au"] main, body[data-page="auserie"] main { padding-top: 0; }
 .mschips { display: flex; flex-wrap: wrap; gap: .8vw; margin-top: 2.4vh; }
 .btn.chip { font-size: 2.2vh; padding: 1vh 1.2vw; background: rgba(11,16,32,.55); }
 .btn.chip.on:not(:focus) { background: rgba(56,189,248,.28); }
+.btn.chip:focus { background: #fff; color: var(--bg1); }   /* "chip" vincerebbe sul fondo di .btn:focus */
 .mseps { flex: 1; overflow: hidden; display: flex; flex-direction: column; gap: 1.2vh; padding: 1vh 1vw; margin: -1vh -1vw; }
 .gprog.msep { background: rgba(11,16,32,.62); }
 .gprog.msep:focus { background: #fff; color: var(--bg1); }

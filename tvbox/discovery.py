@@ -89,7 +89,7 @@ class Discovery:
         try:
             return self.cdp.call("Network.getCookies", {"urls": COOKIE_URLS}).get("cookies", [])
         except Exception as ex:
-            log.warning("discovery+: cookie di Chrome non leggibili: %s", ex)
+            log.warning("Discovery+: cookie di Chrome non leggibili: %s", ex)
             return []
 
     # ---------- GET /api/discovery?action=status|login|logout|site ----------
@@ -129,18 +129,18 @@ class Discovery:
                         challenge = True
                         break
         except Exception as ex:
-            log.warning("discovery+: accesso non riuscito: %s", ex)
-            return {"ok": False, "error": "discovery+ non risponde, riprova tra poco"}
+            log.warning("Discovery+: accesso non riuscito: %s", ex)
+            return {"ok": False, "error": "Discovery+ non risponde, riprova tra poco"}
         if logged:
             self.prefs.set("dplus_user", email)
-            log.info("discovery+: accesso riuscito")
+            log.info("Discovery+: accesso riuscito")
             return dict(self.login_state(), ok=True)
         if challenge:
-            log.info("discovery+: il sito chiede la verifica anti-robot")
+            log.info("Discovery+: il sito chiede la verifica anti-robot")
             return {"ok": False, "site": True,
-                    "error": "discovery+ chiede di completare l'accesso sul sito (verifica «non sono un robot»)"}
-        log.info("discovery+: accesso rifiutato (%s)", error or "nessuna risposta")
-        return {"ok": False, "error": error or "Accesso non riuscito: nessuna risposta da discovery+"}
+                    "error": "Discovery+ chiede di completare l'accesso sul sito (verifica «non sono un robot»)"}
+        log.info("Discovery+: accesso rifiutato (%s)", error or "nessuna risposta")
+        return {"ok": False, "error": error or "Accesso non riuscito: nessuna risposta da Discovery+"}
 
     @staticmethod
     def _try(tab, expr):
@@ -158,6 +158,6 @@ class Discovery:
                     self.cdp.call("Network.deleteCookies", {"name": "st", "domain": c["domain"],
                                                             "path": c.get("path", "/")})
                 except Exception as ex:
-                    log.warning("discovery+: cookie st: %s", ex)
+                    log.warning("Discovery+: cookie st: %s", ex)
         self.prefs.set("dplus_user", "")
         return self.login_state()

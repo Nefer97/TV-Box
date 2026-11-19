@@ -23,8 +23,14 @@ const ON_ENTER = { settings: settingsPage, 'set-av': settingsPage, 'set-power': 
   wifi: wifiPage, siti: sitiPage, homeedit: () => homeEditPage(), guide: guidePage,
   mediaset: msPage, msserie: seriesPage, sc: scPage, scserie: scSeriesPage, au: auPage, auserie: auSeriesPage, channels: () => channelsPage() };
 
+// sezioni con un riquadro che può stare in home o in Altri servizi: MENU torna dove era il
+// riquadro da cui si è entrati (ricordato nel browser: vale anche dopo un episodio, quando il
+// launcher si ricarica da capo)
+const SECTIONS = ['mediaset', 'sc', 'au'];
+
 function show(p) {
   const prev = state.page;
+  if (SECTIONS.includes(p) && (prev === 'home' || prev === 'altri')) store.set('from-' + p, prev);
   state.page = p;
   document.body.dataset.page = p;
   document.querySelectorAll('.page').forEach(s => s.classList.toggle('active', s.id === 'page-' + p));
@@ -41,9 +47,15 @@ state.show = show;
 
 function back() {
   if (overlayOpen()) { if (!state.busy) hideOverlay(); return; }
-  const to = PARENT[state.page];
+  const p = state.page, from = SECTIONS.includes(p) && store.get('from-' + p);
+  const to = from === 'home' || from === 'altri' ? [from] : PARENT[p];
   if (!to) return;
   show(to[0]);
+  if (to[0] === 'altri') {                 // sul riquadro della sezione appena lasciata
+    const id = Object.keys(state.CFG.services).find(k => state.CFG.services[k].page === p);
+    const e = id && document.querySelector(`#altri-row [data-id="${id}"]`);
+    if (e) e.focus();
+  }
   if (to[1]) {
     const e = document.querySelector(`#page-${to[0]} [data-act="${to[1]}"], #page-${to[0]} [data-go="${to[1]}"]`);
     if (e) e.focus();

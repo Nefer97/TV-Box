@@ -226,6 +226,28 @@ def is_episode_url(u):
     )
 
 
+ADULT_TTL = 12 * 3600               # elenco dei titoli per adulti: si riscarica due volte al giorno
+_adult = [0.0, frozenset()]
+
+
+def _adult_ids():
+    """Id dei titoli per adulti (archivio con adult=1, tutte le pagine). Ultimi episodi e
+    ricerca non dicono se un titolo è per adulti: si escludono con questo elenco. Se l'archivio
+    non risponde resta l'ultimo elenco buono."""
+    if time.monotonic() - _adult[0] < ADULT_TTL and _adult[1]:
+        return _adult[1]
+    try:
+        first = _d(_api("/api/archive", {"adult": 1}))
+        pages = [first] + [_d(_api("/api/archive", {"adult": 1, "page": n}))
+                           for n in range(2, min(_int(first.get("last_page"), 1), 20) + 1)]
+        ids = frozenset(_int(x.get("id")) for p in pages for x in _l(p.get("data")) if _d(x).get("id"))
+        if ids:
+            _adult[:] = [time.monotonic(), ids]
+    except Exception as ex:
+        log.warning("AnimeUnity elenco dei titoli per adulti: %s", ex)
+    return _adult[1]
+
+
 def fetch_home():
     data = _api("/api/home/latest-episodes", {
         "page": 1,
@@ -234,12 +256,13 @@ def fetch_home():
 
     items = []
     seen = set()
+    adult = _adult_ids()
 
     for entry in _l(_d(data).get("data")):
         anime = _d(_d(entry).get("episode")).get("anime")
         anime = _d(anime)
 
-        if not anime.get("id") or not anime.get("slug"):
+        if not anime.get("id") or not anime.get("slug") or _int(anime.get("id")) in adult:
             continue
 
         sid = _sid(anime)
@@ -292,11 +315,12 @@ def fetch_anime():
 
 def fetch_search(query):
     data = _api("/api/search", {"q": query})
+    adult = _adult_ids()
 
     return [
         _parse_series(x)
         for x in _l(_d(data).get("data"))
-        if _d(x).get("id") and _d(x).get("slug")
+        if _d(x).get("id") and _d(x).get("slug") and _int(_d(x).get("id")) not in adult
     ]
 
 

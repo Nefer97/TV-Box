@@ -115,7 +115,7 @@ await check('La7 di nuovo solo in Altri servizi', `!document.querySelector('#pag
 // account discovery+ (nessuna sezione in tvbox): l'accesso si apre da Rete e assistenza
 await js(`import('/js/core.js').then(c => c.state.show('set-net'))`);
 await check('discovery+: riga account, non collegato', `(() => { const r = document.querySelector('[data-act="account"][data-svc="discovery"]');
-  return r && r.querySelector('.aname').textContent === 'discovery+' && r.querySelector('.val').textContent === 'non collegato'; })()`, 6000);
+  return r && r.querySelector('.aname').textContent === 'Discovery+' && r.querySelector('.val').textContent === 'non collegato'; })()`, 6000);
 await js(`document.querySelector('[data-act="account"][data-svc="discovery"]').focus()`);
 await press('ok');
 await check('discovery+: schermata di accesso (Email, Password, Accedi)', `document.body.dataset.page === 'login'

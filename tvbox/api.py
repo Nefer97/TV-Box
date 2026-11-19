@@ -61,7 +61,10 @@ def make_routes(tv):
 
     def info(q):
         ip = subprocess.run(["hostname", "-I"], capture_output=True, text=True).stdout.split()
-        return {"hostname": socket.gethostname(), "ip": ip,
+        # la rete usata davvero: l'interfaccia della strada predefinita (wl* = Wi-Fi)
+        route = subprocess.run(["ip", "route", "show", "default"], capture_output=True, text=True).stdout.split()
+        dev = route[route.index("dev") + 1] if "dev" in route[:-1] else ""
+        return {"hostname": socket.gethostname(), "ip": ip, "wired": bool(dev) and not dev.startswith(("wl", "ww")),
                 "remote_aluminium": tv.remote.aluminium if tv.remote else None}
 
     def wifi_(q):

@@ -186,7 +186,9 @@ export async function updateStatus() {
   const [w, i] = await Promise.all([api('wifi'), api('info')]);
   const box = $('#status'), ips = (i && i.ip) || [];
   let kind = 'off', text = 'Non connesso';
-  if (w && w.connected) { kind = 'wifi'; text = w.ssid; }
+  // la rete usata davvero: con cavo e Wi-Fi insieme vince quella della strada predefinita
+  if (i && i.wired && ips.length) { kind = 'cable'; text = 'Rete via cavo'; }
+  else if (w && w.connected) { kind = 'wifi'; text = w.ssid; }
   else if (ips.length) { kind = 'cable'; text = 'Rete via cavo'; }
   box.className = kind === 'off' ? 'off' : '';
   box.innerHTML = NET_ICONS[kind];

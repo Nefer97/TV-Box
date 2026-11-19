@@ -60,7 +60,7 @@
 
 
 
-    "discovery":    { "kind": "web", "label": "discovery+", "subtitle": "Real Time, DMAX, Nove… gratis",
+    "discovery":    { "kind": "web", "label": "Discovery+", "subtitle": "Real Time, DMAX, Nove… gratis",
                       "icon": "play", "color": "#1d4ed8", "auto_fullscreen": true,
                       "url": "https://www.discoveryplus.com/it/it" },
     "raiplay_web":  { "kind": "web", "label": "RaiPlay (sito)", "icon": "play", "color": "#1e3a8a", "auto_fullscreen": true,
@@ -77,6 +77,6 @@
     "sc":          { "kind": "page", "page": "sc", "label": "StreamingCommunity", "subtitle": "Serie TV, film e anime in streaming",
                       "icon": "play", "color": "#1a1a1a",  "auto_fullscreen": true, "url": "https://streaming-community.army/theme/images/logo.png" },
     "au":          { "kind": "page", "page": "au", "label": "AnimeUnity", "subtitle": "Anime in streaming",
-                      "icon": "play", "color": "#1e3a8a" }
+                      "icon": "play", "color": "#1e3a8a", "url": "https://animeunity.cx/" }
   }
 }
