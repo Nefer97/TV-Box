@@ -33,6 +33,7 @@ guida TV, fiction, serie, programmi e cartoni di Mediaset Infinity, YouTube, Rai
 - **Banner del programma** quando parte un canale: titolo, orario e cosa c'è dopo.
 - **App RaiPlay per TV** (la versione HbbTV ufficiale) dentro Chrome, con telecomando e dirette.
 - **YouTube per TV**, Mediaset Infinity, discovery+, La7, Pluto TV, Radio Rai.
+- **Blocco della pubblicità** in tutte le pagine (uBlock Origin Lite, installato da solo in Chrome).
 - **I miei siti**: qualunque sito con la tastiera a schermo; navigazione "assistita" con le
   frecce (un riquadro giallo salta tra le cose cliccabili), vista telefono, blocco di
   pubblicità, popup e banner dei cookie.

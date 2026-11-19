@@ -99,6 +99,16 @@ viene registrato per il prossimo documento e nasce con la pagina, già blu e con
 | `shield.js` | cookie, finestre e riquadri pubblicitari (solo per i siti) |
 | `hbbtv.js` + hls.js | simulatore HbbTV per le app per TV (solo se Chrome si presenta come TV) |
 
+**Pubblicità.** Due livelli. tvd blocca con `Network.setBlockedURLs` le liste di `BLOCKLISTS`
+(`tv.py`: "ads" per i tuoi siti, "trackers" per gli episodi), solo nella pagina principale.
+Chrome ha in più **uBlock Origin Lite**, installato da solo dal Chrome Web Store con la regola
+aziendale `system/chrome-policy.json` (`ExtensionInstallForcelist` + `3rdparty`: niente pagina
+di benvenuto, filtraggio "optimal", esclusi `127.0.0.1`/`localhost` e `netflix.com`): vale per
+tutte le pagine, anche dentro i riquadri di altri siti (i player). Un sito che si rompe si
+esclude aggiungendolo a `noFiltering`. `install.sh` installa la regola anche negli
+aggiornamenti e tiene quella di prima in `/etc/tvbox/chrome-policy.json.prev` per il rollback;
+`cdp.targets()` ignora le pagine `chrome-extension://`.
+
 ## 7. Dati: chi decide cosa
 
 | Dove | Cosa | Chi lo scrive |

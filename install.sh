@@ -32,6 +32,13 @@ install_app() {
     cp /etc/tvbox/config.json /etc/tvbox/config.json.prev
   fi
   install -m 0644 "$SRC/config.json" /etc/tvbox/config.json
+  # regole di Chrome (fra cui il blocco della pubblicità, uBlock Origin Lite): quella di prima in .prev
+  install -d /etc/opt/chrome/policies/managed
+  if [ -f /etc/opt/chrome/policies/managed/tvbox.json ] && \
+     ! cmp -s "$SRC/system/chrome-policy.json" /etc/opt/chrome/policies/managed/tvbox.json; then
+    cp /etc/opt/chrome/policies/managed/tvbox.json /etc/tvbox/chrome-policy.json.prev
+  fi
+  install -m 0644 "$SRC/system/chrome-policy.json" /etc/opt/chrome/policies/managed/tvbox.json
   [ -f /etc/tvbox/session.env ] || install -m 0644 "$SRC/system/session.env" /etc/tvbox/session.env
   # registro di tvd leggibile anche da admin (per i controlli a distanza)
   install -d -o "$TV_USER" -g "$TV_USER" -m 0755 /var/log/tvbox
@@ -61,6 +68,11 @@ case "${1:-}" in
       mv /etc/tvbox/config.json /etc/tvbox/config.json.new
       mv /etc/tvbox/config.json.prev /etc/tvbox/config.json
       mv /etc/tvbox/config.json.new /etc/tvbox/config.json.prev; }
+    P=/etc/opt/chrome/policies/managed/tvbox.json
+    [ -f /etc/tvbox/chrome-policy.json.prev ] && {
+      mv "$P" /etc/tvbox/chrome-policy.json.new
+      mv /etc/tvbox/chrome-policy.json.prev "$P"
+      mv /etc/tvbox/chrome-policy.json.new /etc/tvbox/chrome-policy.json.prev; }
     restart_tvd
     echo "Fatto (la versione appena tolta è in $PREV)."
     exit 0 ;;

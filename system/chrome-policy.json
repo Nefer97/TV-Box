@@ -15,5 +15,22 @@
   "ShowCastIconInToolbar": false,
   "EnableMediaRouter": false,
   "BackgroundModeEnabled": false,
-  "HardwareAccelerationModeEnabled": true
+  "HardwareAccelerationModeEnabled": true,
+  "ExtensionInstallForcelist": [
+    "ddkjiahejlhfcafbddmgiahcphecmpfh;https://clients2.google.com/service/update2/crx"
+  ],
+  "3rdparty": {
+    "extensions": {
+      "ddkjiahejlhfcafbddmgiahcphecmpfh": {
+        "disableFirstRunPage": true,
+        "defaultFiltering": "optimal",
+        "showBlockedCount": false,
+        "noFiltering": [
+          "127.0.0.1",
+          "localhost",
+          "netflix.com"
+        ]
+      }
+    }
+  }
 }

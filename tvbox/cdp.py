@@ -32,7 +32,7 @@ class CDP:
 
     def targets(self):
         return [t for t in json.loads(self._http("/json/list"))
-                if t.get("type") == "page" and not t.get("url", "").startswith("devtools://")
+                if t.get("type") == "page" and not t.get("url", "").startswith(("devtools://", "chrome-extension://"))
                 and t.get("id") not in self.hidden]
 
     def close_other_pages(self):

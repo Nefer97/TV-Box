@@ -67,6 +67,9 @@ requisito si aggiorna prima questo file, poi il codice. Come è costruita: [ARCH
   e a ogni salto; negli ultimi 40 s il riquadro **"Episodio successivo"** (OK lo apre); finito
   l'episodio il successivo **parte da solo** dopo 10 s (MENU per non farlo). Dopo l'ultimo
   della stagione, il primo della stagione dopo.
+- R22. **Blocco della pubblicità** in tutte le pagine (uBlock Origin Lite in Chrome, più le
+  liste di tvd): niente finestre o riquadri pubblicitari; un sito che non funziona con il blocco
+  si esclude.
 - R20. MENU da una sezione (Mediaset, StreamingCommunity, AnimeUnity) torna **dove era il
   riquadro** da cui la si è aperta (home o Altri servizi), anche dopo un episodio.
 
