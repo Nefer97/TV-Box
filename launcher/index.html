@@ -66,6 +66,7 @@
     <div class="settings">
       <div class="btn" tabindex="0" data-act="wifi">Wi-Fi <span class="val" id="wifi-cur">…</span></div>
       <div class="btn" tabindex="0" data-act="info">Indirizzo di rete <span class="val" id="ip">…</span></div>
+      <div class="btn" tabindex="0" data-act="mio-account">Account <span id="mio-account-name">StreamingCommunity</span> <span class="val" id="mio-account-val">…</span></div>
       <div class="btn" tabindex="0" data-act="restart-ui">Ricarica interfaccia <span class="val">se qualcosa non va</span></div>
     </div>
   </section>
@@ -114,9 +115,9 @@
        delle pagine Mediaset. Il nome in alto si cambia qui (mio-brand). -->
   <section class="page" id="page-mio">
     <div class="msbg" id="mio-bg"></div>
-    <!-- mio-account: "Accedi" / "Esci", solo se LOGIN_URL in tvbox/mio.py non è vuoto -->
-    <div class="mstop"><span class="msbrand">Il mio <b>catalogo</b></span>
-      <span class="msright"><span class="btn chip" id="mio-account"></span><span class="msclock"></span></span></div>
+    <div class="mstop"><span class="msbrand">Il mio <b>catalogo</b></span><span class="msclock"></span></div>
+    <!-- schermata di accesso (login.js): al posto del catalogo finché non si accede -->
+    <div class="login-gate" id="mio-login"></div>
     <div class="msinfo-box">
       <div class="mslogo"><img id="mio-logo" alt=""><div class="msname" id="mio-name"></div></div>
       <div class="msmeta" id="mio-meta"></div>

@@ -19,6 +19,32 @@ function refreshInfo() {
   });
 }
 
+// ---------- account del connettore (Il mio catalogo): si vede chi è collegato, OK per uscire ----------
+async function mioAccountVal() {
+  const row = document.querySelector('[data-act="mio-account"]'), s = state.CFG.services.mio;
+  row.style.display = s ? '' : 'none';
+  if (!s) return;
+  $('#mio-account-name').textContent = s.label;
+  const l = await api('mio?action=status');
+  $('#mio-account-val').textContent = !l ? '…' : l.logged ? (l.user || 'collegato') : 'non collegato';
+  return l;
+}
+async function mioAccount() {
+  const l = await mioAccountVal();
+  if (!l || !l.logged) {                              // si accede dalla sezione stessa
+    overlay(`Non sei collegato a ${state.CFG.services.mio.label}.\nL'accesso si fa aprendo la sezione.`, [['OK', hideOverlay]]);
+    return;
+  }
+  overlay(`Uscire dall'account${l.user ? ' «' + l.user + '»' : ''}?`, [
+    ['Esci', async () => {
+      overlay('Esco…');
+      await api('mio?action=logout');
+      hideOverlay();
+      mioAccountVal();
+    }],
+    ['Annulla', hideOverlay]], 1);
+}
+
 // ---------- meteo: città scelta con la tastiera a schermo ----------
 function meteoCitta() {
   window.__osk.open({
@@ -143,6 +169,7 @@ export const ACTIONS = {
   sleep: sleepMenu,
   'saver-off': saverOffMenu,
   info: refreshInfo,
+  'mio-account': mioAccount,
   wifi: () => state.show('wifi'),
   'home-edit': () => state.show('homeedit'),
   channels: () => state.show('channels'),
@@ -154,6 +181,7 @@ export const ACTIONS = {
 export async function settingsPage() {
   api('volume').then(setVol);
   refreshInfo();
+  mioAccountVal();
   updateMeteo();
   screenVal();
   $('#saver-val').textContent = saverLabel();

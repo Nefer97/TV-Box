@@ -156,8 +156,6 @@ body[data-page="mio"] main, body[data-page="mioserie"] main { padding-top: 0; }
 .mstop { display: flex; justify-content: space-between; align-items: center; padding: 3.4vh 0 0; }
 .msbrand { font-size: 2.4vh; letter-spacing: .02em; color: #e2e8f0; }
 .msbrand b { color: #38bdf8; }
-.msright { display: flex; align-items: center; gap: 1.4vw; }
-#mio-account:empty { display: none; }
 .msclock { font-size: 2.6vh; font-weight: 700; font-variant-numeric: tabular-nums; }
 .msinfo-box { height: 38vh; padding-top: 3vh; max-width: 46vw; }
 .mslogo { height: 13vh; display: flex; align-items: flex-end; }
@@ -269,3 +267,29 @@ body:not([data-page="home"]) footer, body.withdetail footer { display: none; }
   text-shadow: 0 .2vh 1vh rgba(0,0,0,.8); }
 #saver .stitle { font-size: 3.4vh; font-weight: 700; color: #fff; margin-top: .5vh; max-width: 40vw;
   text-shadow: 0 .2vh 1vh rgba(0,0,0,.8); }
+
+/* ---------- schermata di accesso (login.js): al posto del catalogo finché non si accede ---------- */
+.login-gate { display: none; }
+.page.locked > :not(.mstop):not(.login-gate) { display: none; }
+.page.locked .login-gate { display: flex; height: 76vh; align-items: center; justify-content: center; }
+.login { display: flex; align-items: center; gap: 4vw; }
+.lcard { flex: 0 0 auto; width: 22vw; height: 36vh; border-radius: 2.6vh; position: relative; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: flex-end; padding: 3vh 1.8vw;
+  box-shadow: 0 1.6vh 4vh rgba(0,0,0,.45); }
+.lcard > svg, .lcard img { position: absolute; top: 3vh; left: 1.8vw; width: 10vh; height: 10vh; border-radius: 2.4vh; }
+.lcard > svg { padding: 2.4vh; background: rgba(255,255,255,.16); }
+.lcard img { object-fit: contain; display: none; background: #fff; box-shadow: 0 .6vh 1.6vh rgba(0,0,0,.35); }
+.lcard.haslogo img { display: block; }
+.lcard.haslogo > svg { display: none; }
+.lcard .lname { font-size: 3.4vh; font-weight: 800; line-height: 1.12; }
+.lcard .lname.long { font-size: 2.8vh; }
+.lform { width: 34vw; display: flex; flex-direction: column; gap: 1.4vh; }
+.ltitle { font-size: 4.6vh; font-weight: 800; }
+.lsub { font-size: 2.2vh; color: var(--muted); margin: -.4vh 0 1.2vh; line-height: 1.35; }
+.btn.lfield { display: flex; justify-content: space-between; align-items: baseline; gap: 2vw; font-size: 2.6vh; }
+.lfield .lk { font-weight: 600; }
+.lfield .lv { font-weight: 500; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lfield.empty .lv { opacity: .45; }
+.btn.lgo { margin-top: 1vh; text-align: center; font-size: 2.8vh; font-weight: 800; background: rgba(56,189,248,.28); }
+.btn.lgo:focus { background: #fff; }
+.lerr { min-height: 2.8vh; font-size: 2.2vh; color: #fca5a5; }

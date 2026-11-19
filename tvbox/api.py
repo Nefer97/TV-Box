@@ -134,7 +134,7 @@ def make_routes(tv):
 
     def mio(q):
         """Il mio catalogo (tvbox/mio.py): righe, una serie con i suoi episodi, apertura di un
-        episodio, accesso al sito (login: apre la pagina; logout; status)."""
+        episodio, accesso al sito (login con utente e password; logout; status)."""
         from .mio import is_episode_url
         a = q.get("action", "rails")
         if a == "search":
@@ -150,15 +150,12 @@ def make_routes(tv):
             tv.post(lambda: tv.open_episode(q["url"], q.get("series", ""), label,
                                             site=site, back="mio", color="#9d174d"))
             return {"ok": True}
-        if a == "login":
-            if not tv.mio.login_state()["available"]:
-                return {"ok": False, "error": "Accesso non previsto (LOGIN_URL vuoto in tvbox/mio.py)"}
-            tv.post(tv.open_login)
-            return {"ok": True}
+        if a == "login":                       # utente e password dalla schermata di tvbox
+            return tv.mio.login(q.get("user", ""), q.get("password", ""))
         if a == "logout":
             return dict(tv.mio.logout(), ok=True)
         if a == "status":
-            return tv.mio.login_state(fresh=True)
+            return tv.mio.login_state(fresh=q.get("fresh") == "1")
         return tv.mio.rails(q.get("page"))
 
     def channels(q):

@@ -4,6 +4,7 @@
 // La riproduzione e la pagina dei dettagli restano invariate.
 
 import { $, api, el, overlay, hideOverlay, q, showProgress, state } from './core.js';
+import { lockPage, loginGate } from './login.js';
 
 let series = null;
 
@@ -28,42 +29,16 @@ const day = d => new Date(d).toLocaleDateString('it-IT', { day: 'numeric', month
 const mins = s => (s ? Math.round(s / 60) + ' min' : '');
 const meta = x => [x.category, ...(x.genres || [])].filter((v, i, a) => v && a.indexOf(v) === i).join(' · ');
 
-// ---------- accesso al sito (login) ----------
+// ---------- accesso (login) ----------
+// Senza accesso la sezione mostra solo la schermata di accesso (login.js); l'accesso lo fa tvd.
+// "Esci" sta in Impostazioni → Rete e assistenza → Account.
 
-function login() {
-  if (state.busy) return;
-  state.busy = true;
-  overlay('Apro la pagina di accesso…\nCon MENU torni qui quando hai finito.');
-  api('mio?action=login').then(r => {
-    if (!r || !r.ok) {
-      state.busy = false;
-      overlay((r && r.error) || 'Non riuscito', [['OK', hideOverlay]]);
-      return;
-    }
-    setTimeout(() => { state.busy = false; }, 8000);
+function showLogin(l) {
+  lockPage('mio', true);
+  loginGate($('#mio-login'), {
+    id: 'mio', endpoint: 'mio', userLabel: 'Utente', user: l && l.user,
+    onDone: () => { lockPage('mio', false); $('#mio-rails').innerHTML = ''; mioPage(); },
   });
-}
-
-function logout() {
-  overlay('Uscire dall\'account?', [
-    ['Esci', async () => {
-      overlay('Esco…');
-      await api('mio?action=logout');
-      hideOverlay();
-      mioPage();
-    }],
-    ['Annulla', hideOverlay]
-  ], 1);
-}
-
-function account(l) {
-  const b = $('#mio-account');
-  b.textContent = '';
-  b.removeAttribute('tabindex');
-  if (!l || !l.available) return;
-  b.textContent = l.logged ? 'Collegato · Esci' : 'Accedi';
-  b.tabIndex = 0;
-  b._act = l.logged ? logout : login;
 }
 
 // ---------- locandina ----------
@@ -259,6 +234,10 @@ async function showCatalogPage(focusTab = false) {
 export async function mioPage() {
   const box = $('#mio-rails');
 
+  const l = await api('mio?action=status');          // collegati? (ricontrollato ogni 5 minuti)
+  if (l && l.required && !l.logged) return showLogin(l);
+  lockPage('mio', false);
+
   if (!box.children.length) {
     box.appendChild(el('div', 'gwait', 'Carico il catalogo…'));
   }
@@ -270,18 +249,11 @@ export async function mioPage() {
   box.innerHTML = '';
 
   if (!r || !r.rails) {
-    account(null);
     box.appendChild(el('div', 'gwait', 'Catalogo non disponibile'));
     return;
   }
 
-  account(r.login);
-
-  if (r.login && r.login.required && !r.login.logged) {
-    box.appendChild(el('div', 'gwait', 'Accedi per vedere il catalogo (pulsante in alto a destra)'));
-    if (state.page === 'mio') $('#mio-account').focus();
-    return;
-  }
+  if (r.login && r.login.required && !r.login.logged) return showLogin(r.login);
 
   if (Date.now() - catalogLoaded > CATALOG_TTL) {   // SERIE TV e FILM: al massimo 30 minuti
     catalogRails = {};
@@ -375,14 +347,7 @@ export async function mioSeriesPage() {
     list.innerHTML = '';
     list.appendChild(el('div', 'gwait', (r && r.error) || 'Non disponibile'));
 
-    if (r && r.login && !r.login.logged) {
-      const b = el('div', 'btn chip', 'Accedi');
-      b.tabIndex = 0;
-      b._act = login;
-      list.appendChild(b);
-
-      if (state.page === 'mioserie') b.focus();
-    }
+    if (r && r.login && r.login.required && !r.login.logged && state.page === 'mioserie') state.show('mio');
 
     return;
   }

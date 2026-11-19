@@ -5,7 +5,6 @@ import concurrent.futures
 import http.cookiejar
 import json
 import html
-import os
 import re
 import threading
 import time
@@ -13,7 +12,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 
-from .util import DESKTOP_UA, USER_DIR, log
+from .util import DESKTOP_UA, log
 
 try:
     from vendor.scuapi import API as SCAPI
@@ -66,17 +65,20 @@ GENRES = [
     (20, "Western", "all"),
 ]
 
-LOGIN_URL = ""
-LOGIN_REQUIRED = False
-COOKIE_URLS = []
-LOGIN_COOKIE = ""
-TOKEN_JS = ""
+# ---------- accesso (login) ----------
+# L'accesso lo fa tvd, non la pagina del sito: utente e password arrivano dalla schermata di
+# tvbox, tvd li manda al modulo di login del sito (Laravel + Inertia, come il browser) e copia
+# i cookie della sessione nel Chrome della TV, dove li usa il player del sito. La password non
+# si salva da nessuna parte: resta il cookie "ricordami" del sito, come spuntandolo nel browser.
+LOGIN_URL = f"{BASE_URL}/login"
+LOGIN_REQUIRED = True            # senza accesso la sezione mostra solo la schermata di accesso
+LOGIN_STATUS_TTL = 300           # lo stato (collegato o no) si ricontrolla sul sito ogni 5 minuti
+SESSION_COOKIES = ("streamingcommunity_session", "remember_web_")   # nomi (o inizi) dei cookie di sessione
 
 RAIL_TTL = 1800
 SERIES_TTL = 1800
 EPISODES_TTL = 900
 HISTORY_MAX = 12
-TOKEN_FILE = os.path.join(USER_DIR, "mio-token.json")
 
 
 def is_episode_url(u):
@@ -170,6 +172,43 @@ def _duration_seconds(value):
         return max(0, int(float(value) * 60)) if value not in (None, "") else 0
     except (ValueError, TypeError):
         return 0
+
+
+def page_props(text):
+    """Dati della pagina Inertia (attributo data-page dell'HTML, o la risposta JSON)."""
+    text = text or ""
+    if text.lstrip().startswith("{"):
+        try:
+            data = json.loads(text)
+        except ValueError:
+            data = {}
+    else:
+        m = re.search(r'data-page="([^"]*)"', text)
+        try:
+            data = json.loads(html.unescape(m.group(1))) if m else {}
+        except ValueError:
+            data = {}
+    return _d(data)
+
+
+def page_user(props):
+    """L'utente collegato secondo la pagina del sito, o None."""
+    user = _d(_d(_d(props.get("props")).get("auth")).get("user"))
+    return user or None
+
+
+def login_error(props):
+    """Primo messaggio d'errore del modulo di accesso (es. "Credenziali non valide.")."""
+    p = _d(props.get("props"))
+    for v in _d(p.get("errors")).values():
+        v = v[0] if isinstance(v, list) and v else v
+        if _s(v):
+            return _s(v)
+    return _s(_d(p.get("flash")).get("error"))
+
+
+def is_session_cookie(name):
+    return any(name == c or (c.endswith("_") and name.startswith(c)) for c in SESSION_COOKIES)
 
 
 def is_logged_in(auth):
@@ -502,8 +541,101 @@ class Mio:
 
             return self._api
 
+    # ---------- accesso: GET /api/mio?action=status|login|logout ----------
+    def _chrome_cookies(self):
+        """Cookie del sito nel Chrome della TV (sono loro a dire se si è collegati)."""
+        if not self.cdp:
+            return []
+        try:
+            return self.cdp.call("Network.getCookies", {"urls": [BASE_URL + "/"]}).get("cookies", [])
+        except Exception as ex:
+            log.warning("mio: cookie di Chrome non leggibili: %s", ex)
+            return []
+
+    def _site_user(self, cookies):
+        """Chiede al sito chi è collegato con questi cookie: l'utente o None."""
+        req = urllib.request.Request(f"{BASE_URL}/it", headers={
+            "User-Agent": DESKTOP_UA, "Accept": "text/html",
+            "Cookie": "; ".join(f"{c['name']}={c['value']}" for c in cookies)})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return page_user(page_props(r.read().decode("utf-8", "replace")))
+
+    def _set_state(self, logged, user=None):
+        user = _d(user)
+        st = {"available": True, "required": LOGIN_REQUIRED, "logged": bool(logged),
+              "user": _s(_first(user, "username", "name", "email", default=""))}
+        with self.lock:
+            self._login = (time.monotonic(), st)
+        return st
+
     def login_state(self, fresh=False):
-        return {"available": False, "logged": False, "required": False}
+        """{"available", "required", "logged", "user"}: dai cookie di Chrome, verificati sul sito."""
+        with self.lock:
+            cached = getattr(self, "_login", None)
+        if not fresh and cached and time.monotonic() - cached[0] < LOGIN_STATUS_TTL:
+            return cached[1]
+        cookies = self._chrome_cookies()
+        if not any(is_session_cookie(c.get("name", "")) for c in cookies):
+            return self._set_state(False)
+        try:
+            user = self._site_user(cookies)
+        except Exception as ex:
+            # sito irraggiungibile: non si chiude fuori l'utente, si resta come prima
+            # (o collegati, se Chrome ha il cookie "ricordami")
+            log.warning("mio: stato dell'accesso non verificabile: %s", ex)
+            if cached:
+                return cached[1]
+            return self._set_state(any(c["name"].startswith("remember_web_") for c in cookies))
+        return self._set_state(user, user)
+
+    def login(self, username, password):
+        """Accesso con utente e password, come il modulo del sito; poi i cookie vanno in Chrome."""
+        username, password = _s(username), password or ""
+        if not username or not password:
+            return {"ok": False, "error": "Scrivi utente e password"}
+        if not self.cdp:
+            return {"ok": False, "error": "Chrome non raggiungibile"}
+        jar = http.cookiejar.CookieJar()
+        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+        base = {"User-Agent": DESKTOP_UA, "Accept-Language": "it-IT,it;q=0.9"}
+        try:
+            with opener.open(urllib.request.Request(LOGIN_URL, headers=base), timeout=15) as r:
+                version = _s(page_props(r.read().decode("utf-8", "replace")).get("version"))
+            xsrf = next((urllib.parse.unquote(c.value) for c in jar if c.name == "XSRF-TOKEN"), "")
+            body = json.dumps({"username": username, "password": password, "remember": True}).encode()
+            req = urllib.request.Request(LOGIN_URL, data=body, method="POST", headers={
+                **base, "Content-Type": "application/json", "Accept": "text/html, application/xhtml+xml",
+                "X-Requested-With": "XMLHttpRequest", "X-Inertia": "true", "X-Inertia-Version": version,
+                "X-XSRF-TOKEN": xsrf, "Origin": BASE_URL, "Referer": LOGIN_URL})
+            with opener.open(req, timeout=15) as r:
+                props = page_props(r.read().decode("utf-8", "replace"))
+        except Exception as ex:
+            log.warning("mio: accesso non riuscito: %s", ex)
+            return {"ok": False, "error": "Il sito non risponde, riprova tra poco"}
+        user = page_user(props)
+        if not user:
+            return {"ok": False, "error": login_error(props) or "Accesso non riuscito"}
+        try:
+            self._clear_chrome_cookies()
+            for c in jar:
+                params = {"name": c.name, "value": c.value, "url": BASE_URL + (c.path or "/"),
+                          "secure": bool(c.secure), "path": c.path or "/",
+                          "httpOnly": c.has_nonstandard_attr("HttpOnly") or c.name != "XSRF-TOKEN"}
+                if c.domain_specified:
+                    params["domain"] = c.domain
+                if c.expires:
+                    params["expires"] = c.expires
+                self.cdp.call("Network.setCookie", params)
+        except Exception as ex:
+            log.warning("mio: cookie non copiati in Chrome: %s", ex)
+            return {"ok": False, "error": "Accesso riuscito, ma Chrome non ha salvato la sessione"}
+        log.info("mio: accesso riuscito")
+        return dict(self._set_state(True, user), ok=True)
+
+    def _clear_chrome_cookies(self):
+        for c in self._chrome_cookies():
+            self.cdp.call("Network.deleteCookies", {"name": c["name"], "domain": c["domain"],
+                                                    "path": c.get("path", "/")})
 
     def auth(self, fresh=False):
         return {"cookies": {}, "token": None}
@@ -512,11 +644,12 @@ class Mio:
         return self.login_state(fresh=True)
 
     def logout(self):
+        """Esce dall'account: via i cookie del sito da Chrome."""
         try:
-            os.remove(TOKEN_FILE)
-        except OSError:
-            pass
-        return self.login_state(fresh=True)
+            self._clear_chrome_cookies()
+        except Exception as ex:
+            log.warning("mio: uscita: %s", ex)
+        return self._set_state(False)
 
     def _get(self, key, url, ttl):
         """Cache TTL single-flight con fallback all'ultimo dato disponibile.
