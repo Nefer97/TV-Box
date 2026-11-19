@@ -29,10 +29,27 @@ class FakeCDP:
             return {"cookies": [{"name": "glt_prova", "value": "x", "domain": ".mediaset.it", "path": "/"}]}
         return {"cookies": []}
 
+class CookieCDP:
+    """Chrome finto con i cookie in memoria, per gli accessi veri dal banco di prova
+    (StreamingCommunity, AnimeUnity): tvbox fa il login sul sito e "copia" qui la sessione;
+    tutto sparisce chiudendo il banco di prova."""
+    def __init__(self): self.jar = {}
+    def call(self, method, params=None, timeout=6):
+        p = params or {}
+        if method == "Network.setCookie":
+            dom = (p.get("domain") or urlparse(p.get("url", "")).hostname or "").lstrip(".")
+            self.jar[(dom, p["name"])] = {"name": p["name"], "value": p["value"], "domain": dom, "path": p.get("path", "/")}
+        elif method == "Network.deleteCookies":
+            self.jar.pop(((p.get("domain") or "").lstrip("."), p.get("name")), None)
+        elif method == "Network.getCookies":
+            hosts = {urlparse(u).hostname or "" for u in p.get("urls", [])}
+            return {"cookies": [c for (dom, _), c in self.jar.items() if any(h == dom or h.endswith("." + dom) for h in hosts)]}
+        return {}
+
 class FakeTV:
     def __init__(self):
         self.cfg = Config.load([ROOT + "/config.json"]); self.prefs = Prefs(tempfile.mkdtemp())
-        self.services = self.cfg.services; self.sites = Sites(self.prefs); self.mediaset = Mediaset(self.prefs, FakeCDP()); self.discovery = Discovery(self.prefs, FakeCDP()); self.sc = SC(self.prefs); self.au = AU(self.prefs)
+        self.services = self.cfg.services; self.sites = Sites(self.prefs); self.mediaset = Mediaset(self.prefs, FakeCDP()); self.discovery = Discovery(self.prefs, FakeCDP()); self.sc = SC(self.prefs, CookieCDP()); self.au = AU(self.prefs, CookieCDP())
         self.epg = EPG(self.services, enabled=self.channel_list); self.remote = None
     def channel_list(self): return self.cfg.live_channels(self.prefs.get("channels"))
     def post(self, *a): pass
