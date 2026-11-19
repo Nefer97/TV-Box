@@ -171,7 +171,19 @@ body[data-page="au"] main, body[data-page="auserie"] main { padding-top: 0; }
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .msrails { height: 52vh; overflow: hidden; margin: 0 -1.2vw; padding: 0 1.2vw; }   /* spazio per la cornice della prima locandina */
 .msrail { padding-bottom: 2vh; }
-.msrail h2.sec-title { margin: 1vh 0 1.2vh; color: #cbd5e1; }
+.msrail h2.sec-title { margin: 1vh 0 2.2vh; color: #cbd5e1; }   /* la locandina ingrandita non copre il titolo */
+/* righe di locandine: la locandina con il fuoco si ingrandisce del 10% e ha la cornice bianca:
+   sopra e sotto serve più spazio di quello delle righe normali, se no la cornice si taglia */
+.msrail .row.scroller { padding: 2.4vh 1.2vw; margin: -2.4vh -1.2vw; }
+/* righe a scorrimento: a destra sfuma dall'inizio, poi lo decide edgeFade (core.js) */
+.msrail .row.scroller { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 6vw), transparent 100%); }
+/* liste che scorrono in verticale (righe dei cataloghi, episodi): sfumano dal lato dove c'è altro */
+.msrails.fade-top { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 5vh); }
+.mseps.fade-bottom { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 8vh), transparent 100%); }
+.mseps.fade-top { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 11vh); }
+.mseps.fade-top.fade-bottom { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 11vh, #000 calc(100% - 8vh), transparent 100%); }
+/* l'immagine di sfondo comincia a 22vw: il suo bordo sinistro sfuma, se no si vede una riga */
+#page-mediaset .msbg, #page-sc .msbg, #page-au .msbg { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14vw); }
 .poster { flex: 0 0 9.4vw; width: 9.4vw; height: 14.1vw; border-radius: 1.4vh; position: relative; outline: none;
   background: #1e293b center/cover no-repeat; box-shadow: 0 .8vh 2vh rgba(0,0,0,.45);
   transition: transform .15s ease, box-shadow .15s ease; }

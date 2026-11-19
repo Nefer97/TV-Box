@@ -28,7 +28,8 @@ const catalogPages = [
 
 const day = d => new Date(d).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
 const mins = s => (s ? Math.round(s / 60) + ' min' : '');
-const meta = x => [x.category, ...(x.genres || [])].filter((v, i, a) => v && a.indexOf(v) === i).join(' · ');
+// "Anime" non serve: in AnimeUnity è tutto anime
+const meta = x => [x.category, ...(x.genres || [])].filter((v, i, a) => v && v !== 'Anime' && a.indexOf(v) === i).join(' · ');
 
 // ---------- accesso (login) ----------
 // Senza accesso la sezione mostra solo la schermata di accesso (login.js); l'accesso lo fa tvd.

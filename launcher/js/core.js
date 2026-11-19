@@ -173,6 +173,20 @@ export function edgeFade(row) {          // sfumatura ai bordi, solo dal lato do
   row.style.maskImage = g;
 }
 
+// liste che scorrono in verticale (righe dei cataloghi, episodi): sfumano sopra e/o sotto
+// dal lato dove c'è altro (classi fade-top / fade-bottom, vedi app.css)
+export function vFade(box) {
+  box.classList.toggle('fade-top', box.scrollTop > 2);
+  box.classList.toggle('fade-bottom', box.scrollTop + box.clientHeight < box.scrollHeight - 2);
+}
+// dopo uno spostamento del fuoco o uno scorrimento: le sfumature di righe e liste intorno a e
+export function fadesAround(e) {
+  for (let n = e; n && n.classList; n = n.parentElement) {
+    if (n.classList.contains('scroller') && n.closest('.msrail')) edgeFade(n);
+    if (n.classList.contains('msrails') || n.classList.contains('mseps')) vFade(n);
+  }
+}
+
 // ---------- episodi: dove si è arrivati (salvato da tvd, /api/progress) ----------
 // barretta in fondo alla miniatura; quasi finito (oltre il 95%) = "VISTO" accanto al titolo
 export function showProgress(pic, title, p) {

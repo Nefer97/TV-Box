@@ -1,5 +1,5 @@
 // app.js — avvio del launcher: pagine, tasti, aggiornamenti periodici.
-import { $, api, centerInRow, hideOverlay, move, overlay, overlayOpen, state, store } from './core.js';
+import { $, api, centerInRow, fadesAround, hideOverlay, move, overlay, overlayOpen, state, store } from './core.js';
 import { build, greeting, showDetail, tick, updateMeteo, updateOnAir, updateStatus } from './home.js';
 import { guidePage } from './guide.js';
 import { msPage, seriesPage } from './mediaset.js';
@@ -98,7 +98,11 @@ document.addEventListener('click', ev => {
   const e = ev.target.closest('[tabindex]');
   if (e) { e.focus(); activate(e); }
 });
-document.addEventListener('focusin', ev => { showDetail(ev.target); centerInRow(ev.target); });
+document.addEventListener('focusin', ev => {
+  showDetail(ev.target); centerInRow(ev.target);
+  fadesAround(ev.target); setTimeout(() => fadesAround(ev.target), 450);   // e a scorrimento finito
+});
+document.addEventListener('scroll', ev => fadesAround(ev.target), true);     // righe e liste che scorrono
 document.addEventListener('mousemove', () => {
   document.body.classList.add('pointer');
   clearTimeout(window._pt);

@@ -164,7 +164,8 @@ await js(`document.querySelector('.au-search-field').focus()`);
 await press('ok');
 await js(`(() => { for (const c of 'naruto') __osk.key(c);
   [...document.getElementById('__osk_host').shadowRoot.querySelectorAll('.key')].find(k => k.textContent === 'FATTO').click(); })()`);
-await until(`[...document.querySelectorAll('.au-search .btn')].some(b => b.textContent === 'Cancella')`, 15000);
+await until(`[...document.querySelectorAll('.au-search .btn')].some(b => b.textContent === 'Cancella') && !!document.querySelector('#au-rails .poster')`, 15000);
+await sleep(1000);                                   // i risultati finiscono di disegnarsi (e spostano il fuoco)
 await js(`document.querySelector('.au-search-field').focus()`);
 await press('right');
 await check('ricerca ►: il pulsante Cancella', `document.activeElement.textContent === 'Cancella'`, 3000);
