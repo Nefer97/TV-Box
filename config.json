@@ -37,7 +37,7 @@
         "items": ["raiplay", "mediaset", "youtube", "altri"] },
       { "title": "Canali in diretta", "channels": true }
     ],
-    "other": ["siti", "mediaset_web", "discovery", "raiplay_web", "la7", "raiplaysound", "plutotv", "netflix", "sc", "impostazioni"]
+    "other": ["siti", "mediaset_web", "discovery", "raiplay_web", "la7", "raiplaysound", "plutotv", "netflix", "sc", "au", "impostazioni"]
   },
 
   "services": {
@@ -75,6 +75,8 @@
                       "player_control": "keys", "hover": false,
                       "url": "https://www.netflix.com/browse" },
     "sc":          { "kind": "page", "page": "sc", "label": "StreamingCommunity", "subtitle": "Serie TV, film e anime in streaming",
-                      "icon": "play", "color": "#1a1a1a",  "auto_fullscreen": true, "url": "https://streaming-community.army/theme/images/logo.png" }
+                      "icon": "play", "color": "#1a1a1a",  "auto_fullscreen": true, "url": "https://streaming-community.army/theme/images/logo.png" },
+    "au":          { "kind": "page", "page": "au", "label": "AnimeUnity", "subtitle": "Anime in streaming",
+                      "icon": "play", "color": "#1e3a8a" }
   }
 }

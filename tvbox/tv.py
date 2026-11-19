@@ -23,6 +23,7 @@ from .health import HealthMixin, resume_point
 from .layer import LayerMixin
 from .mediaset import Mediaset
 from .sc import SC
+from .au import AU
 from .panel import PanelMixin
 from .session import Session
 from .sleep import SleepMixin
@@ -74,6 +75,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         self.sites = Sites(prefs)
         self.mediaset = Mediaset(prefs, self.cdp)
         self.sc = SC(prefs, self.cdp)
+        self.au = AU(prefs, self.cdp)
         self.input = vinput
         self.remote = None                 # RemoteLogic (per /api/info)
         self.actions = queue.Queue()

@@ -487,6 +487,74 @@ class LoginTest(unittest.TestCase):
         self.assertFalse(is_session_cookie("XSRF-TOKEN"))
 
 
+class AnimeUnityTest(unittest.TestCase):
+    """tvbox/au.py: la parte già pronta, con il connettore vuoto e con uno finto."""
+    def setUp(self):
+        import tvbox.au as au
+        self.au, self.d = au, tempfile.TemporaryDirectory()
+        self.saved = {k: getattr(au, k) for k in ("SITE_HOST", "BASE_URL", "EPISODE_PATH", "SESSION_COOKIES",
+                                                    "fetch_home", "fetch_anime", "fetch_series", "site_login")}
+
+    def tearDown(self):
+        for k, v in self.saved.items():
+            setattr(self.au, k, v)
+        self.d.cleanup()
+
+    def test_connettore_vuoto(self):
+        a = self.au.AU(Prefs(self.d.name))
+        r = a.rails("home")
+        self.assertEqual(r["rails"], [])
+        self.assertIn("non ancora scritto", r["error"])
+        self.assertIn("non ancora scritto", a.series("x")["error"])
+        self.assertIn("non ancora scritto", a.search("naruto")["error"])
+        self.assertFalse(a.login_state()["logged"])
+
+    def test_connettore_finto(self):
+        au = self.au
+        au.SITE_HOST, au.BASE_URL, au.EPISODE_PATH = "anime.example", "https://anime.example", "/anime/"
+        au.fetch_home = lambda: [{"id": "top", "title": "Popolari", "items": [au.serie("1-op", "One Piece", "p.jpg")]}]
+        au.fetch_series = lambda sid, season=None: (au.serie(sid, "One Piece"), [
+            au.episodio("e2", "https://anime.example/anime/1-op/2", n=2),
+            au.episodio("x", "https://altro.example/anime/1", n=1)])          # fuori dal sito: scartato
+        a = au.AU(Prefs(self.d.name))
+        a.remember({"series": "1-op", "title": "One Piece", "poster": "p.jpg", "episode": "e2", "n": "2"})
+        r = a.rails("home")
+        self.assertEqual([x["id"] for x in r["rails"]], ["continua", "top"])
+        s = a.series("1-op")
+        self.assertEqual([e["id"] for e in s["episodes"]], ["e2"])
+        self.assertEqual(s["last"], "e2")
+        self.assertEqual(s["seasons"][0]["title"], "Episodi")
+
+    def test_accesso_copia_i_cookie_in_chrome(self):
+        au = self.au
+        au.SITE_HOST, au.BASE_URL, au.SESSION_COOKIES = "anime.example", "https://anime.example", ("au_session",)
+
+        class FakeCDP:
+            def __init__(self): self.cookies = []
+            def call(self, method, params=None, timeout=6):
+                if method == "Network.setCookie":
+                    self.cookies.append(dict(params, domain="anime.example"))
+                if method == "Network.deleteCookies":
+                    self.cookies = [c for c in self.cookies if c["name"] != params["name"]]
+                return {"cookies": self.cookies}
+
+        def site_login(opener, jar, user, pw):
+            import http.cookiejar
+            jar.set_cookie(http.cookiejar.Cookie(0, "au_session", "x", None, False, "anime.example", False, False,
+                                                 "/", True, True, None, False, None, None, {}))
+            return {"ok": pw == "giusta", "user": user, "error": "Credenziali non valide"}
+        au.site_login = site_login
+        cdp = FakeCDP()
+        a = au.AU(Prefs(self.d.name), cdp)
+        self.assertEqual(a.login("io", "sbagliata")["error"], "Credenziali non valide")
+        self.assertEqual(cdp.cookies, [])                                  # niente cookie se l'accesso fallisce
+        self.assertTrue(a.login("io", "giusta")["ok"])
+        self.assertEqual([c["name"] for c in cdp.cookies], ["au_session"])
+        self.assertTrue(a.login_state(fresh=True)["logged"])
+        self.assertFalse(a.logout()["logged"])
+        self.assertEqual(cdp.cookies, [])
+
+
 class HealthTest(unittest.TestCase):
     def test_partenza_e_avanzamento(self):
         w = Watch("canale5", 0)

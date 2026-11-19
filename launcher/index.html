@@ -68,6 +68,7 @@
       <div class="btn" tabindex="0" data-act="info">Indirizzo di rete <span class="val" id="ip">…</span></div>
       <div class="btn" tabindex="0" data-act="account" data-svc="mediaset">Account <span class="aname">Mediaset Infinity</span> <span class="val">…</span></div>
       <div class="btn" tabindex="0" data-act="account" data-svc="sc">Account <span class="aname">StreamingCommunity</span> <span class="val">…</span></div>
+      <div class="btn" tabindex="0" data-act="account" data-svc="au">Account <span class="aname">AnimeUnity</span> <span class="val">…</span></div>
       <div class="btn" tabindex="0" data-act="restart-ui">Ricarica interfaccia <span class="val">se qualcosa non va</span></div>
     </div>
   </section>
@@ -139,6 +140,33 @@
         <div class="mschips" id="scs-seasons"></div>
       </div>
       <div class="mseps" id="scs-eps"></div>
+    </div>
+  </section>
+  <!-- AnimeUnity (launcher/js/au.js + tvbox/au.py): copia delle pagine di StreamingCommunity.
+       Il nome in alto si cambia qui. -->
+  <section class="page" id="page-au">
+    <div class="msbg" id="au-bg"></div>
+    <div class="mstop"><span class="msbrand">Anime<b>Unity</b></span><span class="msclock"></span></div>
+    <!-- schermata di accesso (login.js): al posto del catalogo finché non si accede -->
+    <div class="login-gate" id="au-login"></div>
+    <div class="msinfo-box">
+      <div class="mslogo"><img id="au-logo" alt=""><div class="msname" id="au-name"></div></div>
+      <div class="msmeta" id="au-meta"></div>
+      <div class="msdesc" id="au-desc"></div>
+    </div>
+    <div class="msrails" id="au-rails"></div>
+  </section>
+  <section class="page" id="page-auserie">
+    <div class="msbg on" id="aus-hero"></div>
+    <div class="mstop"><span class="msbrand">Anime<b>Unity</b></span><span class="msclock"></span></div>
+    <div class="msserie">
+      <div class="mshead">
+        <div class="mslogo"><img id="aus-logo" alt=""><div class="msname" id="aus-title"></div></div>
+        <div class="msmeta" id="aus-info"></div>
+        <div class="msdesc" id="aus-desc"></div>
+        <div class="mschips" id="aus-seasons"></div>
+      </div>
+      <div class="mseps" id="aus-eps"></div>
     </div>
   </section>
   <section class="page" id="page-guide">

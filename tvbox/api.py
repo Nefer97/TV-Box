@@ -169,6 +169,32 @@ def make_routes(tv):
             return tv.sc.login_state(fresh=q.get("fresh") == "1")
         return tv.sc.rails(q.get("page"))
 
+    def au(q):
+        """AnimeUnity (tvbox/au.py): righe, un anime con i suoi episodi, ricerca, apertura di un
+        episodio, accesso al sito (login con utente e password; logout; status)."""
+        from .au import is_episode_url
+        a = q.get("action", "rails")
+        if a == "search":
+            return tv.au.search(q.get("q", ""))
+        if a == "series":
+            return tv.au.series(q.get("id", ""), q.get("season"))
+        if a == "play":
+            if not is_episode_url(q.get("url")):
+                return {"ok": False, "error": "Episodio non valido"}
+            tv.au.remember(q)
+            label = " · ".join(x for x in (q.get("title"), q.get("ep")) if x)
+            site = tv.services.get("au", {}).get("label", "AnimeUnity")
+            tv.post(lambda: tv.open_episode(q["url"], q.get("series", ""), label,
+                                            site=site, back="au", color="#1e3a8a"))
+            return {"ok": True}
+        if a == "login":                       # utente e password dalla schermata di tvbox
+            return tv.au.login(q.get("user", ""), q.get("password", ""))
+        if a == "logout":
+            return dict(tv.au.logout(), ok=True)
+        if a == "status":
+            return tv.au.login_state(fresh=q.get("fresh") == "1")
+        return tv.au.rails(q.get("page"))
+
     def channels(q):
         """Catalogo dei canali: quali sono nella home e in che ordine (Impostazioni → Canali)."""
         from .channels import GROUPS, clean_selection
@@ -208,7 +234,7 @@ def make_routes(tv):
         # dove si è arrivati negli episodi: {"<url>": {"t": secondi, "d": durata}}
         "progress": lambda q: {u: {"t": v[0], "d": v[1]} for u, v in (tv.prefs.get("progress") or {}).items()},
         "info": info, "wifi": wifi_, "screen": screen, "system": system,
-        "guide": guide, "prefs": prefs, "sleep": sleep, "mediaset": mediaset, "sc": sc, "channels": channels,
+        "guide": guide, "prefs": prefs, "sleep": sleep, "mediaset": mediaset, "sc": sc, "au": au, "channels": channels,
     }
 
 
