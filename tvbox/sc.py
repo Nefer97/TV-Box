@@ -232,10 +232,15 @@ def rail_entries(data):
     return _l(data.get("titles"))
 
 
-def genre_url(genre_id):
-    """URL dell'archivio filtrato per un singolo genere."""
-    query = urllib.parse.urlencode({"genre[]": int(genre_id)})
-    return f"{BASE_URL}/it/archive?{query}"
+def genre_url(genre_id, kind=None):
+    """URL dell'archivio filtrato per un genere: i 60 titoli più visti (sort=views; di base
+    l'archivio è per data di uscita). kind "tv" o "movie": solo serie o solo film. Va chiesto
+    sempre un tipo: ordinando per visualizzazioni le serie riempiono quasi tutta la lista
+    (Azione: 58 serie e 2 film) e la riga dei film resterebbe vuota."""
+    params = {"genre[]": int(genre_id), "sort": "views"}
+    if kind:
+        params["type"] = kind
+    return f"{BASE_URL}/it/archive?{urllib.parse.urlencode(params)}"
 
 
 def genre_entries(data):
@@ -705,47 +710,22 @@ class SC:
             return data
 
     def _load_genre_rail(self, genre):
+        """Le righe di un genere: una per i film e/o una per le serie (GENRES dice quali),
+        ognuna con i titoli più visti di quel tipo."""
         genre_id, genre_name, genre_type = genre
-        key = f"genere:{genre_id}"
-
-        data = self._get(key, genre_url(genre_id), RAIL_TTL)
-        entries = genre_entries(data)
-
-        movies = []
-        series = []
-
-        for entry in entries:
-            item = parse_series(entry)
-
-            if not item["id"] or not item["title"] or not item["poster"]:
-                continue
-
-            if item["category"] == "Film":
-                if genre_type in ("movie", "all"):
-                    movies.append(item)
-            else:
-                if genre_type in ("tv", "all"):
-                    series.append(item)
-
         rails = []
-
-        if movies:
-            rails.append({
-                "id": f"genere-film:{genre_id}",
-                "page": "films",
-                "title": genre_name,
-                "items": movies,
-            })
-
-        if series:
-            rails.append({
-                "id": f"genere-serie:{genre_id}",
-                "page": "series",
-                "title": genre_name,
-                "items": series,
-            })
-
+        for kind, page in (("movie", "films"), ("tv", "series")):
+            if genre_type not in (kind, "all"):
+                continue
+            data = self._get(f"genere:{genre_id}:{kind}", genre_url(genre_id, kind), RAIL_TTL)
+            items = [x for x in map(parse_series, genre_entries(data))
+                     if x["id"] and x["title"] and x["poster"]
+                     and (x["category"] == "Film") == (kind == "movie")]
+            if items:
+                rails.append({"id": f"genere-{'film' if kind == 'movie' else 'serie'}:{genre_id}",
+                              "page": page, "title": genre_name, "items": items})
         return rails
+
     # ---------- righe: GET /api/sc?page=home|series|films ----------
     def rails(self, page=None):
         """HOME: Continua a guardare + i tre slider. SERIE TV / FILM: una riga per genere.
