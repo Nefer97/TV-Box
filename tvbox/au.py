@@ -39,81 +39,308 @@ NAME = "au"
 # 1. IL CONNETTORE — da scrivere
 # ======================================================================================
 
-SITE_HOST = ""                      # TODO: es. "www.animeunity.so" (senza https://)
+SITE_HOST = "animeunity.cx"
 BASE_URL = f"https://{SITE_HOST}"
-EPISODE_PATH = "/"                  # TODO: inizio dell'indirizzo delle pagine episodio, es. "/anime/"
+EPISODE_PATH = "/anime/"
 
-# ---------- accesso ----------
-LOGIN_REQUIRED = True               # senza accesso la sezione mostra solo la schermata di accesso
-                                    # (False mentre scrivi il catalogo, se vuoi provarlo senza account)
-SESSION_COOKIES = ()                # TODO: nomi (o inizi, con "_" finale) dei cookie che il sito
-                                    # crea dopo l'accesso, es. ("animeunity_session", "remember_web_")
-LOGIN_STATUS_TTL = 300              # lo stato si ricontrolla al massimo ogni 5 minuti
+LOGIN_REQUIRED = False
+SESSION_COOKIES = ()
+LOGIN_STATUS_TTL = 300
 
-# ---------- cache ----------
-RAIL_TTL = 1800                     # righe: 30 minuti
-SERIES_TTL = 900                    # un anime con gli episodi: 15 minuti
-HISTORY_MAX = 12                    # titoli in "Continua a guardare"
+RAIL_TTL = 1800
+SERIES_TTL = 900
+HISTORY_MAX = 12
 
 
-def serie(id, title, poster="", hero="", logo="", desc="", genres=(), seasons=None, current=None,
-          category="Anime"):
-    """Un anime nel formato del launcher. seasons: [(id, numero, titolo), ...] o None = una sola."""
-    ss = [{"id": str(s[0]), "n": int(s[1]), "title": str(s[2])} for s in (seasons or [("1", 1, "Episodi")])]
-    return {"id": str(id), "title": title or "", "poster": poster or "", "hero": hero or poster or "",
-            "logo": logo or "", "desc": desc or "", "category": category, "genres": list(genres)[:3],
-            "seasons": ss, "current": str(current) if current is not None else ss[-1]["id"]}
+def _d(value):
+    return value if isinstance(value, dict) else {}
 
 
-def episodio(id, url, title="", n=None, desc="", dur=0, date=0, image=""):
-    """Un episodio nel formato del launcher (dur in secondi, date in millisecondi)."""
-    return {"id": str(id), "url": url, "title": title or (f"Episodio {n}" if n is not None else "Episodio"),
-            "n": n, "desc": desc or "", "dur": int(dur or 0), "date": int(date or 0),
-            "channel": "", "image": image or ""}
+def _l(value):
+    return value if isinstance(value, list) else []
+
+
+def _s(value):
+    return str(value).strip() if value is not None else ""
+
+
+def _int(value, default=0):
+    try:
+        return int(float(value))
+    except (TypeError, ValueError, OverflowError):
+        return default
+
+
+def _api(path, params=None):
+    url = BASE_URL + path
+    if params:
+        url += "?" + urllib.parse.urlencode(params)
+
+    req = urllib.request.Request(url, headers={
+        "User-Agent": DESKTOP_UA,
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "it-IT,it;q=0.9,en;q=0.8",
+        "Referer": BASE_URL + "/",
+        "X-Requested-With": "XMLHttpRequest",
+    })
+
+    with urllib.request.urlopen(req, timeout=20) as response:
+        return __import__("json").loads(
+            response.read().decode("utf-8", "replace")
+        )
+
+
+def _sid(anime):
+    anime = _d(anime)
+    return f"{anime.get('id')}-{anime.get('slug')}"
+
+
+def _images(anime):
+    return _d(_d(anime).get("images"))
+
+
+def serie(id, title, poster="", hero="", logo="", desc="",
+          category="Anime", genres=None, seasons=None, current=None):
+    if seasons is None:
+        seasons = [("1", 1, "Episodi")]
+
+    return {
+        "id": str(id),
+        "title": title or "",
+        "poster": poster or "",
+        "hero": hero or poster or "",
+        "logo": logo or "",
+        "desc": desc or "",
+        "category": category,
+        "genres": list(genres or [])[:3],
+        "seasons": [
+            {"id": str(s[0]), "n": int(s[1]), "title": str(s[2])}
+            for s in seasons
+        ],
+        "current": current,
+    }
+
+
+def episodio(id, url, title="", n=None, desc="", dur=0,
+             date=0, image=""):
+    return {
+        "id": str(id),
+        "url": url,
+        "title": title or (f"Episodio {n}" if n is not None else "Episodio"),
+        "n": n,
+        "desc": desc or "",
+        "dur": int(dur or 0),
+        "date": int(date or 0),
+        "channel": "",
+        "image": image or "",
+    }
+
+
+def _parse_series(anime):
+    anime = _d(anime)
+    images = _images(anime)
+
+    genres = [
+        _s(g.get("name"))
+        for g in _l(anime.get("genres"))
+        if isinstance(g, dict) and _s(g.get("name"))
+    ]
+
+    return serie(
+        id=_sid(anime),
+        title=anime.get("title_it") or anime.get("title"),
+        poster=images.get("poster") or images.get("cover") or "",
+        hero=images.get("banner") or images.get("cover") or "",
+        logo=images.get("logo") or "",
+        desc=anime.get("plot") or "",
+        genres=genres,
+    )
+
+
+def _parse_episode(raw, anime_sid, poster=""):
+    raw = _d(raw)
+    videos = [
+        v for v in _l(raw.get("videos"))
+        if isinstance(v, dict) and not v.get("is_hidden")
+    ]
+
+    if not videos:
+        return None
+
+    # Preferenza: italiano, giapponese, cinese, coreano, inglese.
+    priorities = ("ita", "jpn", "chn", "kor", "eng")
+    video = next(
+        (v for lang in priorities for v in videos
+         if _s(v.get("language")).lower() == lang),
+        videos[0],
+    )
+
+    video_id = _s(video.get("id"))
+    if not video_id:
+        return None
+
+    number_raw = raw.get("number")
+    number = _int(number_raw, None)
+
+    url = f"{BASE_URL}{EPISODE_PATH}{anime_sid}/{video_id}"
+
+    return episodio(
+        id=video_id,
+        url=url,
+        title=f"Episodio {number}" if number is not None else "Episodio",
+        n=number,
+        dur=video.get("runtime") or 0,
+        image=poster,
+    )
 
 
 def is_episode_url(u):
-    """Solo pagine episodio HTTPS del sito: tvbox apre a schermo intero solo queste."""
     p = urllib.parse.urlparse(u or "")
-    return bool(SITE_HOST) and p.scheme == "https" and p.hostname == SITE_HOST and p.path.startswith(EPISODE_PATH)
+    parts = p.path.strip("/").split("/")
+
+    return (
+        p.scheme == "https"
+        and p.hostname == SITE_HOST
+        and len(parts) == 3
+        and parts[0] == "anime"
+        and parts[1].split("-", 1)[0].isdigit()
+        and parts[2].isdigit()
+    )
 
 
 def fetch_home():
-    """Righe della scheda HOME (es. "In evidenza", "Ultimi episodi", "Popolari"):
-    [riga, ...]. "Continua a guardare" la aggiunge tvbox in cima da sola."""
-    raise NotImplementedError("fetch_home")
+    data = _api("/api/home/latest-episodes", {
+        "page": 1,
+        "per_page": 20,
+    })
+
+    items = []
+    seen = set()
+
+    for entry in _l(_d(data).get("data")):
+        anime = _d(_d(entry).get("episode")).get("anime")
+        anime = _d(anime)
+
+        if not anime.get("id") or not anime.get("slug"):
+            continue
+
+        sid = _sid(anime)
+        if sid in seen:
+            continue
+
+        seen.add(sid)
+        items.append(_parse_series(anime))
+
+    return [{
+        "id": "ultimi-episodi",
+        "title": "Ultimi episodi",
+        "items": items,
+    }] if items else []
 
 
 def fetch_anime():
-    """Righe della scheda ANIME (es. una per genere): [riga, ...]."""
-    raise NotImplementedError("fetch_anime")
+    data = _api("/api/archive")
+    items = [
+        _parse_series(x)
+        for x in _l(_d(data).get("data"))
+        if _d(x).get("id") and _d(x).get("slug")
+    ]
+
+    return [{
+        "id": "catalogo-anime",
+        "title": "Catalogo anime",
+        "items": items,
+    }] if items else []
 
 
 def fetch_search(query):
-    """Ricerca per nome: [serie, ...]."""
-    raise NotImplementedError("fetch_search")
+    data = _api("/api/search", {"q": query})
+
+    return [
+        _parse_series(x)
+        for x in _l(_d(data).get("data"))
+        if _d(x).get("id") and _d(x).get("slug")
+    ]
 
 
 def fetch_series(sid, season=None):
-    """Un anime e gli episodi della stagione scelta (season = id della stagione, o None per
-    quella di partenza): (serie, [episodio, ...]). Gli episodi in ordine dal più recente."""
-    raise NotImplementedError("fetch_series")
+    # L'identificativo è nel formato "1234-slug".
+    raw_sid = _s(sid)
+    anime_id = raw_sid.split("-", 1)[0]
+
+    if not anime_id.isdigit():
+        raise ValueError(f"ID anime non valido: {sid}")
+
+    # Recupera i metadati attraverso la ricerca.
+    slug = raw_sid.split("-", 1)[1] if "-" in raw_sid else ""
+    data = _api("/api/search", {"q": slug or anime_id})
+
+    anime = next(
+        (
+            x for x in _l(_d(data).get("data"))
+            if str(_d(x).get("id")) == anime_id
+        ),
+        None,
+    )
+
+    if anime is None:
+        anime = {
+            "id": int(anime_id),
+            "slug": slug or anime_id,
+            "title": slug.replace("-", " ").title() if slug else anime_id,
+        }
+
+    series = _parse_series(anime)
+    canonical_sid = series["id"]
+
+    episodes = []
+    start = 0
+    total = None
+    tab_size = 120
+
+    # Recupera tutte le finestre dell'API.
+    while total is None or start < total:
+        page = _api(
+            f"/api/anime/{anime_id}/episodes",
+            {"start": start},
+        )
+
+        entries = _l(_d(page).get("episodes"))
+        total = _int(page.get("total"), 0)
+        tab_size = max(1, _int(page.get("tab_size"), 120))
+
+        for entry in entries:
+            ep = _parse_episode(
+                entry,
+                canonical_sid,
+                series.get("poster", ""),
+            )
+            if ep:
+                episodes.append(ep)
+
+        if not entries or total <= 0:
+            break
+
+        start += tab_size
+
+    # Ordine dal più recente al meno recente.
+    episodes.sort(
+        key=lambda e: e["n"] if e["n"] is not None else -1,
+        reverse=True,
+    )
+
+    return series, episodes
 
 
 def site_login(opener, jar, username, password):
-    """Accesso al sito con utente e password, come il modulo di login del browser.
-    opener: urllib con i cookie in jar (usalo per tutte le richieste: GET della pagina di login
-    per il token, POST del modulo). Restituisci {"ok": True, "user": "nome"} oppure
-    {"ok": False, "error": "messaggio per la TV"}. I cookie rimasti in jar li copia tvbox in
-    Chrome, dove li usa il player del sito. Esempio completo: SC.login in tvbox/sc.py."""
-    raise NotImplementedError("site_login")
+    return {
+        "ok": False,
+        "error": "AnimeUnity non richiede l'accesso per il catalogo pubblico",
+    }
 
 
 def site_user(cookie_header):
-    """Facoltativo: chi è collegato con questi cookie ("Cookie: ..." già pronto)? Il nome,
-    oppure None se il sito dice che non si è collegati. Se resta NotImplementedError, basta la
-    presenza dei cookie di SESSION_COOKIES in Chrome."""
-    raise NotImplementedError("site_user")
+    return None
 
 
 # ======================================================================================

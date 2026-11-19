@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 *.log
 diagnosi.txt
+
+# materiale di riferimento solo sul PC (non va sulla TV né su GitHub)
+riferimenti/
