@@ -517,7 +517,7 @@ class AnimeUnityTest(unittest.TestCase):
     vero: i test non vanno mai sul sito e valgono qualunque cosa ci sia nel connettore."""
     PARTS = ("SITE_HOST", "BASE_URL", "EPISODE_PATH", "SESSION_COOKIES", "LOGIN_REQUIRED",
              "fetch_home", "fetch_anime", "fetch_search", "fetch_series", "site_login", "site_user",
-             "resolve_episode", "_adult_ids")
+             "resolve_episode", "fetch_details", "_adult_ids")
 
     def setUp(self):
         import tvbox.au as au
@@ -527,7 +527,7 @@ class AnimeUnityTest(unittest.TestCase):
         def todo(*a, **k):
             raise NotImplementedError("finto")
         for k in ("fetch_home", "fetch_anime", "fetch_search", "fetch_series", "site_login", "site_user",
-                  "resolve_episode"):
+                  "resolve_episode", "fetch_details"):
             setattr(au, k, todo)                                           # di partenza: connettore vuoto
         au.SITE_HOST, au.BASE_URL, au.EPISODE_PATH = "anime.example", "https://anime.example", "/anime/"
         au.SESSION_COOKIES, au.LOGIN_REQUIRED = (), True
@@ -561,6 +561,15 @@ class AnimeUnityTest(unittest.TestCase):
         self.assertEqual([e["id"] for e in s["episodes"]], ["e2"])
         self.assertEqual(s["last"], "e2")
         self.assertEqual(s["seasons"][0]["title"], "Episodi")
+
+    def test_descrizione_di_un_titolo_evidenziato(self):
+        au, calls = self.au, []
+        a = au.AU(Prefs(self.d.name))
+        self.assertEqual(a.details("1-op"), {})                            # connettore senza: niente
+        au.fetch_details = lambda sid: calls.append(sid) or au.serie(sid, "One Piece", desc="Pirati", genres=["Action"])
+        self.assertEqual(a.details("1-op")["desc"], "Pirati")
+        a.details("1-op")
+        self.assertEqual(calls, ["1-op"])                                  # la seconda volta dalla cache
 
     def test_titoli_per_adulti_a_scelta(self):
         au = self.au

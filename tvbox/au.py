@@ -53,6 +53,7 @@ LOGIN_STATUS_TTL = 300
 
 RAIL_TTL = 1800
 SERIES_TTL = 900
+DETAILS_TTL = 24 * 3600            # descrizione di un titolo evidenziato: un giorno
 HISTORY_MAX = 12
 
 
@@ -391,6 +392,18 @@ def fetch_series(sid, season=None):
     return series, episodes
 
 
+def fetch_details(sid):
+    """Descrizione, generi e immagini di un anime (dalla sua pagina), senza gli episodi: per i
+    titoli che arrivano senza descrizione (Ultimi episodi, ricerca, Continua a guardare)."""
+    sid = _s(sid)
+    if not sid.split("-", 1)[0].isdigit():
+        raise ValueError(f"ID anime non valido: {sid}")
+    anime = _d(_page(f"{EPISODE_PATH}{sid}").get("anime"))
+    if not anime:
+        raise ValueError(f"anime non trovato: {sid}")
+    return _parse_series(anime)
+
+
 def resolve_episode(url):
     """Il player dell'episodio da aprire a schermo intero: (indirizzo, provenienza).
     La pagina dell'episodio ha il video in un riquadro di vixcloud a metà pagina, dove tvbox non
@@ -499,6 +512,16 @@ class AU:
             log.warning("AnimeUnity ricerca '%s': %s", query, ex)
             return {"query": query, "items": [], "error": "Ricerca temporaneamente non disponibile"}
 
+    # ---------- descrizione di un titolo evidenziato: GET /api/au?action=details&id=... ----------
+    def details(self, sid):
+        """Descrizione, generi e immagini di un titolo che ne arriva senza (si chiede quando lo si
+        evidenzia; in cache per un giorno). {} se il connettore non lo sa fare o il sito non risponde."""
+        try:
+            s = self._cached(f"dettagli:{sid}", DETAILS_TTL, lambda: fetch_details(sid))
+        except Exception:
+            return {}
+        return {k: s.get(k) for k in ("desc", "genres", "category", "poster", "hero", "logo") if s.get(k)}
+
     # ---------- un anime: GET /api/au?action=series&id=...&season=... ----------
     def series(self, sid, season=None):
         try:
@@ -527,7 +550,7 @@ class AU:
     # ---------- Continua a guardare ----------
     def history(self):
         return [{"id": h["series"], "title": h["title"], "poster": h["poster"], "hero": h.get("hero", ""),
-                 "logo": h.get("logo", ""), "desc": h.get("ep", ""),
+                 "logo": h.get("logo", ""), "desc": "",          # la trama arriva con details()
                  "sub": h.get("ep") or (f"Ep. {h['n']}" if h.get("n") is not None else ""),
                  "episode": h["episode"]}
                 for h in self.prefs.get("au_history")]

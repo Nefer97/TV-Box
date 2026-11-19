@@ -192,11 +192,13 @@ def make_routes(tv):
 
     def au(q):
         """AnimeUnity (tvbox/au.py): righe, un anime con i suoi episodi, ricerca, apertura di un
-        episodio, accesso al sito (login con utente e password; logout; status)."""
+        episodio, descrizione di un titolo (details), accesso al sito (login; logout; status)."""
         from .au import is_episode_url
         a = q.get("action", "rails")
         if a == "search":
             return tv.au.search(q.get("q", ""))
+        if a == "details":
+            return tv.au.details(q.get("id", ""))
         if a == "series":
             return tv.au.series(q.get("id", ""), q.get("season"))
         if a == "play":

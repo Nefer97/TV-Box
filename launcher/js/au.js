@@ -317,6 +317,23 @@ function detail(x) {
   $('#au-meta').textContent = x.sub ? `Continua a guardare · ${x.sub}` : meta(x);
   $('#au-desc').textContent = x.desc || '';
   setBg($('#au-bg'), x.hero);
+  if (!x.desc && x.id) askDetails(x);
+}
+
+// titoli senza descrizione (Ultimi episodi, ricerca, Continua a guardare): la si chiede a tvd
+// quando il titolo resta evidenziato un attimo (scorrendo veloce non parte nessuna richiesta)
+let detailsTimer = 0;
+function askDetails(x) {
+  clearTimeout(detailsTimer);
+  if (x._details) return;
+  detailsTimer = setTimeout(async () => {
+    x._details = true;
+    const d = await api(`au?action=details&id=${q(x.id)}`);
+    if (!d || !d.desc) { x._details = false; return; }
+    Object.assign(x, { desc: d.desc, genres: d.genres || x.genres, hero: x.hero || d.hero });
+    const t = document.activeElement;
+    if (t && t._au === x) detail(x);                 // ancora evidenziato: si aggiorna
+  }, 350);
 }
 
 // ---------- pagina della serie ----------
