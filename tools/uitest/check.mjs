@@ -173,6 +173,12 @@ await until(`document.querySelectorAll('#aus-seasons .chip').length > 6`, 20000)
 await js(`document.querySelector('#aus-seasons .chip').focus()`);
 await press('right', 'right', 'right', 'right');
 await check('gruppi di episodi: ► in ordine anche a capo (1–100 → 401–500)', `document.activeElement.textContent === '401–500'`, 3000);
+await js(`[...document.querySelectorAll('#aus-seasons .chip')].pop().focus()`);
+await press('right');
+await check('gruppi di episodi: ► dall\'ultimo va sugli episodi', `document.activeElement.classList.contains('msep')`, 3000);
+await js(`document.querySelector('#aus-seasons .chip').focus()`);
+await press('left');
+await check('gruppi di episodi: ◄ dal primo resta sul primo', `document.activeElement.textContent === '1–100'`, 3000);
 
 console.log('errori JavaScript:', errors.length ? errors : 'nessuno');
 ws.close();

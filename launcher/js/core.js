@@ -106,18 +106,21 @@ export function move(dir) {
     }
   }
   // gruppi di pulsanti che vanno a capo (stagioni, gruppi di episodi): ◄ ► in ordine di lettura,
-  // il successivo anche se sta sulla riga sotto; oltre il primo o l'ultimo, la ricerca normale
+  // il successivo anche se sta sulla riga sotto; oltre il primo o l'ultimo si esce dal gruppo
+  // (► dall'ultimo: la lista degli episodi), mai su un altro pulsante dello stesso gruppo
   const chips = cur.closest('.mschips');
+  let skip = null;
   if (chips && (dir === 'left' || dir === 'right')) {
     const all = [...chips.querySelectorAll('[tabindex]')], j = all.indexOf(cur) + (dir === 'right' ? 1 : -1);
     if (j >= 0 && j < all.length) { all[j].focus(); return; }
+    skip = chips;
   }
   const a = cur.getBoundingClientRect(), ax = a.left + a.width / 2, ay = a.top + a.height / 2;
   // distanza tra due intervalli (0 se si sovrappongono)
   const gap = (a0, a1, b0, b1) => Math.max(0, b0 - a1, a0 - b1);
   let best = null, bd = Infinity;
   for (const e of items) {
-    if (e === cur) continue;
+    if (e === cur || (skip && skip.contains(e))) continue;
     const b = e.getBoundingClientRect(), dx = b.left + b.width / 2 - ax, dy = b.top + b.height / 2 - ay;
     // Si misura tra i bordi, non tra i centri: da un elemento largo (la barra di ricerca) il
     // pulsante attaccato a destra ("Cancella") e la prima riga sotto ("Continua a guardare",
