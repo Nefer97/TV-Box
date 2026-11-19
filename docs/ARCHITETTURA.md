@@ -1,6 +1,6 @@
 # tvbox — architettura
 
-Come è costruita tvbox (V6) e dove si mette mano per ogni tipo di modifica. Cosa deve fare:
+Come è costruita tvbox (V6.1) e dove si mette mano per ogni tipo di modifica. Cosa deve fare:
 [REQUISITI.md](REQUISITI.md).
 
 ## 1. I pezzi
@@ -132,6 +132,11 @@ apre a schermo (visione `episode`, MENU torna alla serie e riparte dal punto sal
 | launcher | `launcher/js/mediaset.js` | `launcher/js/sc.js` | `launcher/js/au.js` (copia di `sc.js`, schede HOME / ANIME) |
 | cosa si apre per un episodio | la pagina dell'episodio sul sito | il **player da solo** (sotto) | il **player da solo** (sotto) |
 | accesso | obbligatorio | obbligatorio | nessuno (`LOGIN_REQUIRED = False`) |
+| titoli per adulti | — | — | nascosti di serie (prefs `au_adult`, `AU._visible`: flag del sito o elenco `adult=1` dell'archivio) |
+| descrizione mancante | — | — | chiesta quando il titolo resta evidenziato (`/api/au?action=details`, `fetch_details`) |
+
+**MENU dalle sezioni.** `app.js` (`SECTIONS`) ricorda nel browser da dove si è entrati in
+`mediaset`, `sc`, `au` (home o Altri servizi) e MENU torna lì, anche dopo un episodio.
 
 **Il player da solo.** StreamingCommunity e AnimeUnity mettono il video in un riquadro di
 vixcloud dentro la pagina dell'episodio: lì tvbox non lo vede (niente schermo intero, niente

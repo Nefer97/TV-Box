@@ -58,8 +58,12 @@ requisito si aggiorna prima questo file, poi il codice. Come è costruita: [ARCH
 
 ### AnimeUnity
 - R19. Sezione nostra con il catalogo di anime del sito: schede **HOME / ANIME** (in corso, più
-  popolari, righe per genere ordinate per visualizzazioni, niente titoli per adulti), ricerca,
-  "Continua a guardare", pagina dell'anime con gli episodi. Nessun account.
+  popolari, righe per genere ordinate per visualizzazioni), ricerca, "Continua a guardare",
+  pagina dell'anime con gli episodi; la descrizione si vede anche evidenziando un titolo in HOME.
+  I titoli per adulti sono **nascosti di serie** e si possono rendere visibili da Impostazioni →
+  Home e meteo. Nessun account.
+- R20. MENU da una sezione (Mediaset, StreamingCommunity, AnimeUnity) torna **dove era il
+  riquadro** da cui la si è aperta (home o Altri servizi), anche dopo un episodio.
 
 ### Accesso agli account
 - R17. Mediaset e StreamingCommunity **chiedono l'accesso** entrando nella sezione: una
@@ -78,7 +82,8 @@ requisito si aggiorna prima questo file, poi il codice. Come è costruita: [ARCH
 - R14. Quattro gruppi: Immagine e audio · Accensione e spegnimento · Home e meteo · Rete e
   assistenza (con gli account, R17). In fondo, come nella home, solo i tasti che non si
   indovinano (niente spiegazioni lunghe).
-- R15. Risoluzione con prova sicura; Wi-Fi da telecomando; riavvio e spegnimento.
+- R15. Risoluzione con prova sicura; Wi-Fi da telecomando; riavvio e spegnimento. In alto a
+  destra la rete usata davvero (Wi-Fi o cavo).
 
 ## 3. Requisiti di qualità
 
