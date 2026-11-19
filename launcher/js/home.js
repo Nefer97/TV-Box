@@ -21,6 +21,17 @@ const NET_ICONS = {
 const MAIN_SERVICES = ['raiplay', 'mediaset', 'youtube'];
 
 // ---------- riquadri ----------
+// parole del nome, anche quelle attaccate: "StreamingCommunity" -> Streaming, Community
+const words = label => label.split(/\s+|(?<=[a-zà-ù])(?=[A-Z])/);
+// il nome del riquadro: tra le parole attaccate si può andare a capo (<wbr>), non a metà parola
+function labelEl(label) {
+  const span = el('span', 'label');
+  label.split(/(?<=[a-zà-ù])(?=[A-Z])/).forEach((part, i) => {
+    if (i) span.appendChild(document.createElement('wbr'));
+    span.appendChild(document.createTextNode(part));
+  });
+  return span;
+}
 function tile(id, s, big) {
   if (s.live) {                                      // canale in diretta: scheda condivisa
     const c = window.TVCards.live({ id, label: s.label, color: s.color });
@@ -33,7 +44,7 @@ function tile(id, s, big) {
   t.dataset.id = id;
   t.style.background = `linear-gradient(160deg, ${s.color || '#334155'}, ${shade(s.color || '#334155')})`;
   t.innerHTML = ICONS[s.icon] || ICONS.play;
-  t.appendChild(el('span', 'label', s.label));
+  t.appendChild(labelEl(s.label));
   if (big) t.appendChild(el('span', 'sub', s.subtitle || ''));   // sempre presente: riquadri allineati
   const site = s.no_logo ? null : (s.logo_url || s.url);           // logo vero del sito, se c'è
   if (big && site) {
@@ -44,8 +55,8 @@ function tile(id, s, big) {
     box.appendChild(img);
     t.appendChild(box);
   }
-  // nomi lunghi: carattere più piccolo, mai spezzati a metà
-  if (big && Math.max(...s.label.split(/\s+/).map(w => w.length)) > 10) t.querySelector('.label').classList.add('long');
+  // nomi lunghi: carattere più piccolo, mai spezzati a metà (le parole attaccate contano separate)
+  if (big && Math.max(...words(s.label).map(w => w.length)) > 10) t.querySelector('.label').classList.add('long');
   return t;
 }
 
