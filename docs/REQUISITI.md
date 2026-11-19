@@ -46,7 +46,22 @@ requisito si aggiorna prima questo file, poi il codice. Come è costruita: [ARCH
 - R12. Sezione nostra con il catalogo gratuito: **fiction, serie TV, programmi TV, cartoni,
   documentari e approfondimento** (locandine, "Continua a guardare"),
   pagina della serie con stagioni ed episodi; l'episodio parte a tutto schermo con il sipario;
-  MENU torna alla serie.
+  MENU torna alla serie. Serve l'account (R17).
+- R18. Un episodio lasciato a metà **riparte da dove si era arrivati** (Mediaset e
+  StreamingCommunity).
+
+### StreamingCommunity
+- R16. Sezione nostra con il catalogo del sito: schede **HOME / SERIE TV / FILM**, ricerca con
+  la tastiera a schermo, "Continua a guardare", righe per genere; pagina della serie come per
+  Mediaset. Serve l'account (R17).
+
+### Accesso agli account
+- R17. Mediaset e StreamingCommunity **chiedono l'accesso** entrando nella sezione: una
+  schermata di tvbox (stile della home) con utente/email e password scritti con la tastiera a
+  schermo. Il sito **non si vede**: l'accesso lo fa la TV. La password **non si salva**; resta
+  la sessione del sito, quindi la schermata non torna finché non si esce. Se il sito chiede un
+  controllo "non sono un robot", la TV lo dice e apre il sito solo per quella volta.
+  Impostazioni → Rete e assistenza mostra chi è collegato e permette di uscire.
 
 ### Altri servizi e siti
 - R13. Servizi web (La7, Pluto TV, Radio Rai, discovery+, …) e **I miei siti** scelti
@@ -54,7 +69,9 @@ requisito si aggiorna prima questo file, poi il codice. Come è costruita: [ARCH
   (tieni premuto OK), vista "telefono" e protezione da pubblicità e finestre.
 
 ### Impostazioni
-- R14. Quattro gruppi: Immagine e audio · Accensione e spegnimento · Home e meteo · Rete e sistema.
+- R14. Quattro gruppi: Immagine e audio · Accensione e spegnimento · Home e meteo · Rete e
+  assistenza (con gli account, R17). In fondo, come nella home, solo i tasti che non si
+  indovinano (niente spiegazioni lunghe).
 - R15. Risoluzione con prova sicura; Wi-Fi da telecomando; riavvio e spegnimento.
 
 ## 3. Requisiti di qualità
@@ -74,4 +91,7 @@ requisito si aggiorna prima questo file, poi il codice. Come è costruita: [ARCH
 
 - Telecomando dal telefono: non voluto.
 - Servizi a pagamento: possono funzionare (Netflix sperimentale) ma non sono garantiti.
+- Accesso con Google o Facebook: non si fa dentro la TV (Google non permette che un programma
+  scriva le credenziali al posto dell'utente); gli account usano email e password.
+- Il controllo "non sono un robot" non si aggira mai: lo si completa sul sito (R17).
 - Il lampo bianco passando da Rai a Mediaset è attenuato (fondo blu), non eliminato del tutto.

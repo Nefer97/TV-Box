@@ -14,7 +14,13 @@ guida TV, fiction, serie, programmi e cartoni di Mediaset Infinity, YouTube, Rai
 - **Canali in diretta**: un catalogo di 39 canali (Rai, Mediaset, Discovery); scegli dalla TV quali
   mettere nella home e in che ordine. Ognuno con programma in onda, avanzamento, descrizione e immagine.
 - **Mediaset Infinity per la TV**: fiction, serie, programmi TV, cartoni, documentari e approfondimento in righe di locandine, pagina della serie con
-  stagioni ed episodi, "Continua a guardare"; l'episodio parte a tutto schermo.
+  stagioni ed episodi, "Continua a guardare"; l'episodio parte a tutto schermo e, se lo avevi
+  lasciato a metà, riparte da lì.
+- **StreamingCommunity**: un secondo catalogo con schede HOME / SERIE TV / FILM, ricerca,
+  "Continua a guardare" e righe per genere, con la stessa pagina della serie.
+- **Accesso agli account dentro la TV**: Mediaset e StreamingCommunity chiedono l'accesso con
+  una schermata di tvbox (email/utente e password con la tastiera a schermo); l'accesso lo fa la
+  TV senza mostrare il sito e la password non viene salvata. Si esce dalle Impostazioni.
 - **Dirette che si riparano da sole**: se il video resta fermo la TV riapre il canale, e se il sito
   chiede di accedere lo mostra invece dello schermo nero.
 - **Guida TV**: i programmi delle prossime ore per ogni canale; OK sul programma in onda lo apre.
@@ -29,7 +35,7 @@ guida TV, fiction, serie, programmi e cartoni di Mediaset Infinity, YouTube, Rai
   pubblicità, popup e banner dei cookie.
 - **Impostazioni dalla TV**, in quattro gruppi: immagine e audio (volume, risoluzione con
   prova di 15 secondi), accensione e spegnimento (ultimo canale all'accensione, timer,
-  salvaschermo), home e meteo, rete (Wi-Fi con ricerca e password).
+  salvaschermo), home e meteo, rete e assistenza (Wi-Fi con ricerca e password, account).
 - **Salvaschermo** con le foto dei programmi in onda; dopo un'ora lo schermo si spegne.
 - **Sempre acceso**: si riaccende dopo un blackout, si riavvia da solo se si blocca, riparte
   dall'ultimo canale guardato.
@@ -174,8 +180,8 @@ python3 tools/checklinks.py                  # gli indirizzi di Rai, Mediaset e 
 ```
 
 Le prove automatiche coprono la logica del telecomando (doppioni, ripetizioni, pressioni lunghe),
-la tabella dei tasti, la configurazione, le preferenze, i palinsesti, il catalogo Mediaset, le
-regole di "cosa si sta guardando" e la sorveglianza delle dirette. Le prove della grafica aprono
+la tabella dei tasti, la configurazione, le preferenze, i palinsesti, il catalogo Mediaset,
+l'accesso agli account, le regole di "cosa si sta guardando" e la sorveglianza delle dirette. Le prove della grafica aprono
 home, Guida TV, Impostazioni, canali e Mediaset come col telecomando e controllano contenuti,
 misure ed errori JavaScript. Poi la vera classe TV guida Chromium con tre canali finti (pagine
 locali con un video disegnato al momento): sipario, schermo intero, banner, volume, pannello,
@@ -202,7 +208,8 @@ cambio canale, pausa, diretta ferma riaperta, episodio e ritorno alla serie.
 ```
 tvd.py                avvio di tvd
 tvbox/                il demone, un modulo per compito (vedi tvbox/__init__.py):
-                        visione, strato TV, canali, Mediaset, timer, sorveglianza…
+                        visione, strato TV, canali, cataloghi (mediaset.py, sc.py) e
+                        accesso, timer, sorveglianza…
 config.json           servizi e canali
 launcher/             la home: index.html, css/, js/ (+ hls.js in vendor/)
 launcher/inject/      script iniettati nelle pagine dei servizi (strato TV, player, …)
@@ -221,5 +228,5 @@ docs/screenshots/     le immagini di questo file
 ## Nota
 
 Progetto personale e non ufficiale, senza legami con Rai, Mediaset, Warner Bros. Discovery,
-Google o Apple. tvbox apre i siti e le app web ufficiali dei servizi, come farebbe un browser
-o una Smart TV; marchi, loghi e contenuti appartengono ai rispettivi proprietari.
+Google o Apple. tvbox apre i siti e le app web dei servizi, come farebbe un browser o una
+Smart TV; marchi, loghi e contenuti appartengono ai rispettivi proprietari.
