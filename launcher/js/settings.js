@@ -29,6 +29,7 @@ async function accountVal(row) {
   if (!s) return null;
   row.querySelector('.aname').textContent = s.label;
   const l = await api(id + '?action=status');
+  if (l && !l.required && !l.logged) { row.style.display = 'none'; return l; }   // servizio senza account
   row.querySelector('.val').textContent = !l ? '…' : l.logged ? (l.user || 'collegato') : 'non collegato';
   return l;
 }

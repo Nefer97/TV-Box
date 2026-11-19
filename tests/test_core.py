@@ -513,12 +513,22 @@ class LoginTest(unittest.TestCase):
 
 
 class AnimeUnityTest(unittest.TestCase):
-    """tvbox/au.py: la parte già pronta, con il connettore vuoto e con uno finto."""
+    """tvbox/au.py: la parte già pronta (classe AU), con un connettore finto al posto di quello
+    vero: i test non vanno mai sul sito e valgono qualunque cosa ci sia nel connettore."""
+    PARTS = ("SITE_HOST", "BASE_URL", "EPISODE_PATH", "SESSION_COOKIES", "LOGIN_REQUIRED",
+             "fetch_home", "fetch_anime", "fetch_search", "fetch_series", "site_login", "site_user")
+
     def setUp(self):
         import tvbox.au as au
         self.au, self.d = au, tempfile.TemporaryDirectory()
-        self.saved = {k: getattr(au, k) for k in ("SITE_HOST", "BASE_URL", "EPISODE_PATH", "SESSION_COOKIES",
-                                                    "fetch_home", "fetch_anime", "fetch_series", "site_login")}
+        self.saved = {k: getattr(au, k) for k in self.PARTS}
+
+        def todo(*a, **k):
+            raise NotImplementedError("finto")
+        for k in ("fetch_home", "fetch_anime", "fetch_search", "fetch_series", "site_login", "site_user"):
+            setattr(au, k, todo)                                           # di partenza: connettore vuoto
+        au.SITE_HOST, au.BASE_URL, au.EPISODE_PATH = "anime.example", "https://anime.example", "/anime/"
+        au.SESSION_COOKIES, au.LOGIN_REQUIRED = (), True
 
     def tearDown(self):
         for k, v in self.saved.items():
@@ -536,7 +546,6 @@ class AnimeUnityTest(unittest.TestCase):
 
     def test_connettore_finto(self):
         au = self.au
-        au.SITE_HOST, au.BASE_URL, au.EPISODE_PATH = "anime.example", "https://anime.example", "/anime/"
         au.fetch_home = lambda: [{"id": "top", "title": "Popolari", "items": [au.serie("1-op", "One Piece", "p.jpg")]}]
         au.fetch_series = lambda sid, season=None: (au.serie(sid, "One Piece"), [
             au.episodio("e2", "https://anime.example/anime/1-op/2", n=2),
@@ -552,7 +561,7 @@ class AnimeUnityTest(unittest.TestCase):
 
     def test_accesso_copia_i_cookie_in_chrome(self):
         au = self.au
-        au.SITE_HOST, au.BASE_URL, au.SESSION_COOKIES = "anime.example", "https://anime.example", ("au_session",)
+        au.SESSION_COOKIES = ("au_session",)
 
         class FakeCDP:
             def __init__(self): self.cookies = []
