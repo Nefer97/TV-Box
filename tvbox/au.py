@@ -164,7 +164,7 @@ def _parse_series(anime):
         if isinstance(g, dict) and _s(g.get("name"))
     ]
 
-    return serie(
+    s = serie(
         id=_sid(anime),
         title=anime.get("title_it") or anime.get("title"),
         poster=images.get("poster") or images.get("cover") or "",
@@ -173,6 +173,8 @@ def _parse_series(anime):
         desc=anime.get("plot") or "",
         genres=genres,
     )
+    s["adult"] = bool(anime.get("is_adult"))     # per adulti (se il sito lo dice; vedi AU._visible)
+    return s
 
 
 def _parse_episode(raw, anime_sid, poster=""):
@@ -232,8 +234,8 @@ _adult = [0.0, frozenset()]
 
 def _adult_ids():
     """Id dei titoli per adulti (archivio con adult=1, tutte le pagine). Ultimi episodi e
-    ricerca non dicono se un titolo è per adulti: si escludono con questo elenco. Se l'archivio
-    non risponde resta l'ultimo elenco buono."""
+    ricerca non dicono se un titolo è per adulti: li riconosce questo elenco (AU._visible). Se
+    l'archivio non risponde resta l'ultimo elenco buono."""
     if time.monotonic() - _adult[0] < ADULT_TTL and _adult[1]:
         return _adult[1]
     try:
@@ -256,13 +258,11 @@ def fetch_home():
 
     items = []
     seen = set()
-    adult = _adult_ids()
-
     for entry in _l(_d(data).get("data")):
         anime = _d(_d(entry).get("episode")).get("anime")
         anime = _d(anime)
 
-        if not anime.get("id") or not anime.get("slug") or _int(anime.get("id")) in adult:
+        if not anime.get("id") or not anime.get("slug"):
             continue
 
         sid = _sid(anime)
@@ -293,9 +293,8 @@ ANIME_RAILS = [
 
 
 def _anime_list(data):
-    """Anime di una risposta a pagine dell'API (archivio, classifica), senza quelli per adulti."""
-    return [_parse_series(x) for x in _l(_d(data).get("data"))
-            if _d(x).get("id") and _d(x).get("slug") and not _d(x).get("is_adult")]
+    """Anime di una risposta a pagine dell'API (archivio, classifica)."""
+    return [_parse_series(x) for x in _l(_d(data).get("data")) if _d(x).get("id") and _d(x).get("slug")]
 
 
 def fetch_anime():
@@ -315,12 +314,11 @@ def fetch_anime():
 
 def fetch_search(query):
     data = _api("/api/search", {"q": query})
-    adult = _adult_ids()
 
     return [
         _parse_series(x)
         for x in _l(_d(data).get("data"))
-        if _d(x).get("id") and _d(x).get("slug") and _int(_d(x).get("id")) not in adult
+        if _d(x).get("id") and _d(x).get("slug")
     ]
 
 
@@ -455,6 +453,13 @@ class AU:
             self.cache[key] = (time.monotonic(), d)
         return d
 
+    # ---------- titoli per adulti: si vedono solo se l'utente lo sceglie (prefs "au_adult") ----------
+    def _visible(self, items):
+        if self.prefs.get("au_adult"):
+            return items
+        adult = _adult_ids()
+        return [x for x in items if not x.get("adult") and _int(str(x.get("id", "")).split("-", 1)[0]) not in adult]
+
     # ---------- righe: GET /api/au?page=home|anime ----------
     def rails(self, page=None):
         page = page if page in ("home", "anime") else "home"
@@ -466,7 +471,7 @@ class AU:
         try:
             rows = self._cached("righe:" + page, RAIL_TTL, fetch_home if page == "home" else fetch_anime)
             for r in rows or []:
-                items = [x for x in r.get("items") or [] if x.get("id") and x.get("title")]
+                items = self._visible([x for x in r.get("items") or [] if x.get("id") and x.get("title")])
                 if items:
                     out.append({"id": str(r.get("id") or r.get("title")), "page": page,
                                 "title": r.get("title") or "", "items": items})
@@ -486,7 +491,7 @@ class AU:
         if not query:
             return {"query": "", "items": []}
         try:
-            items = [x for x in fetch_search(query) or [] if x.get("id") and x.get("title")]
+            items = self._visible([x for x in fetch_search(query) or [] if x.get("id") and x.get("title")])
             return {"query": query, "items": items}
         except NotImplementedError:
             return {"query": query, "items": [], "error": TODO_MSG}

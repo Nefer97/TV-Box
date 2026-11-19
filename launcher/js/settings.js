@@ -1,5 +1,5 @@
 // settings.js — pagina Impostazioni: volume, meteo, risoluzione, rete, riavvio/spegnimento.
-import { $, api, choose, focusAct, hideOverlay, overlay, q, state } from './core.js';
+import { $, api, choose, focusAct, hideOverlay, overlay, q, state, store } from './core.js';
 import { updateMeteo } from './home.js';
 import { saverLabel, saverMenu } from './saver.js';
 import { loginGate } from './login.js';
@@ -152,6 +152,25 @@ async function startupMenu() {
     ['Mostra la home', 'home', set('home')]], r && r.startup);
 }
 
+// ---------- AnimeUnity: titoli per adulti nascosti (di serie) o visibili ----------
+async function auAdultVal() {
+  const row = document.querySelector('[data-act="au-adult"]');
+  row.style.display = state.CFG.services.au ? '' : 'none';
+  const r = await api('prefs');
+  $('#auadult-val').textContent = r && r.au_adult ? 'visibili' : 'nascosti';
+  return r;
+}
+async function auAdultMenu() {
+  const r = await auAdultVal();
+  const set = v => async () => {
+    await api('prefs?key=au_adult&value=' + v);
+    store.set('au-adult', v);                        // AnimeUnity ricarica le righe già aperte
+    hideOverlay(); auAdultVal();
+  };
+  choose('Titoli per adulti in AnimeUnity', [['Nascosti', '0', set('0')], ['Visibili', '1', set('1')]],
+    r && r.au_adult ? '1' : '0');
+}
+
 // ---------- schermo spento dopo tanto salvaschermo ----------
 const offLabel = m => (m ? `dopo ${m >= 60 ? m / 60 + (m === 60 ? ' ora' : ' ore') : m + ' minuti'} di salvaschermo` : 'mai');
 async function saverOffVal() {
@@ -193,6 +212,7 @@ export const ACTIONS = {
   startup: startupMenu,
   sleep: sleepMenu,
   'saver-off': saverOffMenu,
+  'au-adult': auAdultMenu,
   info: refreshInfo,
   account,
   wifi: () => state.show('wifi'),
@@ -211,6 +231,7 @@ export async function settingsPage() {
   screenVal();
   $('#saver-val').textContent = saverLabel();
   startupVal();
+  auAdultVal();
   sleepVal();
   saverOffVal();
   // riassunto sotto ogni gruppo

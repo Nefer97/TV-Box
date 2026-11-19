@@ -104,13 +104,16 @@ def make_routes(tv):
                 if sid in tv.services else []}
 
     def prefs(q):
-        """Scelte semplici dalla TV (per ora: cosa fare all'accensione)."""
+        """Scelte semplici dalla TV: cosa fare all'accensione, schermo spento, titoli per adulti."""
         k, v = q.get("key"), q.get("value")
         if k == "startup" and v in ("last", "home"):
             tv.prefs.set("startup", v)
         elif k == "saver_off" and (v or "").isdigit():
             tv.prefs.set("saver_off", int(v))
-        return {"startup": tv.prefs.get("startup"), "saver_off": tv.prefs.get("saver_off")}
+        elif k == "au_adult" and v in ("0", "1"):
+            tv.prefs.set("au_adult", v == "1")
+        return {"startup": tv.prefs.get("startup"), "saver_off": tv.prefs.get("saver_off"),
+                "au_adult": tv.prefs.get("au_adult")}
 
     def sleep(q):
         if "minutes" in q:

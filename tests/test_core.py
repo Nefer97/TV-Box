@@ -561,6 +561,21 @@ class AnimeUnityTest(unittest.TestCase):
         self.assertEqual(s["last"], "e2")
         self.assertEqual(s["seasons"][0]["title"], "Episodi")
 
+    def test_titoli_per_adulti_a_scelta(self):
+        au = self.au
+        saved = au._adult_ids
+        try:
+            au._adult_ids = lambda: frozenset({2})                       # elenco del sito (finto)
+            items = [au.serie("1-a", "A"), au.serie("2-b", "B"), dict(au.serie("3-c", "C"), adult=True)]
+            au.fetch_home = lambda: [{"id": "r", "title": "Riga", "items": items}]
+            p = Prefs(self.d.name)
+            a = au.AU(p)
+            self.assertEqual([x["id"] for x in a.rails("home")["rails"][0]["items"]], ["1-a"])   # di serie nascosti
+            p.set("au_adult", True)
+            self.assertEqual([x["id"] for x in a.rails("home")["rails"][0]["items"]], ["1-a", "2-b", "3-c"])
+        finally:
+            au._adult_ids = saved
+
     def test_player_da_solo_o_pagina_episodio(self):
         au, ep = self.au, "https://anime.example/anime/1-op/2"
         a = au.AU(Prefs(self.d.name))

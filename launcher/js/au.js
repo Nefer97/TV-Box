@@ -3,7 +3,7 @@
 // I dati del catalogo vengono preparati da tvbox/au.py (il connettore).
 // La riproduzione e la pagina dei dettagli restano invariate.
 
-import { $, api, el, overlay, hideOverlay, q, showProgress, state } from './core.js';
+import { $, api, el, overlay, hideOverlay, q, showProgress, state, store } from './core.js';
 import { lockPage, loginGate } from './login.js';
 
 let series = null;
@@ -18,6 +18,7 @@ let searchResults = null;
 let searchBusy = false;
 let searchRequest = 0;
 let catalogLoaded = 0;
+let adultChoice = store.get('au-adult');   // cambiata in Impostazioni: righe da ricaricare
 const CATALOG_TTL = 30 * 60 * 1000;
 
 const catalogPages = [
@@ -232,6 +233,7 @@ async function showCatalogPage(focusTab = false) {
 // ---------- caricamento catalogo ----------
 
 export async function auPage() {
+  if (store.get('au-adult') !== adultChoice) { adultChoice = store.get('au-adult'); catalogRails = {}; }
   const box = $('#au-rails');
 
   const l = await api('au?action=status');          // collegati? (ricontrollato ogni 5 minuti)

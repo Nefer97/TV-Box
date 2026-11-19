@@ -12,6 +12,7 @@ Contenuto:
     ms_history [{"series","title","poster","episode","n","t"}]  Mediaset: Continua a guardare
     sc_history  come ms_history                               StreamingCommunity: Continua a guardare
     au_history  come ms_history                               AnimeUnity: Continua a guardare
+    au_adult   bool                                             AnimeUnity: mostrare i titoli per adulti
     ms_user    "email"                                          account Mediaset collegato (solo da mostrare)
     dplus_user "email"                                          account discovery+ collegato (solo da mostrare)
     progress   {"<url episodio>": [secondi, durata, quando]}    dove si è arrivati negli episodi (ultimi 200)
@@ -45,6 +46,7 @@ DEFAULTS = {
     "progress": {},
     "sc_history": [],
     "au_history": [],
+    "au_adult": False,
     "ms_user": "",
     "dplus_user": "",
     "channels": list(DEFAULT_CHANNELS),
@@ -132,6 +134,7 @@ class Prefs:
                   if isinstance(u, str) and isinstance(v, list) and len(v) == 3
                   and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in v) and v[1] > 0}
             out["progress"] = dict(sorted(ok.items(), key=lambda kv: kv[1][2])[-PROGRESS_MAX:])
+        out["au_adult"] = d.get("au_adult") is True
         if isinstance(d.get("ms_user"), str):
             out["ms_user"] = d["ms_user"][:80]
         if isinstance(d.get("dplus_user"), str):
