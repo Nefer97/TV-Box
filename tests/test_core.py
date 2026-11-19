@@ -603,6 +603,31 @@ class AnimeUnityTest(unittest.TestCase):
         self.assertEqual(cdp.cookies, [])
 
 
+class StreamingCommunityPlayerTest(unittest.TestCase):
+    """sc.py: dal riquadro della pagina dell'episodio al player da aprire da solo."""
+    def test_riquadro_episodio_e_film(self):
+        from tvbox.sc import iframe_url
+        self.assertEqual(iframe_url("https://streamingunity.day/it/watch/3242?e=77527"),
+                         "https://streamingunity.day/it/iframe/3242?episode_id=77527")
+        self.assertEqual(iframe_url("https://streamingunity.day/it/watch/66468"),
+                         "https://streamingunity.day/it/iframe/66468")
+        with self.assertRaises(ValueError):
+            iframe_url("https://streamingunity.day/it/titles/66468")
+
+    def test_ripiego_sulla_pagina(self):
+        import tvbox.sc as sc
+        saved = sc.resolve_episode
+
+        def rotto(u):
+            raise ValueError("sito cambiato")
+        try:
+            sc.resolve_episode = rotto
+            ep = "https://streamingunity.day/it/watch/3242?e=77527"
+            self.assertEqual(sc.SC(None).play_target(ep), (ep, None))
+        finally:
+            sc.resolve_episode = saved
+
+
 class EpisodeKeyTest(unittest.TestCase):
     def test_player_da_solo(self):
         """AnimeUnity: si apre il player con la provenienza, il punto si salva sull'episodio."""

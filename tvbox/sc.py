@@ -415,6 +415,35 @@ def pick_season(series, season=None):
     )
 
 
+def iframe_url(watch_url):
+    """Il riquadro del player di una pagina /it/watch/: /it/iframe/<id>?episode_id=<e> per un
+    episodio, /it/iframe/<id> per un film."""
+    p = urllib.parse.urlparse(watch_url or "")
+    tid = p.path[len(EPISODE_PATH):].strip("/") if p.path.startswith(EPISODE_PATH) else ""
+    if not tid.isdigit():
+        raise ValueError(f"indirizzo dell'episodio non valido: {watch_url}")
+    e = urllib.parse.parse_qs(p.query).get("e", [""])[0]
+    return f"{BASE_URL}/it/iframe/{tid}" + (f"?episode_id={urllib.parse.quote(e)}" if e else "")
+
+
+def resolve_episode(watch_url, timeout=15):
+    """Il player dell'episodio da aprire a schermo intero: (indirizzo, provenienza).
+    La pagina /it/watch/ ha il video dentro un riquadro (/it/iframe/, che contiene il player di
+    vixcloud): tvbox lì non lo vede, quindi niente punto di ripresa né controllo del video.
+    Il player aperto da solo invece è la pagina stessa. Il suo indirizzo ha un codice che scade
+    (si ricava a ogni apertura) e vale solo se il riquadro si chiede dichiarando di arrivare
+    dalla pagina dell'episodio; aprendolo poi si dichiara di arrivare dal riquadro."""
+    frame = iframe_url(watch_url)
+    req = urllib.request.Request(frame, headers={"User-Agent": DESKTOP_UA, "Referer": watch_url,
+                                                 "Accept": "text/html", "Accept-Language": "it-IT,it;q=0.9"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        page = html.unescape(r.read().decode("utf-8", "replace"))
+    m = re.search(r'https://vixcloud\.cc/embed/\d+[^"\'<\s]*', page)
+    if not m:
+        raise ValueError(f"player non trovato in {frame}")
+    return m.group(0), frame
+
+
 def get_json_auth(url, headers=None, timeout=12):
     """GET tradizionale usato per le pagine pubbliche/Inertia."""
     request_headers = {
@@ -902,6 +931,15 @@ class SC:
             }
             for h in (self.prefs.get("sc_history") or [])
         ]
+
+    def play_target(self, url):
+        """Cosa aprire a schermo per l'episodio url: (indirizzo, provenienza). Il player da solo;
+        se non si trova, la pagina dell'episodio come prima."""
+        try:
+            return resolve_episode(url)
+        except Exception as ex:
+            log.warning("%s: player di %s non trovato, apro la pagina: %s", NAME, url, ex)
+            return url, None
 
     def remember(self, q):
         q = _d(q)

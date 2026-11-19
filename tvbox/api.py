@@ -172,8 +172,9 @@ def make_routes(tv):
             tv.sc.remember(q)
             label = " · ".join(x for x in (q.get("title"), q.get("ep")) if x)
             site = tv.services.get("sc", {}).get("label", "StreamingCommunity")
-            tv.post(lambda: tv.open_episode(q["url"], q.get("series", ""), label,
-                                            site=site, back="sc", color="#9d174d"))
+            target, referrer = tv.sc.play_target(q["url"])     # il player da solo, a tutto schermo
+            tv.post(lambda: tv.open_episode(target, q.get("series", ""), label, site=site, back="sc",
+                                            color="#9d174d", referrer=referrer, key=q["url"]))
             return {"ok": True}
         if a == "login":                       # utente e password dalla schermata di tvbox
             return tv.sc.login(q.get("user", ""), q.get("password", ""))
