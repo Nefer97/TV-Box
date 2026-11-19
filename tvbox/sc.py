@@ -211,27 +211,6 @@ def is_session_cookie(name):
     return any(name == c or (c.endswith("_") and name.startswith(c)) for c in SESSION_COOKIES)
 
 
-def is_logged_in(auth):
-    return False
-
-
-def auth_headers(auth):
-    return {}
-
-
-def rail_url(param):
-    # Compatibilità con eventuali chiamanti precedenti.
-    return SLIDERS_URL if param == "sliders" else ""
-
-
-def rail_entries(data):
-    """Compatibilità: estrae i titoli da una risposta slider."""
-    if isinstance(data, list):
-        return data
-    data = _d(data)
-    return _l(data.get("titles"))
-
-
 def genre_url(genre_id, kind=None):
     """URL dell'archivio filtrato per un genere: i 60 titoli più visti (sort=views; di base
     l'archivio è per data di uscita). kind "tv" o "movie": solo serie o solo film. Va chiesto
@@ -258,11 +237,6 @@ def series_url(sid):
 def series_entry(data):
     data = _d(data)
     return data if _first(data, "id", "name") else None
-
-
-def episodes_url(series, season):
-    # scarica già le stagioni e crea episodeList.
-    return ""
 
 
 def episode_entries(data):
@@ -670,9 +644,6 @@ class SC:
         for c in self._chrome_cookies():
             self.cdp.call("Network.deleteCookies", {"name": c["name"], "domain": c["domain"],
                                                     "path": c.get("path", "/")})
-
-    def auth(self, fresh=False):
-        return {"cookies": {}, "token": None}
 
     def after_login(self):
         return self.login_state(fresh=True)
