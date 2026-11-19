@@ -151,6 +151,29 @@ await check('scendendo: riga Cartoni scelta e visibile', `(() => { const r = doc
 await sleep(800);
 await shot('mediaset-cartoni');
 
+// frecce: barra di ricerca larga e gruppi di pulsanti che vanno a capo (AnimeUnity, senza account)
+console.log('frecce');
+await js(`fetch('/api/au?action=play&url=' + encodeURIComponent('https://animeunity.cx/anime/12-one-piece/110339') +
+  '&series=12-one-piece&title=One%20Piece&episode=110339&n=1180&ep=Episodio%201180').then(r => r.json())`);
+await open('au');
+await until(`!!document.querySelector('#au-rails .poster')`, 15000);
+await js(`document.querySelector('.au-search-field').focus()`);
+await press('down');
+await check('ricerca ▼: la prima riga (Continua a guardare)', `/Continua/.test(document.activeElement.closest('.msrail')?.querySelector('.sec-title')?.textContent || '')`, 3000);
+await js(`document.querySelector('.au-search-field').focus()`);
+await press('ok');
+await js(`(() => { for (const c of 'naruto') __osk.key(c);
+  [...document.getElementById('__osk_host').shadowRoot.querySelectorAll('.key')].find(k => k.textContent === 'FATTO').click(); })()`);
+await until(`[...document.querySelectorAll('.au-search .btn')].some(b => b.textContent === 'Cancella')`, 15000);
+await js(`document.querySelector('.au-search-field').focus()`);
+await press('right');
+await check('ricerca ►: il pulsante Cancella', `document.activeElement.textContent === 'Cancella'`, 3000);
+await open('au:12-one-piece');
+await until(`document.querySelectorAll('#aus-seasons .chip').length > 6`, 20000);
+await js(`document.querySelector('#aus-seasons .chip').focus()`);
+await press('right', 'right', 'right', 'right');
+await check('gruppi di episodi: ► in ordine anche a capo (1–100 → 401–500)', `document.activeElement.textContent === '401–500'`, 3000);
+
 console.log('errori JavaScript:', errors.length ? errors : 'nessuno');
 ws.close();
 process.exit(failed || errors.length ? 1 : 0);

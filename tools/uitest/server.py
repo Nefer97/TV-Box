@@ -18,6 +18,7 @@ from tvbox.discovery import Discovery
 from tvbox.mediaset import Mediaset
 from tvbox.sc import SC
 from tvbox.au import AU
+from tvbox.episodes import EpisodesMixin
 from tvbox.prefs import Prefs
 from tvbox.sites import Sites
 
@@ -46,7 +47,7 @@ class CookieCDP:
             return {"cookies": [c for (dom, _), c in self.jar.items() if any(h == dom or h.endswith("." + dom) for h in hosts)]}
         return {}
 
-class FakeTV:
+class FakeTV(EpisodesMixin):
     def __init__(self):
         self.cfg = Config.load([ROOT + "/config.json"]); self.prefs = Prefs(tempfile.mkdtemp())
         self.services = self.cfg.services; self.sites = Sites(self.prefs); self.mediaset = Mediaset(self.prefs, FakeCDP()); self.discovery = Discovery(self.prefs, FakeCDP()); self.sc = SC(self.prefs, CookieCDP()); self.au = AU(self.prefs, CookieCDP())

@@ -105,20 +105,32 @@ export function move(dir) {
       return;
     }
   }
+  // gruppi di pulsanti che vanno a capo (stagioni, gruppi di episodi): ◄ ► in ordine di lettura,
+  // il successivo anche se sta sulla riga sotto; oltre il primo o l'ultimo, la ricerca normale
+  const chips = cur.closest('.mschips');
+  if (chips && (dir === 'left' || dir === 'right')) {
+    const all = [...chips.querySelectorAll('[tabindex]')], j = all.indexOf(cur) + (dir === 'right' ? 1 : -1);
+    if (j >= 0 && j < all.length) { all[j].focus(); return; }
+  }
   const a = cur.getBoundingClientRect(), ax = a.left + a.width / 2, ay = a.top + a.height / 2;
+  // distanza tra due intervalli (0 se si sovrappongono)
+  const gap = (a0, a1, b0, b1) => Math.max(0, b0 - a1, a0 - b1);
   let best = null, bd = Infinity;
   for (const e of items) {
     if (e === cur) continue;
     const b = e.getBoundingClientRect(), dx = b.left + b.width / 2 - ax, dy = b.top + b.height / 2 - ay;
-    // di lato si conta la distanza dal bordo del bersaglio, non dal suo centro: un elemento
-    // largo (es. una barra di ricerca) che sta proprio sopra non perde contro uno piccolo a fianco
-    const offX = Math.max(0, b.left - ax, ax - b.right), offY = Math.max(0, b.top - ay, ay - b.bottom);
-    let main, cross;
-    if (dir === 'left') { if (dx > -5) continue; main = -dx; cross = offY; }
-    if (dir === 'right') { if (dx < 5) continue; main = dx; cross = offY; }
-    if (dir === 'up') { if (dy > -5) continue; main = -dy; cross = offX; }
-    if (dir === 'down') { if (dy < 5) continue; main = dy; cross = offX; }
-    const d = main + cross * 2.2;
+    // Si misura tra i bordi, non tra i centri: da un elemento largo (la barra di ricerca) il
+    // pulsante attaccato a destra ("Cancella") e la prima riga sotto ("Continua a guardare",
+    // anche se ha le locandine solo a sinistra) sono i più vicini. "cross" è quanto il
+    // bersaglio è fuori dalla stessa fila (o colonna): pesa di più, così si resta in fila
+    // (i gruppi di episodi "1–100", "101–200"… vanno in ordine). "tie" sceglie tra pari merito
+    // il più allineato.
+    let main, cross, tie;
+    if (dir === 'left') { if (dx > -5) continue; main = Math.max(0, a.left - b.right); cross = gap(a.top, a.bottom, b.top, b.bottom); tie = Math.abs(dy); }
+    if (dir === 'right') { if (dx < 5) continue; main = Math.max(0, b.left - a.right); cross = gap(a.top, a.bottom, b.top, b.bottom); tie = Math.abs(dy); }
+    if (dir === 'up') { if (dy > -5) continue; main = Math.max(0, a.top - b.bottom); cross = gap(a.left, a.right, b.left, b.right); tie = Math.abs(dx); }
+    if (dir === 'down') { if (dy < 5) continue; main = Math.max(0, b.top - a.bottom); cross = gap(a.left, a.right, b.left, b.right); tie = Math.abs(dx); }
+    const d = main + cross * 3 + tie * 0.05;
     if (d < bd) { bd = d; best = e; }
   }
   if (!best) return;
