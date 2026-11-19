@@ -14,7 +14,7 @@ from urllib.parse import parse_qs, urlparse
 from . import wifi
 from .meteo import Meteo
 from .sites import normalize_url, site_icon
-from .util import LAUNCHER_DIR
+from .util import LAUNCHER_DIR, log
 
 
 class Binary:
@@ -269,10 +269,21 @@ def make_handler(routes):
             self.end_headers()
             self.wfile.write(body)
 
+        def _foreign(self):
+            """Richiesta che non viene dal launcher: da un'altra pagina aperta in Chrome (un sito,
+            una pubblicità) o da un nome che punta a questo indirizzo (DNS rebinding). Chrome
+            recente le blocca già da sé; questa è una seconda difesa."""
+            host = (self.headers.get("Host") or "").rsplit(":", 1)[0]
+            site = self.headers.get("Sec-Fetch-Site")      # mandato da Chrome; tvd e curl non lo mandano
+            return host not in ("127.0.0.1", "localhost") or (site is not None and site not in ("same-origin", "none"))
+
         def do_GET(self):
             u = urlparse(self.path)
             if not u.path.startswith("/api/"):
                 return super().do_GET()
+            if self._foreign():
+                log.warning("API: richiesta rifiutata da %s (%s)", self.headers.get("Origin") or "?", u.path)
+                return self._send(b'{"error": "forbidden"}', "application/json", 403)
             fn = routes.get(u.path[5:])
             if not fn:
                 return self._send(b'{"error": "not found"}', "application/json", 404)

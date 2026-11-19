@@ -86,7 +86,8 @@ class Browser:
             "--disable-features=Translate,TranslateUI,MediaRouter,GlobalMediaControls",
             f"--remote-debugging-port={self.cfg.opt('chrome.cdp_port', 9222)}",
             "--remote-debugging-address=127.0.0.1",
-            "--remote-allow-origins=*",
+            # DevTools solo per tvd (si collega senza Origin): nessuna pagina web può usarlo
+            f"--remote-allow-origins=http://127.0.0.1:{self.cfg.opt('chrome.cdp_port', 9222)}",
         ]
         if self.cfg.opt("chrome.disable_gpu", False):
             args.append("--disable-gpu")
