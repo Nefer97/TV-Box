@@ -11,6 +11,7 @@ Contenuto:
     saver_off  minuti                                           schermo spento dopo tanto salvaschermo (0 = mai)
     ms_history [{"series","title","poster","episode","n","t"}]  Mediaset: Continua a guardare
     mio_history  come ms_history                               Il mio catalogo: Continua a guardare
+    ms_user    "email"                                          account Mediaset collegato (solo da mostrare)
     progress   {"<url episodio>": [secondi, durata, quando]}    dove si è arrivati negli episodi (ultimi 200)
     channels   ["rai1", ...]                                    canali in diretta scelti, in ordine
 
@@ -40,6 +41,7 @@ DEFAULTS = {
     "ms_history": [],
     "progress": {},
     "mio_history": [],
+    "ms_user": "",
     "channels": list(DEFAULT_CHANNELS),
 }
 
@@ -119,6 +121,8 @@ class Prefs:
                   if isinstance(u, str) and isinstance(v, list) and len(v) == 3
                   and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in v) and v[1] > 0}
             out["progress"] = dict(sorted(ok.items(), key=lambda kv: kv[1][2])[-PROGRESS_MAX:])
+        if isinstance(d.get("ms_user"), str):
+            out["ms_user"] = d["ms_user"][:80]
         for key in ("ms_history", "mio_history"):
             h = d.get(key)
             if isinstance(h, list):

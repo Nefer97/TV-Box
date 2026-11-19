@@ -72,7 +72,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         self.browser = Browser(cfg, self.launcher_url, self.display.scale_factor)
         self.epg = EPG(self.services, enabled=self.channel_list)
         self.sites = Sites(prefs)
-        self.mediaset = Mediaset(prefs)
+        self.mediaset = Mediaset(prefs, self.cdp)
         self.mio = Mio(prefs, self.cdp)
         self.input = vinput
         self.remote = None                 # RemoteLogic (per /api/info)
@@ -291,12 +291,14 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin):
         sess.resume_at = resume_point((self.prefs.get("progress") or {}).get(sess.url))
         self.start(sess)
 
-    def open_login(self):
-        """Pagina di accesso del sito di Il mio catalogo (LOGIN_URL in tvbox/mio.py)."""
+    def open_login(self, sid="mio"):
+        """Il sito vero a schermo per l'accesso, quando quello fatto da tvd non basta (es.
+        Mediaset chiede il captcha): MENU torna alla sezione."""
+        from .mediaset import SITE
         from .mio import LOGIN_URL
-        if LOGIN_URL:
-            label = "Accesso a " + self.services.get("mio", {}).get("label", "Il mio catalogo")
-            self.start(Session.login_page(LOGIN_URL, label, back="mio"))
+        url = SITE if sid == "mediaset" else LOGIN_URL
+        label = "Accesso a " + self.services.get(sid, {}).get("label", sid)
+        self.start(Session.login_page(url, label, back=sid))
 
     def start(self, sess, panel=None):
         """Mette a schermo una visione. Le regole (sipario, banner, avvio, ultimo canale) sono

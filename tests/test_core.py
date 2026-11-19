@@ -431,6 +431,48 @@ class MediasetTest(unittest.TestCase):
         self.assertFalse(is_episode_url("https://mediasetinfinity.mediaset.it/diretta/canale5"))
 
 
+class LoginTest(unittest.TestCase):
+    """Accesso fatto da tvd: Mediaset (Gigya) e Il mio catalogo (modulo del sito)."""
+    class FakeCDP:
+        def __init__(self, names):
+            self.cookies = [{"name": n, "value": "x", "domain": ".mediaset.it", "path": "/"} for n in names]
+
+        def call(self, method, params=None, timeout=6):
+            return {"cookies": self.cookies}
+
+    def test_mediaset_collegato_solo_con_cookie_di_sessione(self):
+        from tvbox.mediaset import Mediaset
+        with tempfile.TemporaryDirectory() as d:
+            p = Prefs(d)
+            p.set("ms_user", "io@example.com")
+            self.assertFalse(Mediaset(p, self.FakeCDP(["gmid", "ucid"])).login_state()["logged"])
+            st = Mediaset(p, self.FakeCDP(["gmid", "glt_3_abc"])).login_state()
+            self.assertTrue(st["logged"])
+            self.assertEqual(st["user"], "io@example.com")
+            self.assertEqual(Prefs(d).get("ms_user"), "io@example.com")     # resta nel file
+
+    def test_mediaset_messaggi(self):
+        from tvbox.mediaset import gigya_login_js, login_message
+        self.assertEqual(login_message(403042), "Email o password non corretti")
+        js = gigya_login_js('a"b@x.it', "p'w\\")
+        self.assertIn('"loginID": "a\\"b@x.it"', js)                      # niente stringhe montate a mano
+        self.assertIn("gigya.accounts.login", js)
+
+    def test_mediaset_campi_vuoti(self):
+        from tvbox.mediaset import Mediaset
+        self.assertFalse(Mediaset(None, self.FakeCDP([])).login(" ", "")["ok"])
+
+    def test_mio_pagina_del_sito(self):
+        from tvbox.mio import is_session_cookie, login_error, page_props, page_user
+        props = page_props('<div data-page="{&quot;props&quot;:{&quot;errors&quot;:{&quot;username&quot;:'
+                           '&quot;Credenziali non valide.&quot;},&quot;auth&quot;:{&quot;user&quot;:null}}}">')
+        self.assertIsNone(page_user(props))
+        self.assertEqual(login_error(props), "Credenziali non valide.")
+        self.assertEqual(page_user(page_props('{"props": {"auth": {"user": {"username": "io"}}}}')), {"username": "io"})
+        self.assertTrue(is_session_cookie("remember_web_59ba36"))
+        self.assertFalse(is_session_cookie("XSRF-TOKEN"))
+
+
 class HealthTest(unittest.TestCase):
     def test_partenza_e_avanzamento(self):
         w = Watch("canale5", 0)

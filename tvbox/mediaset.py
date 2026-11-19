@@ -8,11 +8,13 @@ Il video si guarda sulla pagina dell'episodio del sito (con il suo player e la l
 aperta da tvd a tutto schermo. La TV ricorda gli ultimi episodi aperti ("Continua a guardare").
 Le funzioni parse_* lavorano sui dati già scaricati: si provano con i test.
 """
+import json
 import threading
 import time
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 
+from .cdp import HiddenTab
 from .util import get_json, log
 
 FEED = "https://feed.entertainment.tv.theplatform.eu/f/PR1GhC/"
@@ -29,6 +31,20 @@ PLAYABLE_TTL = 6 * 3600       # "questo titolo ha qualcosa di gratuito da vedere
 CHECK_FIELDS = ("guid,tvSeasonEpisodeNumber,mediasetprogram$duration,mediasetprogram$videoPageUrl,"
                 "mediasetprogram$channelsRights")
 HISTORY_MAX = 12
+
+# ---------- accesso (login) ----------
+# Il sito usa Gigya (SAP, servito da login.mediaset.it). L'accesso lo fa tvd: apre la pagina di
+# Mediaset in una scheda nascosta del Chrome della TV (cdp.HiddenTab) e chiama la funzione di
+# accesso della libreria del sito (gigya.accounts.login) con email e password scritte nella
+# schermata di tvbox. Cookie e sessione li imposta la libreria, come accedendo a mano; la
+# password non si salva. Se Gigya chiede il captcha, l'accesso si fa una volta sul sito.
+SITE = "https://mediasetinfinity.mediaset.it/"
+GIGYA_WAIT = 40               # secondi per avere la libreria pronta (la pagina è pesante)
+GIGYA_READY = "!!(window.gigya && gigya.accounts && gigya.accounts.login)"
+LOGIN_ERRORS = {403042: "Email o password non corretti", 403043: "Email o password non corretti",
+                403120: "Account bloccato per troppi tentativi: riprova tra qualche minuto",
+                403041: "Account disattivato", 401030: "Email o password non corretti"}
+NEEDS_SITE = {401020, 401021, 206001, 206002, 206006}   # captcha, dati da completare: sul sito
 
 
 def _img(thumbs, *keys):
@@ -100,9 +116,22 @@ def pick_season(s, season=None):
         or next((x for x in s["seasons"] if x["guid"] == s["current"]), None) or s["seasons"][-1]
 
 
+def gigya_login_js(email, password):
+    """Espressione JS: accesso con Gigya; restituisce {errorCode, errorMessage, email}."""
+    args = json.dumps({"loginID": email, "password": password, "sessionExpiration": -2})
+    return ("new Promise(r => gigya.accounts.login(Object.assign(" + args + ", {callback: x => r({"
+            "errorCode: x.errorCode, errorMessage: x.errorMessage || '', "
+            "email: (x.profile && x.profile.email) || ''})})))")
+
+
+def login_message(code, msg=""):
+    return LOGIN_ERRORS.get(code) or (f"Accesso non riuscito ({msg or code})")
+
+
 class Mediaset:
-    def __init__(self, prefs):
+    def __init__(self, prefs, cdp=None):
         self.prefs = prefs
+        self.cdp = cdp                      # Chrome della TV: cookie e scheda nascosta per l'accesso
         self.lock = threading.Lock()
         self.cache = {}                     # chiave -> (istante, dati)
         self.playable_cache = {}            # stagione -> (istante, True/False)
@@ -220,3 +249,81 @@ class Mediaset:
         if not h["series"]:
             return
         self.prefs.update("ms_history", lambda l: ([h] + [x for x in l if x["series"] != h["series"]])[:HISTORY_MAX])
+
+    # ---------- accesso: GET /api/mediaset?action=status|login|logout ----------
+    def _cookies(self):
+        if not self.cdp:
+            return []
+        try:
+            return self.cdp.call("Network.getCookies", {"urls": [SITE]}).get("cookies", [])
+        except Exception as ex:
+            log.warning("Mediaset: cookie di Chrome non leggibili: %s", ex)
+            return []
+
+    def login_state(self):
+        """{"required", "logged", "user"}: collegati se Chrome ha il cookie di sessione di Gigya
+        (glt_<chiave>), che c'è solo dopo l'accesso e sparisce uscendo."""
+        logged = any(c.get("name", "").startswith("glt_") for c in self._cookies())
+        return {"available": True, "required": True, "logged": logged,
+                "user": (self.prefs.get("ms_user") or "") if logged else ""}
+
+    def _tab(self):
+        tab = HiddenTab(self.cdp, SITE)
+        t0 = time.monotonic()
+        while time.monotonic() - t0 < GIGYA_WAIT:
+            try:
+                if tab.eval(GIGYA_READY, timeout=5):
+                    return tab
+            except Exception:
+                pass                                   # pagina ancora in caricamento
+            time.sleep(0.5)
+        tab.close()
+        raise TimeoutError("libreria di accesso di Mediaset non pronta")
+
+    def login(self, email, password):
+        email, password = (email or "").strip(), password or ""
+        if not email or not password:
+            return {"ok": False, "error": "Scrivi email e password"}
+        if not self.cdp:
+            return {"ok": False, "error": "Chrome non raggiungibile"}
+        try:
+            with self._tab() as tab:
+                r = tab.eval(gigya_login_js(email, password), timeout=30) or {}
+                code = r.get("errorCode")
+                if code == 0:
+                    time.sleep(1.5)                    # i cookie della sessione arrivano subito dopo
+        except Exception as ex:
+            log.warning("Mediaset: accesso non riuscito: %s", ex)
+            return {"ok": False, "error": "Mediaset non risponde, riprova tra poco"}
+        if code != 0:
+            log.info("Mediaset: accesso rifiutato (%s %s)", code, r.get("errorMessage"))
+            if code in NEEDS_SITE:
+                return {"ok": False, "site": True,
+                        "error": "Mediaset chiede di completare l'accesso sul sito (es. il controllo «non sono un robot»)"}
+            return {"ok": False, "error": login_message(code, r.get("errorMessage"))}
+        self.prefs.set("ms_user", r.get("email") or email)
+        st = self.login_state()
+        log.info("Mediaset: accesso riuscito; cookie: %s", ", ".join(c["name"] for c in self._cookies()))
+        if not st["logged"]:
+            # Gigya ha detto sì ma il cookie atteso non c'è: lo si segnala invece di fingere
+            return {"ok": False, "error": "Accesso riuscito, ma la sessione non risulta salvata in Chrome"}
+        return dict(st, ok=True)
+
+    def logout(self):
+        """Esce dall'account: con la libreria del sito (chiude anche la sessione condivisa
+        di login.mediaset.it), poi via i cookie glt_ rimasti."""
+        if self.cdp:
+            try:
+                with self._tab() as tab:
+                    tab.eval("new Promise(r => gigya.accounts.logout({callback: r})).then(() => true)", timeout=20)
+            except Exception as ex:
+                log.warning("Mediaset: uscita con la libreria non riuscita: %s", ex)
+            for c in self._cookies():
+                if c["name"].startswith("glt_"):
+                    try:
+                        self.cdp.call("Network.deleteCookies", {"name": c["name"], "domain": c["domain"],
+                                                                "path": c.get("path", "/")})
+                    except Exception as ex:
+                        log.warning("Mediaset: cookie %s: %s", c["name"], ex)
+        self.prefs.set("ms_user", "")
+        return self.login_state()

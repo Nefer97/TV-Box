@@ -24,6 +24,7 @@ class CDP:
         self.pending = {}
         self.next_id = 1
         self.crashed = threading.Event()
+        self.hidden = set()             # schede nascoste di tvd (HiddenTab): né popup né pagina principale
 
     def _http(self, path, timeout=3):
         with urllib.request.urlopen(f"http://127.0.0.1:{self.port}{path}", timeout=timeout) as r:
@@ -31,7 +32,8 @@ class CDP:
 
     def targets(self):
         return [t for t in json.loads(self._http("/json/list"))
-                if t.get("type") == "page" and not t.get("url", "").startswith("devtools://")]
+                if t.get("type") == "page" and not t.get("url", "").startswith("devtools://")
+                and t.get("id") not in self.hidden]
 
     def close_other_pages(self):
         """Chiude le schede in più (popup aperti dai siti)."""
@@ -141,3 +143,89 @@ class CDP:
         obj = fn.rsplit(".", 1)[0]
         call = f"{fn}({', '.join(json.dumps(a) for a in args)})"
         return self.eval(f"(window.{obj} ? {call} : null)", timeout=timeout, gesture=gesture)
+
+
+# i video di una scheda nascosta non partono (Chrome qui ha l'autoplay libero)
+MUTE_JS = "HTMLMediaElement.prototype.play = function () { this.muted = true; return Promise.resolve(); };"
+
+
+class HiddenTab:
+    """Scheda di Chrome in sottofondo per un lavoro breve di tvd (es. l'accesso a un sito):
+    non si vede, ha la sua connessione DevTools, non riceve gli script di tvbox e la
+    sorveglianza non la chiude come popup. Condivide cookie e dati dei siti con la TV.
+        with HiddenTab(cdp, url) as tab:
+            tab.eval("...")"""
+
+    def __init__(self, cdp, url, timeout=10):
+        self.cdp, self.ws, self.next_id, self.id = cdp, None, 0, None
+        info = json.loads(cdp._http("/json/version"))
+        bws = websocket.create_connection(info["webSocketDebuggerUrl"], timeout=timeout, suppress_origin=True)
+        try:
+            bws.send(json.dumps({"id": 1, "method": "Target.createTarget",
+                                 "params": {"url": "about:blank", "background": True}}))
+            while True:
+                m = json.loads(bws.recv())
+                if m.get("id") == 1:
+                    if "error" in m:
+                        raise RuntimeError(f"Target.createTarget: {m['error']}")
+                    self.id = m["result"]["targetId"]
+                    break
+        finally:
+            bws.close()
+        cdp.hidden.add(self.id)
+        try:
+            self.ws = websocket.create_connection(f"ws://127.0.0.1:{cdp.port}/devtools/page/{self.id}",
+                                                  timeout=timeout, suppress_origin=True)
+            self.call("Page.enable")
+            self.call("Page.addScriptToEvaluateOnNewDocument", {"source": MUTE_JS})
+            self.call("Page.navigate", {"url": url})
+        except Exception:
+            self.close()
+            raise
+
+    def call(self, method, params=None, timeout=10):
+        self.next_id += 1
+        mid = self.next_id
+        self.ws.settimeout(timeout)
+        self.ws.send(json.dumps({"id": mid, "method": method, "params": params or {}}))
+        while True:                                   # gli eventi della pagina si scartano
+            m = json.loads(self.ws.recv())
+            if m.get("id") == mid:
+                if "error" in m:
+                    raise RuntimeError(f"{method}: {m['error']}")
+                return m.get("result", {})
+
+    def eval(self, expr, timeout=10):
+        r = self.call("Runtime.evaluate", {"expression": expr, "returnByValue": True,
+                                           "awaitPromise": True}, timeout=timeout)
+        if r.get("exceptionDetails"):
+            raise RuntimeError(r["exceptionDetails"].get("text", "errore JavaScript"))
+        return r.get("result", {}).get("value")
+
+    def close(self):
+        closed = False
+        if self.ws:
+            try:
+                self.call("Page.close", timeout=3)     # la scheda si chiude da sé
+                closed = True
+            except Exception as ex:
+                log.debug("HiddenTab Page.close: %s", ex)
+            try:
+                self.ws.close()
+            except Exception:
+                pass
+            self.ws = None
+        if self.id:
+            if not closed:
+                try:
+                    self.cdp._http(f"/json/close/{self.id}")
+                except Exception as ex:
+                    log.warning("scheda nascosta non chiusa: %s", ex)
+            self.cdp.hidden.discard(self.id)
+            self.id = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()

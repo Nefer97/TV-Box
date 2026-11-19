@@ -1,7 +1,8 @@
-// login.js — schermata di accesso di un servizio (Il mio catalogo; poi Mediaset).
+// login.js — schermata di accesso di un servizio (Il mio catalogo, Mediaset).
 // Utente e password si scrivono con la tastiera a schermo; l'accesso lo fa tvd (nessuna pagina
 // del sito a schermo) e la password non si salva. Uso:
 //   loginGate(box, { id: 'mio', endpoint: 'mio', userLabel: 'Utente', onDone: () => ... })
+// Se il sito chiede altro (captcha), tvd risponde {site: true}: si offre l'accesso sul sito vero.
 import { $, api, el, hideOverlay, overlay, q, shade, state } from './core.js';
 
 const dots = s => '•'.repeat(Math.min(s.length, 16));
@@ -78,13 +79,19 @@ export function loginGate(box, o) {
     if (!user) { err.textContent = `Scrivi ${(o.userLabel || 'utente').toLowerCase()} e password`; return here(fu); }
     if (!pw) { err.textContent = 'Scrivi la password'; return here(fp); }
     state.busy = true;
-    overlay('Accesso in corso…');
+    overlay(`Accesso a ${name} in corso…`);
     const r = await api(`${o.endpoint}?action=login&user=${q(user)}&password=${q(pw)}`);
     state.busy = false;
     pw = '';
     fp._set('');
     hideOverlay();
     if (r && r.ok) return o.onDone(r);
+    if (r && r.site) {                              // es. captcha: l'accesso si completa sul sito, una volta
+      overlay(`${r.error}.\nApro ${name}: accedi lì (tieni premuto OK per il puntatore), poi MENU per tornare.`, [
+        ['Apri il sito', () => { overlay(`Apro ${name}…`); api(`${o.endpoint}?action=site`); }],
+        ['Annulla', hideOverlay]]);
+      return;
+    }
     err.textContent = (r && r.error) || 'Accesso non riuscito';
     here(fp);
   };

@@ -118,9 +118,20 @@ def make_routes(tv):
         return {"minutes": tv.sleep_left()}
 
     def mediaset(q):
-        """Sezione Mediaset: righe di serie, una serie con i suoi episodi, apertura di un episodio."""
+        """Sezione Mediaset: righe di serie, una serie con i suoi episodi, apertura di un episodio,
+        accesso (login con email e password; logout; status; site = accesso sul sito, se Mediaset
+        chiede il captcha)."""
         from .mediaset import is_episode_url
         a = q.get("action", "rails")
+        if a == "status":
+            return tv.mediaset.login_state()
+        if a == "login":
+            return tv.mediaset.login(q.get("user", ""), q.get("password", ""))
+        if a == "logout":
+            return dict(tv.mediaset.logout(), ok=True)
+        if a == "site":
+            tv.post(tv.open_login, "mediaset")
+            return {"ok": True}
         if a == "series":
             return tv.mediaset.series(q.get("id", ""), q.get("season"))
         if a == "play":

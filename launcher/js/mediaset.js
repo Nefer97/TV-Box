@@ -2,6 +2,7 @@
 // I dati arrivano da tvd (/api/mediaset, catalogo pubblico Mediaset); OK su un episodio lo apre
 // a tutto schermo sul sito Mediaset, MENU dal video riporta qui (#ms:<serie>).
 import { $, api, el, overlay, hideOverlay, q, showProgress, state } from './core.js';
+import { lockPage, loginGate } from './login.js';
 
 let series = null;                 // la serie aperta (risposta di /api/mediaset?action=series)
 
@@ -20,8 +21,26 @@ function poster(x) {
   return c;
 }
 
+// ---------- accesso (login) ----------
+// Senza accesso la sezione mostra solo la schermata di accesso (login.js); l'accesso lo fa tvd
+// con la libreria del sito Mediaset. "Esci" sta in Impostazioni → Rete e assistenza.
+async function locked() {
+  const l = await api('mediaset?action=status');
+  return l && l.required && !l.logged ? l : null;
+}
+function showLogin(l) {
+  lockPage('mediaset', true);
+  loginGate($('#ms-login'), {
+    id: 'mediaset', endpoint: 'mediaset', userLabel: 'Email', user: l && l.user,
+    onDone: () => { lockPage('mediaset', false); $('#ms-rails').innerHTML = ''; msPage(); },
+  });
+}
+
 export async function msPage() {
   const box = $('#ms-rails');
+  const l = await locked();
+  if (l) return showLogin(l);
+  lockPage('mediaset', false);
   if (!box.children.length) box.appendChild(el('div', 'gwait', 'Carico il catalogo Mediaset…'));
   const r = await api('mediaset');
   box.innerHTML = '';
@@ -92,6 +111,7 @@ async function openSeries(id, episode) {
 }
 
 export async function seriesPage() {
+  if (await locked()) return state.show('mediaset');   // senza accesso: la schermata di accesso
   const id = state.msSeries;
   const list = $('#mss-eps');
   list.innerHTML = '';

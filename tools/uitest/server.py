@@ -19,10 +19,18 @@ from tvbox.mio import Mio
 from tvbox.prefs import Prefs
 from tvbox.sites import Sites
 
+class FakeCDP:
+    """Chrome finto: solo i cookie. Mediaset risulta collegato (cookie di Gigya), salvo
+    UITEST_LOGGED_OUT=1 per vedere la schermata di accesso."""
+    def call(self, method, params=None, timeout=6):
+        if method == "Network.getCookies" and not os.environ.get("UITEST_LOGGED_OUT"):
+            return {"cookies": [{"name": "glt_prova", "value": "x", "domain": ".mediaset.it", "path": "/"}]}
+        return {"cookies": []}
+
 class FakeTV:
     def __init__(self):
         self.cfg = Config.load([ROOT + "/config.json"]); self.prefs = Prefs(tempfile.mkdtemp())
-        self.services = self.cfg.services; self.sites = Sites(self.prefs); self.mediaset = Mediaset(self.prefs); self.mio = Mio(self.prefs)
+        self.services = self.cfg.services; self.sites = Sites(self.prefs); self.mediaset = Mediaset(self.prefs, FakeCDP()); self.mio = Mio(self.prefs)
         self.epg = EPG(self.services, enabled=self.channel_list); self.remote = None
     def channel_list(self): return self.cfg.live_channels(self.prefs.get("channels"))
     def post(self, *a): pass

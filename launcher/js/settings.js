@@ -19,28 +19,34 @@ function refreshInfo() {
   });
 }
 
-// ---------- account del connettore (Il mio catalogo): si vede chi è collegato, OK per uscire ----------
-async function mioAccountVal() {
-  const row = document.querySelector('[data-act="mio-account"]'), s = state.CFG.services.mio;
+// ---------- account (Mediaset, Il mio catalogo): chi è collegato; OK per uscire ----------
+// una riga per servizio (data-svc = id del servizio = indirizzo /api/<id>); l'accesso si fa
+// aprendo la sezione, che senza account mostra la schermata di accesso (login.js)
+async function accountVal(row) {
+  const id = row.dataset.svc, s = state.CFG.services[id];
   row.style.display = s ? '' : 'none';
-  if (!s) return;
-  $('#mio-account-name').textContent = s.label;
-  const l = await api('mio?action=status');
-  $('#mio-account-val').textContent = !l ? '…' : l.logged ? (l.user || 'collegato') : 'non collegato';
+  if (!s) return null;
+  row.querySelector('.aname').textContent = s.label;
+  const l = await api(id + '?action=status');
+  row.querySelector('.val').textContent = !l ? '…' : l.logged ? (l.user || 'collegato') : 'non collegato';
   return l;
 }
-async function mioAccount() {
-  const l = await mioAccountVal();
-  if (!l || !l.logged) {                              // si accede dalla sezione stessa
-    overlay(`Non sei collegato a ${state.CFG.services.mio.label}.\nL'accesso si fa aprendo la sezione.`, [['OK', hideOverlay]]);
+const accountRows = () => document.querySelectorAll('[data-act="account"]');
+async function account() {
+  const row = document.activeElement.closest('[data-act="account"]');
+  if (!row) return;
+  const id = row.dataset.svc, name = state.CFG.services[id].label;
+  const l = await accountVal(row);
+  if (!l || !l.logged) {
+    overlay(`Non sei collegato a ${name}.\nL'accesso si fa aprendo la sezione.`, [['OK', hideOverlay]]);
     return;
   }
-  overlay(`Uscire dall'account${l.user ? ' «' + l.user + '»' : ''}?`, [
+  overlay(`Uscire dall'account ${name}${l.user ? ' «' + l.user + '»' : ''}?`, [
     ['Esci', async () => {
       overlay('Esco…');
-      await api('mio?action=logout');
+      await api(id + '?action=logout');
       hideOverlay();
-      mioAccountVal();
+      accountVal(row);
     }],
     ['Annulla', hideOverlay]], 1);
 }
@@ -169,7 +175,7 @@ export const ACTIONS = {
   sleep: sleepMenu,
   'saver-off': saverOffMenu,
   info: refreshInfo,
-  'mio-account': mioAccount,
+  account,
   wifi: () => state.show('wifi'),
   'home-edit': () => state.show('homeedit'),
   channels: () => state.show('channels'),
@@ -181,7 +187,7 @@ export const ACTIONS = {
 export async function settingsPage() {
   api('volume').then(setVol);
   refreshInfo();
-  mioAccountVal();
+  accountRows().forEach(accountVal);
   updateMeteo();
   screenVal();
   $('#saver-val').textContent = saverLabel();
