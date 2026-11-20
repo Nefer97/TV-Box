@@ -72,7 +72,7 @@ await shot('home');
 console.log('guida TV');
 await open('guide');
 await check('canali a sinistra', `document.querySelectorAll('#guide-chans .gch').length >= 3`);
-await check('programmi a destra', `document.querySelectorAll('#guide-progs .gprog').length >= 2`);
+await check('programmi a destra', `document.querySelectorAll('#guide-progs .gprog').length >= 2`, 20000);   // palinsesti scaricati a freddo
 await shot('guida');
 
 console.log('impostazioni');
