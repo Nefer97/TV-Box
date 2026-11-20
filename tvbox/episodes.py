@@ -7,9 +7,11 @@ La classe TV lo eredita da EpisodesMixin.
                          successivo; q = i dati dell'episodio (url, series, season, episode,
                          title, ep, n, poster…), gli stessi che il catalogo salva in
                          "Continua a guardare".
-  _episode_tick(…)       chiamata dalla sorveglianza ogni 2 s: negli ultimi NEXT_LEAD secondi
-                         mostra il riquadro "Episodio successivo"; finito l'episodio, il
-                         successivo parte da solo dopo NEXT_WAIT secondi (MENU per non farlo).
+  _episode_tick(…)       chiamata dalla sorveglianza ogni 2 s: a NEXT_LOOKUP secondi dalla fine
+                         cerca il successivo (in silenzio); a NEXT_SHOW secondi dalla fine mostra
+                         il riquadro "Episodio successivo" con il conto alla rovescia, che finisce
+                         con l'episodio: allora il successivo parte da solo (MENU per non farlo).
+                         In pausa o tornando indietro il riquadro sparisce e il conto si ferma.
   play_next()            OK sul riquadro: il successivo subito.
   seekbar(…)             la barra di avanzamento (pausa, salti, inizio dell'episodio).
 
@@ -20,8 +22,8 @@ import time
 
 from .util import log
 
-NEXT_LEAD = 40          # secondi dalla fine in cui compare "Episodio successivo"
-NEXT_WAIT = 10          # finito l'episodio, il successivo parte dopo questi secondi
+NEXT_LOOKUP = 60        # secondi dalla fine in cui si cerca il successivo (senza mostrarlo)
+NEXT_SHOW = 10          # secondi dalla fine in cui compare il riquadro, con il conto alla rovescia
 SEEKBAR_START = 5       # all'inizio dell'episodio la barra resta a schermo questi secondi
 
 # catalogo -> (attributo della TV, nome del sito per il sipario, sezione per MENU, colore)
@@ -111,11 +113,12 @@ class EpisodesMixin:
         except Exception as ex:
             log.warning("episodio successivo: %s", ex)
             sess.next_info = False
-        if sess.next_info and self.session is sess:
-            self._show_next(sess)
 
     def _show_next(self, sess, wait=None):
         n = sess.next_info
+        if n is None:                                            # via il riquadro
+            self.layer("next", None, timeout=3)
+            return
         self.layer("next", {"title": " · ".join(x for x in (n.get("title"), n.get("ep")) if x),
                             "image": n.get("image") or "", "wait": wait}, timeout=3)
 
@@ -126,17 +129,22 @@ class EpisodesMixin:
         if not sess.info or not isinstance(t, (int, float)) or not isinstance(d, (int, float)) or d <= 0:
             return
         left = d - t
-        if sess.next_info is None and left <= NEXT_LEAD and t > 5:
+        if sess.next_info is None and left <= NEXT_LOOKUP and t > 5:
             sess.next_info = "…"                                 # una ricerca sola
             threading.Thread(target=self._lookup_next, args=(sess,), daemon=True).start()
             return
-        if not isinstance(sess.next_info, dict):
+        if not isinstance(sess.next_info, dict) or sess.next_at == float("inf"):
             return
-        ended = st.get("ended") or left <= 1
-        if ended and sess.next_at is None:
-            sess.next_at = now + NEXT_WAIT
-            self._show_next(sess, wait=NEXT_WAIT)
-        elif sess.next_at is not None and now >= sess.next_at:
+        ended = bool(st.get("ended")) or left <= 0.5
+        counting = sess.next_at is not None
+        if counting and not ended and (st.get("paused") or left > NEXT_SHOW + 3):
+            sess.next_at = None                                  # pausa o indietro: conto fermo
+            self.layer("next", None, timeout=3)
+        elif not counting and (ended or (left <= NEXT_SHOW and not st.get("paused"))):
+            wait = max(1, round(left)) if not ended else 1
+            sess.next_at = now + wait                            # il conto finisce con l'episodio
+            self._show_next(sess, wait=wait)
+        elif counting and now >= sess.next_at:
             sess.next_at = float("inf")                          # una partenza sola
             self.post(self._autoplay_next, sess)
 

@@ -717,7 +717,7 @@ class EpisodesTest(unittest.TestCase):
         self.assertIsNone(t.find_next(dict(info, season="2")))              # ultimo dell'ultima stagione
 
     def test_riquadro_e_partenza(self):
-        from tvbox.episodes import NEXT_LEAD, NEXT_WAIT
+        from tvbox.episodes import NEXT_LOOKUP, NEXT_SHOW
         t = self.fake_tv({"1": [self.ep(1), self.ep(2)]})
         shown, posted = [], []
         t.layer = lambda m, *a, **k: shown.append((m, a))
@@ -732,14 +732,20 @@ class EpisodesTest(unittest.TestCase):
         saved = E.threading.Thread
         E.threading.Thread = lambda target, args, daemon: type("X", (), {"start": lambda self: target(*args)})()
         try:
-            t._episode_tick(sess, {"t": 1000 - NEXT_LEAD + 1, "d": 1000}, 1)
+            t._episode_tick(sess, {"t": 1000 - NEXT_LOOKUP + 1, "d": 1000}, 1)
         finally:
             E.threading.Thread = saved
-        self.assertEqual(sess.next_info["episode"], "e2")
-        t._episode_tick(sess, {"t": 1000, "d": 1000, "ended": True}, 2)    # finito: conto alla rovescia
-        self.assertEqual(shown[-1][1][0]["wait"], NEXT_WAIT)
-        t._episode_tick(sess, {"t": 1000, "d": 1000, "ended": True}, 2 + NEXT_WAIT)
-        t._episode_tick(sess, {"t": 1000, "d": 1000, "ended": True}, 4 + NEXT_WAIT)
+        self.assertEqual(sess.next_info["episode"], "e2")                   # cercato, ma non ancora mostrato
+        self.assertEqual(shown, [])
+        t._episode_tick(sess, {"t": 1000 - NEXT_SHOW, "d": 1000}, 10)        # a 10 s: riquadro con il conto
+        self.assertEqual(shown[-1][1][0]["wait"], NEXT_SHOW)
+        t._episode_tick(sess, {"t": 1000 - NEXT_SHOW + 2, "d": 1000, "paused": True}, 12)   # pausa: via
+        self.assertEqual(shown[-1], ("next", (None,)))
+        self.assertIsNone(sess.next_at)
+        t._episode_tick(sess, {"t": 1000 - 6, "d": 1000}, 20)               # riparte: conto dai 6 s che mancano
+        self.assertEqual(shown[-1][1][0]["wait"], 6)
+        t._episode_tick(sess, {"t": 1000, "d": 1000, "ended": True}, 26)    # finito il conto: parte
+        t._episode_tick(sess, {"t": 1000, "d": 1000, "ended": True}, 28)
         self.assertEqual(len(posted), 1)                                    # parte una volta sola
 
 

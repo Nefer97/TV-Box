@@ -64,9 +64,10 @@ requisito si aggiorna prima questo file, poi il codice. Come è costruita: [ARCH
   Home e meteo. Nessun account.
 - R21. Mentre si guarda un episodio (Mediaset, StreamingCommunity, AnimeUnity): **barra di
   avanzamento** (titolo, tempo, quanto manca) all'inizio, in pausa (resta finché si è in pausa)
-  e a ogni salto; negli ultimi 40 s il riquadro **"Episodio successivo"** (OK lo apre); finito
-  l'episodio il successivo **parte da solo** dopo 10 s (MENU per non farlo). Dopo l'ultimo
-  della stagione, il primo della stagione dopo.
+  e a ogni salto; a 10 s dalla fine il riquadro **"Episodio successivo"** con il conto alla
+  rovescia (OK lo apre subito, MENU torna alla serie): a fine episodio il successivo **parte da
+  solo**. In pausa o tornando indietro il conto si ferma. Dopo l'ultimo della stagione, il primo
+  della stagione dopo.
 - R22. **Blocco della pubblicità** in tutte le pagine (uBlock Origin Lite in Chrome, più le
   liste di tvd): niente finestre o riquadri pubblicitari; un sito che non funziona con il blocco
   si esclude.

@@ -204,7 +204,6 @@ check("episodio: di nuovo il launcher", lambda: mode() == keys.LAUNCHER, 6)
 
 # episodio di un catalogo: barra di avanzamento ed episodio successivo (catalogo finto)
 import tvbox.episodes as episodes  # noqa: E402
-episodes.NEXT_WAIT = 2
 EP2 = f"http://localhost:{srv_port}/__test/episodio.html?n=2"
 INFO = {"cat": "mediaset", "series": "SERIE", "season": "s1", "episode": "e1", "title": "Prova",
         "ep": "Ep. 1", "url": EP + "&c=1", "poster": "", "hero": ""}
@@ -220,7 +219,10 @@ check("pausa: dopo 5 s la barra c'è ancora", has("seek"), 2)
 key("ok")
 check("riproduci: la barra se ne va da sola", lambda: not has("seek")(), 8)
 tv.cdp.eval("document.getElementById('v').currentTime = 575", timeout=3)
-check("verso la fine: riquadro \"Episodio successivo\"", lambda: tick() and has("next")() and "Ep. 2" in (js(
+check("a 25 s dalla fine: ancora niente riquadro", lambda: tick() and not has("next")(), 3)
+tv.cdp.eval("document.getElementById('v').currentTime = 589", timeout=3)
+check("a 10 s dalla fine: riquadro \"Episodio successivo\" con il conto", lambda: tick() and has("next")() and "Ep. 2" in (js(
+    "document.getElementById('__tvlayer').shadowRoot.querySelector('.next').textContent") or "") and "Parte tra" in (js(
     "document.getElementById('__tvlayer').shadowRoot.querySelector('.next').textContent") or ""), 10)
 shot("episodio-successivo")
 key("ok")
@@ -228,10 +230,10 @@ check("OK sul riquadro: parte il successivo", lambda: "n=2" in tv.url() and tv.s
 check("successivo: Continua a guardare aggiornato", lambda: (prefs.get("ms_history") or [{}])[0].get("episode") == "e2", 3)
 tv.find_next = lambda info: dict(info, url=EP + "&c=3", episode="e3", ep="Ep. 3")
 check("successivo: video a tutto schermo", lambda: mode() == keys.PLAYER, 15)
-tv.cdp.eval("document.getElementById('v').currentTime = 599.5", timeout=3)
-check("finito: conto alla rovescia sul riquadro", lambda: tick() and "Parte tra" in (js(
+tv.cdp.eval("document.getElementById('v').currentTime = 594", timeout=3)
+check("a 6 s dalla fine: conto alla rovescia sul riquadro", lambda: tick() and "Parte tra" in (js(
     "document.getElementById('__tvlayer').shadowRoot.querySelector('.next').textContent") or ""), 10)
-check("finito: dopo l'attesa parte da solo", lambda: tick() and "c=3" in tv.url(), 15)
+check("finito il conto: parte da solo", lambda: tick() and "c=3" in tv.url(), 20)
 tv.home()
 
 tv.start(Session.site(PAGE + "?n=7"))

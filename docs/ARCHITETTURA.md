@@ -156,10 +156,11 @@ apre a schermo (visione `episode`, MENU torna alla serie e riparte dal punto sal
 **Episodi: barra ed episodio successivo** (`tvbox/episodes.py`, mixin della TV). Il launcher
 apre un episodio con `/api/<cat>?action=play` → `play_episode(cat, q)`: un solo percorso per i
 tre cataloghi (Continua a guardare, player da solo, `Session.episode(..., info=q)`). La
-sorveglianza (`_health_tick`, ogni 2 s) chiama `_episode_tick`: a `NEXT_LEAD` secondi dalla fine
-cerca il successivo (`find_next`: `series()` del catalogo, `next_episode` per numero o data,
-altrimenti il primo della stagione dopo) e mostra il riquadro (`__tvl.next`); a episodio finito
-lo fa partire dopo `NEXT_WAIT` s. OK sul riquadro: `player_ok` → `play_next`. La barra
+sorveglianza (`_health_tick`, ogni 2 s) chiama `_episode_tick`: a `NEXT_LOOKUP` secondi dalla fine
+cerca in silenzio il successivo (`find_next`: `series()` del catalogo, `next_episode` per numero o
+data, altrimenti il primo della stagione dopo); a `NEXT_SHOW` secondi dalla fine mostra il
+riquadro (`__tvl.next`) con il conto alla rovescia, che finisce con l'episodio: allora lo fa
+partire. Pausa o salto indietro: riquadro via, conto fermo. OK sul riquadro: `player_ok` → `play_next`. La barra
 (`__tvl.seek`) legge da sola il video principale finché è a schermo; tvd la chiama all'inizio,
 in pausa e nei salti (al posto degli avvisi "Pausa" / "+30 s"). `__tv.kick` si ferma se l'utente
 ha messo in pausa (prima i primi 30 s la pausa veniva annullata).
