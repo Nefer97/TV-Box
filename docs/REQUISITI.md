@@ -61,7 +61,7 @@ requisito si aggiorna prima questo file, poi il codice. Come è costruita: [ARCH
   popolari, righe per genere ordinate per visualizzazioni), ricerca, "Continua a guardare",
   pagina dell'anime con gli episodi; la descrizione si vede anche evidenziando un titolo in HOME.
   I titoli per adulti sono **nascosti di serie** e si possono rendere visibili da Impostazioni →
-  Home e meteo. Nessun account.
+  Home e contenuti. Nessun account.
 - R21. Mentre si guarda un episodio (Mediaset, StreamingCommunity, AnimeUnity): **barra di
   avanzamento** (titolo, tempo, quanto manca) all'inizio, in pausa (resta finché si è in pausa)
   e a ogni salto; a 10 s dalla fine il riquadro **"Episodio successivo"** con il conto alla
@@ -91,7 +91,7 @@ requisito si aggiorna prima questo file, poi il codice. Come è costruita: [ARCH
   (tieni premuto OK), vista "telefono" e protezione da pubblicità e finestre.
 
 ### Impostazioni
-- R14. Quattro gruppi: Immagine e audio · Accensione e spegnimento · Home e meteo · Rete e
+- R14. Quattro gruppi: Immagine e audio · Accensione e spegnimento · Home e contenuti · Rete e
   assistenza (con gli account, R17). In fondo, come nella home, solo i tasti che non si
   indovinano (niente spiegazioni lunghe).
 - R15. Risoluzione con prova sicura; Wi-Fi da telecomando; riavvio e spegnimento. In alto a

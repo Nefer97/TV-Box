@@ -179,9 +179,12 @@ body[data-page="au"] main, body[data-page="auserie"] main { padding-top: 0; }
 .msrail .row.scroller { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 6vw), transparent 100%); }
 /* liste che scorrono in verticale (righe dei cataloghi, episodi): sfumano dal lato dove c'è altro */
 .msrails.fade-top { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 5vh); }
-.mseps.fade-bottom { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 8vh), transparent 100%); }
-.mseps.fade-top { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 11vh); }
-.mseps.fade-top.fade-bottom { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 11vh, #000 calc(100% - 8vh), transparent 100%); }
+.msrails.fade-bottom { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 7vh), transparent 100%); }
+.msrails.fade-top.fade-bottom { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 5vh, #000 calc(100% - 7vh), transparent 100%); }
+.mseps.fade-bottom, .gprogs.fade-bottom, .settings.fade-bottom { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 8vh), transparent 100%); }
+.mseps.fade-top, .gprogs.fade-top, .settings.fade-top { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 11vh); }
+.mseps.fade-top.fade-bottom, .gprogs.fade-top.fade-bottom, .settings.fade-top.fade-bottom {
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 11vh, #000 calc(100% - 8vh), transparent 100%); }
 /* l'immagine di sfondo comincia a 22vw: il suo bordo sinistro sfuma, se no si vede una riga */
 #page-mediaset .msbg, #page-sc .msbg, #page-au .msbg { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14vw); }
 .poster { flex: 0 0 9.4vw; width: 9.4vw; height: 14.1vw; border-radius: 1.4vh; position: relative; outline: none;
@@ -207,6 +210,9 @@ body[data-page="au"] main, body[data-page="auserie"] main { padding-top: 0; }
 .gprog.msep { background: rgba(11,16,32,.62); }
 .gprog.msep:focus { background: #fff; color: var(--bg1); }
 .msep .gpic { flex: 0 0 13vw; height: 7.3vw; order: -1; }
+/* episodio senza un'immagine sua: il numero grande */
+.gpic.gnum { display: flex; align-items: center; justify-content: center; color: #fff;
+  background: linear-gradient(160deg, #1e3a8a, #0b1020); font-size: 4.6vh; font-weight: 800; letter-spacing: -.02em; }
 .msep .gtitle { font-size: 2.6vh; }
 .msep .ginfo { font-size: 1.9vh; opacity: .75; margin-top: .4vh; }
 .msep .gnow { display: inline-block; margin: 0 0 0 1vw; vertical-align: .3vh; background: #0284c7; }

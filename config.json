@@ -75,7 +75,7 @@
                       "player_control": "keys", "hover": false,
                       "url": "https://www.netflix.com/browse" },
     "sc":          { "kind": "page", "page": "sc", "label": "StreamingCommunity", "subtitle": "Serie TV, film e anime in streaming",
-                      "icon": "play", "color": "#1a1a1a",  "auto_fullscreen": true, "url": "https://streaming-community.army/theme/images/logo.png" },
+                      "icon": "play", "color": "#1a1a1a",  "auto_fullscreen": true, "url": "https://streamingunity.day/" },
     "au":          { "kind": "page", "page": "au", "label": "AnimeUnity", "subtitle": "Anime in streaming",
                       "icon": "play", "color": "#1e3a8a", "url": "https://animeunity.cx/" }
   }

@@ -179,12 +179,17 @@ export function vFade(box) {
   box.classList.toggle('fade-top', box.scrollTop > 2);
   box.classList.toggle('fade-bottom', box.scrollTop + box.clientHeight < box.scrollHeight - 2);
 }
-// dopo uno spostamento del fuoco o uno scorrimento: le sfumature di righe e liste intorno a e
+// liste verticali che sfumano: righe dei cataloghi, episodi, programmi della Guida TV, liste
+// delle Impostazioni (Riquadri della home, Canali, Wi-Fi…)
+const VLISTS = '.msrails, .mseps, .gprogs, .settings';
+// dopo uno spostamento del fuoco, uno scorrimento o un contenuto nuovo: le sfumature delle righe
+// intorno a e e di tutte le liste della pagina
 export function fadesAround(e) {
   for (let n = e; n && n.classList; n = n.parentElement) {
     if (n.classList.contains('scroller') && n.closest('.msrail')) edgeFade(n);
-    if (n.classList.contains('msrails') || n.classList.contains('mseps')) vFade(n);
   }
+  const page = state.page && document.getElementById('page-' + state.page);
+  if (page) page.querySelectorAll(VLISTS).forEach(vFade);
 }
 
 // ---------- episodi: dove si è arrivati (salvato da tvd, /api/progress) ----------

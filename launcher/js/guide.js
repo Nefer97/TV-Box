@@ -1,7 +1,7 @@
 // guide.js — Guida TV: a sinistra i canali, a destra i loro programmi delle prossime ore.
 // Scegliendo un canale (frecce su/giù) si caricano i suoi programmi; → per scorrerli;
 // OK sul programma in onda (o sul canale) apre la diretta.
-import { $, api, el, hideOverlay, overlay, q, state } from './core.js';
+import { $, api, el, hideOverlay, overlay, q, state, vFade } from './core.js';
 
 const cache = {};                 // id canale -> {t, programs}
 let shown = null, loadTimer = 0;
@@ -53,6 +53,7 @@ async function showPrograms(id) {
   if (!progs.length) list.appendChild(el('div', 'gwait', 'Guida non disponibile per questo canale'));
   progs.forEach(p => list.appendChild(row(p, id, now)));
   list.scrollTop = 0;
+  vFade(list);                                       // sfuma in basso se ci sono altri programmi
 }
 
 export async function guidePage() {

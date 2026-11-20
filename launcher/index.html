@@ -27,7 +27,7 @@
       <div class="setcat" tabindex="0" data-go="set-power" style="--c:#6d28d9"><svg class="sic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/></svg>
         <span class="slbl">Accensione e spegnimento</span><span class="ssum" id="sum-power">…</span></div>
       <div class="setcat" tabindex="0" data-go="set-home" style="--c:#0f766e"><svg class="sic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>
-        <span class="slbl">Home e meteo</span><span class="ssum" id="sum-home">…</span></div>
+        <span class="slbl">Home e contenuti</span><span class="ssum" id="sum-home">…</span></div>
       <div class="setcat" tabindex="0" data-go="set-net" style="--c:#374151"><svg class="sic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>
         <span class="slbl">Rete e assistenza</span><span class="ssum" id="sum-net">…</span></div>
     </div>
@@ -52,7 +52,7 @@
       <div class="btn" tabindex="0" data-act="saver">Salvaschermo <span class="val" id="saver-val">…</span></div>
       <div class="btn" tabindex="0" data-act="saver-off">Spegni lo schermo <span class="val" id="saveroff-val">…</span></div>
       <div class="btn" tabindex="0" data-act="reboot">Riavvia il Mac mini</div>
-      <div class="btn" tabindex="0" data-act="poweroff">Spegni</div>
+      <div class="btn" tabindex="0" data-act="poweroff">Spegni il Mac mini</div>
     </div>
   </section>
   <section class="page" id="page-set-home">
@@ -81,18 +81,15 @@
   </section>
   <section class="page" id="page-siti">
     <div class="settings" id="siti-list"></div>
-    <p class="note">Scrivi l'indirizzo con la tastiera a schermo (es. <b>www.la7.it</b>). Puoi salvarlo
-      qui per aprirlo poi con un clic. Su un sito: <b>tieni premuto il tasto centrale</b> per il puntatore.</p>
+    <div class="keys setkeys"><span><b>OK</b> apri</span><span><b>Tieni OK</b> puntatore sui siti</span><span><b>MENU</b> indietro</span></div>
   </section>
   <section class="page" id="page-channels">
     <div class="settings" id="channels-list"></div>
-    <p class="note">I canali in alto sono quelli della home, nel loro ordine: <b>OK</b> per spostarli o toglierli.
-      Sotto, i canali di Rai, Mediaset e Discovery da aggiungere.</p>
+    <div class="keys setkeys"><span><b>OK</b> sposta, togli o aggiungi</span><span><b>MENU</b> indietro</span></div>
   </section>
   <section class="page" id="page-homeedit">
     <div class="settings" id="homeedit-list"></div>
-    <p class="note">OK su una voce per mostrarla o nasconderla. I tuoi siti si mettono nella home da
-      <b>Altri servizi → I miei siti</b>.</p>
+    <div class="keys setkeys"><span><b>OK</b> mostra o nascondi</span><span><b>MENU</b> indietro</span></div>
   </section>
   <!-- Mediaset: righe di locandine; pagina della serie con stagioni ed episodi -->
   <!-- Mediaset: pagina a tutto schermo (niente intestazione): immagine della serie scelta,

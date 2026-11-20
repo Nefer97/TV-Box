@@ -87,7 +87,7 @@ const focusSearch = () => {
 function openSearchKeyboard() {
   if (!window.__osk) return;
   window.__osk.open({
-    title: 'Cerca per nome',
+    title: 'Cerca un anime',
     value: searchQuery,
     onDone: v => {
       searchQuery = (v || '').trim();
@@ -424,8 +424,11 @@ export async function auSeriesPage() {
     const row = el('div', 'gprog msep');
     row.tabIndex = 0;
 
-    const pic = el('div', 'gpic');
-    if (e.image) pic.style.backgroundImage = `url("${e.image}")`;
+    // il sito non ha un'immagine per episodio (ripete la locandina della serie): al suo posto il numero
+    const same = !e.image || e.image === r.poster || e.image === r.hero;
+    const pic = el('div', 'gpic' + (same ? ' gnum' : ''));
+    if (same) pic.appendChild(el('span', '', e.n != null ? String(e.n) : '▶'));
+    else pic.style.backgroundImage = `url("${e.image}")`;
 
     const body = el('div', 'gbody');
     const seasonNumber = r.season ?? r.season_number ?? '';

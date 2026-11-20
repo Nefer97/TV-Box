@@ -39,7 +39,7 @@ guida TV, fiction, serie, programmi e cartoni di Mediaset Infinity, YouTube, Rai
   pubblicità, popup e banner dei cookie.
 - **Impostazioni dalla TV**, in quattro gruppi: immagine e audio (volume, risoluzione con
   prova di 15 secondi), accensione e spegnimento (ultimo canale all'accensione, timer,
-  salvaschermo), home e meteo, rete e assistenza (Wi-Fi con ricerca e password, account).
+  salvaschermo), home e contenuti (canali, riquadri, meteo, titoli per adulti), rete e assistenza (Wi-Fi con ricerca e password, account).
 - **Salvaschermo** con le foto dei programmi in onda; dopo un'ora lo schermo si spegne.
 - **Sempre acceso**: si riaccende dopo un blackout, si riavvia da solo se si blocca, riparte
   dall'ultimo canale guardato.
@@ -162,7 +162,7 @@ barra spaziatrice (pausa); ▲ ▼ restano il volume della TV, MENU indietro.
 
 I canali in diretta vengono dal catalogo in [tvbox/channels.py](tvbox/channels.py) (indirizzi e
 palinsesti di Rai, Mediaset e Discovery); quali compaiono e in che ordine si sceglie dalla TV
-(Impostazioni → Home e meteo → Canali in diretta).
+(Impostazioni → Home e contenuti → Canali in diretta).
 
 Ogni servizio in `config.json` ha un **tipo** che decide come si comporta col telecomando:
 `hbbtv` (app per TV come RaiPlay), `tvapp` (YouTube TV), `web` (siti normali) o `page`

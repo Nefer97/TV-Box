@@ -85,7 +85,7 @@ const focusSearch = () => {
 function openSearchKeyboard() {
   if (!window.__osk) return;
   window.__osk.open({
-    title: 'Cerca per nome',
+    title: 'Cerca film o serie TV',
     value: searchQuery,
     onDone: v => {
       searchQuery = (v || '').trim();

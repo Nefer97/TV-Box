@@ -151,7 +151,7 @@ export async function channelsPage(focusId, r) {
   head('Nella home, in quest\'ordine');
   r.selected.forEach((id, i) => {
     const c = all[id];
-    const b = item(`${i + 1}.  ${c.label}`, `${c.group}${c.guide ? '' : ' · senza guida TV'}`, () => channelMenu(c, r.selected.length));
+    const b = item(`${i + 1}.  ${c.label}`, c.guide ? '' : 'senza guida TV', () => channelMenu(c, r.selected.length));
     b.dataset.cid = id;
     list.appendChild(b);
   });

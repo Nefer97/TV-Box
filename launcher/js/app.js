@@ -11,7 +11,7 @@ import { ACTIONS, changeVolume, loginPage, settingsPage } from './settings.js';
 
 const TITLES = { altri: 'Altri servizi', settings: 'Impostazioni', wifi: 'Wi-Fi', siti: 'I miei siti',
   homeedit: 'Riquadri della home', guide: 'Guida TV', channels: 'Canali in diretta', mediaset: 'Mediaset Infinity', msserie: 'Mediaset Infinity', sc: 'StreamingCommunity', scserie: 'StreamingCommunity', au: 'AnimeUnity', auserie: 'AnimeUnity', 'set-av': 'Immagine e audio',
-  'set-power': 'Accensione e spegnimento', 'set-home': 'Home e meteo', 'set-net': 'Rete e assistenza', login: 'Accesso' };
+  'set-power': 'Accensione e spegnimento', 'set-home': 'Home e contenuti', 'set-net': 'Rete e assistenza', login: 'Accesso' };
 // MENU: pagina a cui si torna (e voce da selezionare)
 const PARENT = { wifi: ['set-net', 'wifi'], homeedit: ['set-home', 'home-edit'], channels: ['set-home', 'channels'], siti: ['altri'],
   settings: ['home'], altri: ['home'], guide: ['home'], mediaset: ['home'], msserie: ['mediaset'], sc: ['altri'], scserie: ['sc'], au: ['altri'], auserie: ['au'],

@@ -71,6 +71,7 @@ export function loginPage() {
     if (row) { row.focus(); accountVal(row); }
   };
   const name = (state.CFG.services[id] || {}).label || id;
+  $('#title').textContent = name;                    // in alto il servizio, come le altre schermate di accesso
   loginGate($('#login-box'), { id, endpoint: id, userLabel: 'Email', onDone: back,
     sub: `Entra con il tuo account ${name}: aprendo ${name} sarai già collegato.` });
 }
@@ -197,10 +198,11 @@ async function sleepVal() {
   return r;
 }
 async function sleepMenu() {
-  await sleepVal();
+  const r = await sleepVal();
   const set = m => async () => { await api('sleep?minutes=' + m); hideOverlay(); sleepVal(); };
+  // ✓ solo su "Spento": con il timer acceso i minuti che mancano non sono una delle scelte
   choose('Timer di spegnimento', [30, 60, 90, 120].map(m => [`Tra ${m} minuti`, m, set(m)])
-    .concat([['Spento', 0, set(0)]]), -1);
+    .concat([['Spento', 0, set(0)]]), r && r.minutes ? -1 : 0);
 }
 
 // ---------- sistema ----------
