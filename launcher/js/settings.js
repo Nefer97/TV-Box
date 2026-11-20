@@ -14,7 +14,10 @@ export const changeVolume = delta => api('volume?delta=' + delta).then(setVol);
 
 // ---------- rete ----------
 function refreshInfo() {
-  api('info').then(r => { $('#ip').textContent = r && r.ip && r.ip.length ? r.ip[0] : 'non connesso'; });
+  api('info').then(r => {
+    $('#ip').textContent = r && r.ip && r.ip.length ? r.ip[0] : 'non connesso';
+    $('#tvbox-ver').textContent = r && r.version ? r.version : '…';
+  });
   api('wifi').then(w => {
     $('#wifi-cur').textContent = !w || !w.present ? 'assente' : w.connected ? w.ssid : 'non collegato';
   });

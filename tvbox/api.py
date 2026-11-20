@@ -11,7 +11,7 @@ import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from . import wifi
+from . import VERSION, wifi
 from .meteo import Meteo
 from .sites import normalize_url, site_icon
 from .util import LAUNCHER_DIR, log
@@ -65,6 +65,7 @@ def make_routes(tv):
         route = subprocess.run(["ip", "route", "show", "default"], capture_output=True, text=True).stdout.split()
         dev = route[route.index("dev") + 1] if "dev" in route[:-1] else ""
         return {"hostname": socket.gethostname(), "ip": ip, "wired": bool(dev) and not dev.startswith(("wl", "ww")),
+                "version": VERSION,
                 "remote_aluminium": tv.remote.aluminium if tv.remote else None}
 
     def wifi_(q):

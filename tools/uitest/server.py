@@ -11,6 +11,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 sys.path.insert(0, ROOT)
 import tvbox.sites as sites
 sites.ICON_DIR = tempfile.mkdtemp()
+from tvbox import VERSION
 from tvbox.api import make_routes, Binary
 from tvbox.config import Config
 from tvbox.epg import EPG
@@ -62,7 +63,7 @@ class FakeTV(EpisodesMixin):
 TV = FakeTV(); ROUTES = make_routes(TV)
 STUB = {"meteo": {"city": "Roma", "temp": 18, "text": "Sereno", "icon": "🌙"},
         "wifi": {"present": True, "connected": True, "ssid": "Wi-Fi di casa", "ip": "192.168.1.50"},
-        "info": {"ip": ["192.168.1.50"]},
+        "info": {"ip": ["192.168.1.50"], "version": VERSION},
         "screen": {"current": "1280x720", "video_mode": "1280x720", "video_low": True, "modes": ["1280x720"], "saved": "1280x720", "preferred": "1280x720"}}
 class H(http.server.SimpleHTTPRequestHandler):
     def __init__(s, *a, **k): super().__init__(*a, directory=ROOT + "/launcher", **k)
