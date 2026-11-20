@@ -743,6 +743,27 @@ class EpisodesTest(unittest.TestCase):
         self.assertEqual(len(posted), 1)                                    # parte una volta sola
 
 
+class ChromeUpdateTest(unittest.TestCase):
+    """Chrome aggiornato di notte: si riavvia solo a schermo spento."""
+    def test_solo_a_schermo_spento(self):
+        from tvbox.tv import TV
+        killed = []
+
+        class B:
+            def updated_since_start(self): return True
+            def kill(self): killed.append(1)
+
+        class C:
+            def drop(self): pass
+        t = type("T", (), {"browser": B(), "cdp": C(), "asleep": False})()
+        TV._chrome_update_tick(t)
+        self.assertEqual(killed, [])                                       # schermo acceso: mai
+        t.asleep = True
+        TV._chrome_update_tick(t)
+        TV._chrome_update_tick(t)                                           # al più ogni 10 minuti
+        self.assertEqual(killed, [1])
+
+
 class HealthTest(unittest.TestCase):
     def test_partenza_e_avanzamento(self):
         w = Watch("canale5", 0)

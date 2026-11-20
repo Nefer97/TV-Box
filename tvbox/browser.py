@@ -2,6 +2,7 @@
 import functools
 import json
 import os
+import shutil
 import signal
 import subprocess
 import time
@@ -98,7 +99,17 @@ class Browser:
         logf = open(os.path.join(self.profile, "tvbox-chrome.log"), "ab")
         self.proc = subprocess.Popen(args, stdout=logf, stderr=logf, start_new_session=True)
         self.started_at = time.monotonic()
+        self.started_wall = time.time()        # per capire se Chrome è stato aggiornato dopo
         log.info("Chrome avviato (pid %s, ingrandimento %.2f)", self.proc.pid, self.dsf)
+
+    def updated_since_start(self):
+        """Il programma di Chrome è stato aggiornato (aggiornamenti automatici) dopo che questo
+        Chrome è partito? Allora sta ancora usando la versione vecchia."""
+        try:
+            path = os.path.realpath(shutil.which(self.cfg.opt("chrome.binary", "google-chrome-stable")) or "")
+            return bool(path) and os.path.getmtime(path) > getattr(self, "started_wall", time.time())
+        except OSError:
+            return False
 
     def alive(self):
         return self.proc is not None and self.proc.poll() is None

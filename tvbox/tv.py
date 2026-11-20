@@ -362,6 +362,18 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin, EpisodesMixin
         self.cdp.call("Page.navigate", {"url": self.launcher_url + (f"#{page}" if page else "")})
 
     # ---------- all'accensione: ultimo canale ----------
+    def _chrome_update_tick(self):
+        """Chrome aggiornato da solo di notte (unattended-upgrades): il Chrome aperto usa ancora
+        la versione vecchia. Lo si riavvia solo a schermo spento, controllando ogni 10 minuti."""
+        now = time.monotonic()
+        if not self.asleep or now - getattr(self, "_update_checked", 0.0) < 600:
+            return
+        self._update_checked = now
+        if self.browser.updated_since_start():
+            log.info("Chrome aggiornato: lo riavvio a schermo spento")
+            self.cdp.drop()
+            self.browser.kill()                       # la sorveglianza lo fa ripartire
+
     def _resume(self):
         self._resumed = True
         sid = self.prefs.get("last_channel")
@@ -447,6 +459,7 @@ class TV(Actions, LayerMixin, PanelMixin, SleepMixin, HealthMixin, EpisodesMixin
                     self.cdp.crashed.clear()
                     self.home()
                 self._sleep_tick()
+                self._chrome_update_tick()
                 url = self.url()
                 self._auto_fullscreen_tick(url)
                 self._saver_tick(url)

@@ -109,6 +109,14 @@ esclude aggiungendolo a `noFiltering`. `install.sh` installa la regola anche neg
 aggiornamenti e tiene quella di prima in `/etc/tvbox/chrome-policy.json.prev` per il rollback;
 `cdp.targets()` ignora le pagine `chrome-extension://`.
 
+**Sicurezza.** Il server di tvd (`api.py`) e DevTools di Chrome ascoltano solo su 127.0.0.1;
+l'API rifiuta (403) le richieste che non vengono dal launcher (Host diverso da
+127.0.0.1/localhost, `Sec-Fetch-Site` diverso da same-origin/none); DevTools accetta solo tvd
+(`--remote-allow-origins` ristretto). Le password non si salvano. Aggiornamenti automatici di
+sicurezza (`install.sh` → `setup_updates`: unattended-upgrades per Debian security e Google
+Chrome, alle 4:30, niente riavvii); il Chrome già aperto lo riavvia tvd solo a schermo spento
+(`_chrome_update_tick`, `Browser.updated_since_start`).
+
 ## 7. Dati: chi decide cosa
 
 | Dove | Cosa | Chi lo scrive |

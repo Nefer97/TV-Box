@@ -70,6 +70,9 @@ requisito si aggiorna prima questo file, poi il codice. Come è costruita: [ARCH
 - R22. **Blocco della pubblicità** in tutte le pagine (uBlock Origin Lite in Chrome, più le
   liste di tvd): niente finestre o riquadri pubblicitari; un sito che non funziona con il blocco
   si esclude.
+- R23. **Aggiornamenti di sicurezza da soli**, di notte (Debian e Chrome), senza riavviare il
+  Mac mini e senza interrompere quello che si guarda (Chrome si riavvia a schermo spento).
+  Solo il launcher comanda tvd: una pagina web aperta sulla TV no.
 - R20. MENU da una sezione (Mediaset, StreamingCommunity, AnimeUnity) torna **dove era il
   riquadro** da cui la si è aperta (home o Altri servizi), anche dopo un episodio.
 

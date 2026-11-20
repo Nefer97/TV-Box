@@ -1,0 +1,5 @@
+// tvbox: ogni giorno si aggiorna l'elenco dei pacchetti e si installano da soli gli
+// aggiornamenti di sicurezza (vedi 51tvbox-unattended-upgrades)
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::AutocleanInterval "7";

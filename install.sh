@@ -44,6 +44,21 @@ install_app() {
   install -d -o "$TV_USER" -g "$TV_USER" -m 0755 /var/log/tvbox
 }
 
+# Aggiornamenti di sicurezza automatici (Debian security + Google Chrome), di notte. Si mettono
+# anche con --update; se apt è occupato o manca la rete si riprova al deploy successivo.
+setup_updates() {
+  if ! dpkg -s unattended-upgrades >/dev/null 2>&1; then
+    DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=120 install -y unattended-upgrades \
+      || { echo "ATTENZIONE: unattended-upgrades non installato (riprovo al prossimo aggiornamento)"; return 0; }
+  fi
+  install -m 0644 "$SRC/system/20auto-upgrades" /etc/apt/apt.conf.d/20auto-upgrades
+  install -m 0644 "$SRC/system/51tvbox-unattended-upgrades" /etc/apt/apt.conf.d/51tvbox-unattended-upgrades
+  install -d /etc/systemd/system/apt-daily-upgrade.timer.d
+  install -m 0644 "$SRC/system/apt-daily-upgrade-tvbox.conf" /etc/systemd/system/apt-daily-upgrade.timer.d/tvbox.conf
+  systemctl daemon-reload 2>/dev/null || true
+  systemctl enable --now apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
+}
+
 restart_tvd() {
   sync
   # la sessione X lo fa ripartire da sola (system/xinitrc); il modello è ancorato all'inizio
@@ -56,6 +71,7 @@ case "${1:-}" in
     echo "==> Aggiornamento dell'app"
     [ -d "$DEST" ] && { rm -rf "$PREV"; cp -a "$DEST" "$PREV"; }
     install_app
+    setup_updates
     restart_tvd
     echo "Aggiornato: $(sed -n 's/^VERSION = //p' "$DEST/tvbox/__init__.py" 2>/dev/null)"
     echo "Se qualcosa non va, dal PC:  ./deploy.sh --rollback"
@@ -128,6 +144,7 @@ install -m 0644 -o "$TV_USER" -g "$TV_USER" "$SRC/system/bash_profile" "/home/$T
 
 echo "==> File del progetto in $DEST"
 install_app
+setup_updates
 
 echo "==> Autologin su tty1"
 install -d /etc/systemd/system/getty@tty1.service.d
